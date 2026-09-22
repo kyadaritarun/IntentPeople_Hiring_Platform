@@ -1,0 +1,41 @@
+# Root Git Ignore for Uptrix Hiring Platform Monorepo
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/vite.config.js.timestamp-*
+frontend/vite.config.ts.timestamp-*
+frontend/.env.local
+frontend/.env.*.local
+frontend/.vercel/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+
+# Backend
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/*/__pycache__/
+backend/*/*/*/__pycache__/
+backend/*.py[cod]
+backend/*/*.py[cod]
+backend/*/*/*.py[cod]
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/venv/
+backend/.venv/
+backend/env/
+backend/uploads/
+backend/*.log
+backend/logs/
+backend/*.sqlite3
+
+# General / OS / Editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
