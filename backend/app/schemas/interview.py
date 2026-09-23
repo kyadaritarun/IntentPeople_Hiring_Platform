@@ -21,3 +21,7 @@ class InterviewUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     meet_url: Optional[str] = None
+    round: Optional[str] = None
+    interviewer_name: Optional[str] = None
+    mode: Optional[str] = None
+    duration: Optional[str] = None

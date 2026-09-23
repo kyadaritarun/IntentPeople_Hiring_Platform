@@ -60,6 +60,14 @@ export const TAB_CONFIG = {
     path: '/saved-jobs',
     title: 'Saved Jobs | Uptrix',
   },
+  skill_advisory: {
+    path: '/skill-advisory',
+    title: 'Monthly Analysis | Uptrix',
+  },
+  career_analytics: {
+    path: '/skill-advisory',
+    title: 'Monthly Analysis | Uptrix',
+  },
   my_posts: {
     path: '/home',
     title: 'Home | Uptrix',

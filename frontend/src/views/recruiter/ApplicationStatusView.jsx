@@ -301,7 +301,10 @@ export default function ApplicationStatusView({ setActiveTab }) {
           try {
             await api.updateInterview(matchingIv.id, {
               round: roundText,
-              notes: notePayload
+              notes: notePayload,
+              interview_date: 'To Be Scheduled',
+              interview_time: 'Slot Needed',
+              status: 'SCHEDULED'
             });
           } catch { }
         } else {
@@ -311,20 +314,20 @@ export default function ApplicationStatusView({ setActiveTab }) {
               job_title: jobTitle,
               candidate_name: candidateName,
               interviewer_name: user?.name || 'Hiring Lead',
-              interview_date: todayDate,
-              interview_time: 'To Be Scheduled',
+              interview_date: 'To Be Scheduled',
+              interview_time: 'Slot Needed',
               duration: '45 mins',
               round: roundText,
               mode: 'Google Meet',
               notes: notePayload,
-              status: 'CONFIRMED'
+              status: 'SCHEDULED'
             });
           } catch { }
         }
         await handleStageChange(
           appId,
           'INTERVIEW_SCHEDULED',
-          `🚀 ${candidateName} advanced to ${roundText} (${feedbackForm.subject || 'Assessment'})!`
+          `🚀 ${candidateName} advanced to ${roundText}! Set Date & Slot in Candidate Interview Pipeline.`
         );
       }
 

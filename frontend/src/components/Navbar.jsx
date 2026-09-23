@@ -3,7 +3,7 @@ import {
   Home, Users, Briefcase, Bell, Search,
   HelpCircle, LogOut, ShieldCheck, ChevronDown,
   PlusCircle, User, Building2, LayoutDashboard,
-  CheckCircle2, Calendar, PenSquare, FileText, Bookmark, Sparkles, MessageSquare
+  CheckCircle2, Calendar, PenSquare, FileText, Bookmark, Sparkles, MessageSquare, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
@@ -267,6 +267,20 @@ export default function Navbar({
                 <span className="text-[0.68rem] font-medium hidden md:block mt-0.5 whitespace-nowrap">Saved Jobs</span>
               </button>
 
+              {/* 5B. Monthly Analysis */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('skill_advisory')}
+                className={`h-full flex flex-col items-center justify-center px-2 border-b-2 transition-colors cursor-pointer border-transparent ${activeTab === 'skill_advisory'
+                  ? 'border-slate-900 text-slate-900 font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                title="Monthly Analysis"
+              >
+                <TrendingUp className="w-5 h-5 text-indigo-600" />
+                <span className="text-[0.68rem] font-medium hidden md:block mt-0.5 whitespace-nowrap">Monthly Analysis</span>
+              </button>
+
               {/* 6. Interview */}
               <button
                 type="button"
@@ -384,6 +398,18 @@ export default function Navbar({
                   >
                     <span>{isRecruiter ? 'Manage Job Roles' : 'My Applications & Status'}</span>
                   </div>
+                  {!isRecruiter && (
+                    <div
+                      onClick={() => {
+                        setActiveTab('skill_advisory');
+                        setShowMeMenu(false);
+                      }}
+                      className="px-4 py-1.5 hover:bg-slate-50 cursor-pointer flex items-center gap-2 text-indigo-700 font-medium"
+                    >
+                      <TrendingUp size={13} />
+                      <span>Monthly Analysis</span>
+                    </div>
+                  )}
                   <div
                     onClick={() => {
                       setActiveTab('interviews');

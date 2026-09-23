@@ -16,6 +16,7 @@ import { api } from '../../api';
 const JobSearch = lazy(() => import('../candidate/JobSearch'));
 const MyApplications = lazy(() => import('../candidate/MyApplications'));
 const SavedJobs = lazy(() => import('../candidate/SavedJobs'));
+const CandidateSkillAdvisoryView = lazy(() => import('../candidate/CandidateSkillAdvisoryView'));
 const CandidateProfile = lazy(() => import('../candidate/CandidateProfile'));
 const InterviewsView = lazy(() => import('../common/InterviewsView'));
 const MessagesView = lazy(() => import('../common/MessagesView'));
@@ -109,6 +110,7 @@ export default function FeedDashboard({
     if (tab === 'job_search' || tab === 'find_jobs') return 'find_jobs';
     if (tab === 'my_applications') return 'my_applications';
     if (tab === 'saved_jobs') return 'saved_jobs';
+    if (tab === 'skill_advisory' || tab === 'career_analytics' || tab === 'skill-advisory') return 'skill_advisory';
     if (tab === 'my_posts' || tab === 'posts') return isStaff ? (isAdmin ? 'admin_dashboard' : isRecruiter ? 'recruiter_dashboard' : 'hiring_manager_dashboard') : 'home';
     if (tab === 'community_feed' || tab === 'community' || tab === 'community-feed') return isStaff ? (isAdmin ? 'admin_dashboard' : isRecruiter ? 'recruiter_dashboard' : 'hiring_manager_dashboard') : 'home';
     if (tab === 'interviews' || tab === 'my_interviews') return isStaff ? 'interviews' : 'my_interviews';
@@ -244,9 +246,11 @@ export default function FeedDashboard({
 
   const quickNav = [
     { icon: User, label: 'Edit profile', tab: 'candidate_profile', primary: true },
+    { icon: TrendingUp, label: 'Monthly Analysis', tab: 'skill_advisory' },
   ];
 
   const activities = [
+    { icon: TrendingUp, color: '#4F46E5', title: 'Monthly Analysis', sub: 'Discover in-demand recruiter skills and monthly funnel analysis', time: 'Active', tab: 'skill_advisory' },
     { icon: Target, color: '#0E9F6E', title: 'Smart job match enabled', sub: 'Explore matching openings across digital marketing & engineering', time: 'Just now', tab: 'job_search' },
     { icon: Eye, color: NAVY_SOFT, title: 'Profile visible to verified employers', sub: 'Hiring managers can discover your skill competencies', time: '5h ago', tab: 'candidate_profile' },
     { icon: CheckCircle2, color: '#0E9F6E', title: 'Application tracking active', sub: 'Track your submissions and scheduled interviews in real time', time: '1d ago', tab: 'my_applications' },
@@ -441,7 +445,8 @@ export default function FeedDashboard({
         { id: 'home', label: 'Home', icon: Home, isInternal: true },
         { id: 'find_jobs', label: 'Find Jobs', icon: Search, tab: 'job_search' },
         { id: 'my_applications', label: 'My Applications', icon: Briefcase, tab: 'my_applications' },
-        { id: 'saved_jobs', label: 'Saved Jobs', icon: Bookmark, tab: 'saved_jobs' }
+        { id: 'saved_jobs', label: 'Saved Jobs', icon: Bookmark, tab: 'saved_jobs' },
+        { id: 'skill_advisory', label: 'Monthly Analysis', icon: TrendingUp, tab: 'skill_advisory' }
       ]
     },
     {
@@ -679,8 +684,8 @@ export default function FeedDashboard({
                 }
               }}
               className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} p-1.5 rounded-xl cursor-pointer transition-colors select-none ${(activeSidebarItem === 'profile' || activeSidebarItem === 'company_profile')
-                  ? 'bg-[#F6F7FB] border border-slate-300/80 shadow-xs'
-                  : 'hover:bg-[#F6F7FB]'
+                ? 'bg-[#F6F7FB] border border-slate-300/80 shadow-xs'
+                : 'hover:bg-[#F6F7FB]'
                 }`}
             >
               <div className="relative shrink-0">
@@ -1046,7 +1051,7 @@ export default function FeedDashboard({
             {/* 3. MY APPLICATIONS VIEW                                             */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {activeSidebarItem === 'my_applications' && (
-              <div className="py-6 bg-[#F6F7FB] min-h-full">
+              <div className="min-h-full">
                 <MyApplications setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
               </div>
             )}
@@ -1055,8 +1060,21 @@ export default function FeedDashboard({
             {/* 4. SAVED JOBS VIEW                                                  */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {activeSidebarItem === 'saved_jobs' && (
-              <div className="py-6 bg-[#F6F7FB] min-h-full">
+              <div className="min-h-full">
                 <SavedJobs setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* 4B. MONTHLY ANALYSIS VIEW                                         */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {activeSidebarItem === 'skill_advisory' && (
+              <div className="pt-1 pb-6 min-h-full">
+                <CandidateSkillAdvisoryView
+                  setActiveTab={handleTabChange}
+                  onNavigateTab={handleTabChange}
+                  setSelectedJobId={setSelectedJobId}
+                />
               </div>
             )}
 

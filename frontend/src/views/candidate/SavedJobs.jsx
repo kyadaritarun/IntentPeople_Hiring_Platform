@@ -142,7 +142,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
       label: 'Remote Roles', 
       value: remoteCount, 
       sub: 'Work from anywhere', 
-      color: '#0a66c2', 
+      color: '#00a884', 
       filterKey: 'REMOTE'
     },
     { 
@@ -187,7 +187,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   ];
 
   return (
-    <div className="max-w-10xl mx-auto px-3 sm:px-6 lg:px-8 space-y-5">
+    <div className="p-4 sm:p-8 max-w-10xl mx-auto space-y-6 select-text text-slate-800">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -197,99 +197,103 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
         </div>
       )}
 
-      {/* ─── 1. JobSearch-Style Hero Header Card ─── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              Saved <span className="text-[#0a66c2]">Jobs</span>
+      {/* ── Top Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5 m-0">
+              <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold border border-teal-100/80">
+                <Bookmark className="w-4 h-4" />
+              </span>
+              Saved Jobs
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Review and apply for roles you bookmarked for later across top digital marketing and tech teams.
-            </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-              <Bookmark className="w-3 h-3 text-amber-600 fill-amber-500" /> Curated Collection
-            </span>
+          <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed m-0">
+            Review and apply for roles you bookmarked for later across top digital marketing and tech teams.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+            <Bookmark className="w-3 h-3 text-amber-600 fill-amber-500" /> Curated Collection
+          </span>
+          <button
+            type="button"
+            onClick={() => setActiveTab?.('job_search')}
+            className="px-4 py-2 rounded-xl bg-[#00a884] hover:bg-[#008f70] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 border-none cursor-pointer"
+          >
+            <Search className="w-3.5 h-3.5" /> Explore Jobs
+          </button>
+        </div>
+      </div>
+
+      {/* ── Search Toolbar & Work Mode Pills ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              className="w-full pl-10 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#00a884] transition-all placeholder:text-slate-400"
+              placeholder="Filter saved roles by title, company, or location..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Sort & Applications Link */}
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
+            >
+              <option value="recent">Recently Saved</option>
+              <option value="title">Job Title (A-Z)</option>
+              <option value="company">Company Name</option>
+            </select>
+
             <button
               type="button"
-              onClick={() => setActiveTab?.('job_search')}
-              className="px-4 py-2 rounded-xl bg-[#0a66c2] hover:bg-[#084e96] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 border-none cursor-pointer"
+              onClick={() => setActiveTab?.('my_applications')}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors border-none cursor-pointer shrink-0"
             >
-              <Search className="w-3.5 h-3.5" /> Explore Jobs
+              My Applications
             </button>
           </div>
         </div>
 
-        {/* Search Toolbar & Work Mode Pills */}
-        <div className="space-y-3 pt-1">
-          <div className="flex flex-col sm:flex-row items-center gap-2.5">
-            {/* Search Input */}
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                className="w-full pl-10 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#0a66c2] transition-all placeholder:text-slate-400"
-                placeholder="Filter saved roles by title, company, or location..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            {/* Sort & Applications Link */}
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
-              >
-                <option value="recent">Recently Saved</option>
-                <option value="title">Job Title (A-Z)</option>
-                <option value="company">Company Name</option>
-              </select>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab?.('my_applications')}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors border-none cursor-pointer shrink-0"
-              >
-                My Applications
-              </button>
-            </div>
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
-            {filterTabs.map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setWorkModeFilter(tab.id)}
-                className={`text-[0.7rem] px-3 py-1.5 rounded-xl font-semibold transition-colors border cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                  workModeFilter === tab.id
-                    ? 'bg-[#0a66c2] text-white border-[#0a66c2] shadow-xs'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span className={`px-1.5 py-0.2 rounded-md text-[0.62rem] font-bold ${
-                  workModeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-600'
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
+        {/* Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
+          {filterTabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setWorkModeFilter(tab.id)}
+              className={`text-[0.7rem] px-3 py-1.5 rounded-xl font-semibold transition-colors border cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                workModeFilter === tab.id
+                  ? 'bg-[#00a884] text-white border-[#00a884] shadow-xs'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.2 rounded-md text-[0.62rem] font-bold ${
+                workModeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-600'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -311,7 +315,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <button
               type="button"
               onClick={() => setActiveTab?.('job_search')}
-              className="px-5 py-2.5 rounded-xl bg-[#0a66c2] hover:bg-[#084e96] text-white text-xs font-bold transition-all border-none cursor-pointer shadow-xs"
+              className="px-5 py-2.5 rounded-xl bg-[#00a884] hover:bg-[#008f70] text-white text-xs font-bold transition-all border-none cursor-pointer shadow-xs"
             >
               Browse Open Jobs
             </button>
@@ -349,14 +353,14 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                       </div>
                       <div className="min-w-0">
                         <h3 
-                          className="text-base font-bold text-slate-900 hover:text-[#0a66c2] transition-colors cursor-pointer truncate"
+                          className="text-base font-bold text-slate-900 hover:text-[#00a884] transition-colors cursor-pointer truncate"
                           onClick={() => setViewDetailsJob(job)}
                         >
                           {job.title}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                           <span className="font-semibold text-slate-800 flex items-center gap-1">
-                            <ShieldCheck size={13} className="text-[#0a66c2]" />
+                            <ShieldCheck size={13} className="text-[#00a884]" />
                             {job.company}
                           </span>
                         </div>
@@ -380,7 +384,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                       <MapPin size={11} className="text-slate-400" /> {job.location || 'Remote'}
                     </span>
                     {job.work_mode && (
-                      <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-semibold bg-blue-50 text-[#0a66c2] border border-blue-100">
+                      <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-semibold bg-teal-50 text-[#00a884] border border-teal-100">
                         {job.work_mode}
                       </span>
                     )}
@@ -420,7 +424,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                       <button
                         type="button"
                         onClick={() => setActiveTab?.('my_applications')}
-                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#0a66c2] hover:bg-blue-50 border-none bg-transparent cursor-pointer transition-colors"
+                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#00a884] hover:bg-teal-50 border-none bg-transparent cursor-pointer transition-colors"
                       >
                         Track Status
                       </button>
@@ -429,7 +433,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                     <button
                       type="button"
                       onClick={(e) => handleOpenApplyModal(job, e)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0a66c2] hover:bg-[#084e96] transition-all border-none cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] transition-all border-none cursor-pointer shadow-xs"
                     >
                       <Send size={12} /> Apply Now
                     </button>
@@ -497,7 +501,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                 <button
                   type="submit"
                   disabled={applying}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#0a66c2] hover:bg-[#084e96] border-none cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] border-none cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {applying ? (
                     <>
@@ -708,7 +712,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                         setViewDetailsJob(null);
                         handleOpenApplyModal(j);
                       }}
-                      className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#0a66c2] hover:bg-[#084e96] border-none cursor-pointer shadow-sm"
+                      className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] border-none cursor-pointer shadow-sm"
                     >
                       Apply Now
                     </button>

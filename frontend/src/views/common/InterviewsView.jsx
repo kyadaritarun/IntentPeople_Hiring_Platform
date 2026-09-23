@@ -11,7 +11,14 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api';
 
 const parseInterviewDateTime = (dateStr, timeStr) => {
-  if (!dateStr) return null;
+  if (!dateStr || !timeStr) return null;
+  const isPending = (str) => {
+    if (!str || typeof str !== 'string') return true;
+    const s = str.toLowerCase();
+    return s.includes('scheduled') || s.includes('needed') || s.includes('pending') || s.includes('check');
+  };
+  if (isPending(dateStr) || isPending(timeStr)) return null;
+
   try {
     let timePart = '12:00 PM';
     if (timeStr) {
@@ -141,6 +148,15 @@ export default function InterviewsView({ setActiveTab }) {
   const [selectedFeedbackModal, setSelectedFeedbackModal] = useState(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
+  // Candidate Date, Slot & Reminder scheduling modal state
+  const [schedulingInterview, setSchedulingInterview] = useState(null);
+  const [slotDate, setSlotDate] = useState('');
+  const [slotTime, setSlotTime] = useState('02:00 PM - 02:45 PM IST');
+  const [slotCustomTime, setSlotCustomTime] = useState('');
+  const [slotReminder, setSlotReminder] = useState('10');
+  const [slotRound, setSlotRound] = useState('');
+  const [savingSlot, setSavingSlot] = useState(false);
+
   // New Interview Form
   const [newTitle, setNewTitle] = useState('');
   const [newCandidateName, setNewCandidateName] = useState('');
@@ -157,8 +173,17 @@ export default function InterviewsView({ setActiveTab }) {
 
   // ── Helper: map server interview object to the UI shape ──
   const mapServerInterview = (iv) => {
+    const isSlotPending = !iv.interview_date ||
+      iv.interview_date === 'To Be Scheduled' ||
+      iv.interview_date === 'Not Scheduled' ||
+      iv.interview_date === 'Pending Schedule' ||
+      !iv.interview_time ||
+      iv.interview_time === 'Slot Needed' ||
+      iv.interview_time === 'To Be Scheduled' ||
+      iv.interview_time === 'Pending';
+
     const reminderInfo = getReminderSetting(iv.id, iv.candidate_name);
-    const diffMin = getInterviewDiffMinutes(iv.interview_date, iv.interview_time);
+    const diffMin = isSlotPending ? null : getInterviewDiffMinutes(iv.interview_date, iv.interview_time);
     return {
       id: iv.id,
       applicationId: iv.application_id,
@@ -170,6 +195,7 @@ export default function InterviewsView({ setActiveTab }) {
       interviewer: iv.interviewer_name,
       date: iv.interview_date,
       time: iv.interview_time,
+      isSlotPending,
       duration: iv.duration || '45 mins',
       round: iv.round || 'Round 1: Technical Discovery & Core Skills',
       mode: iv.mode || 'Google Meet',
@@ -181,8 +207,8 @@ export default function InterviewsView({ setActiveTab }) {
       meetUrl: iv.meeting_url || iv.meet_url,
       meetingLink: iv.meeting_url || iv.meet_url,
       notes: iv.notes,
-      status: iv.status || 'CONFIRMED',
-      countdown: iv.status === 'SCHEDULED' ? 'Rescheduled' : 'Upcoming',
+      status: isSlotPending ? 'NEEDS_SCHEDULING' : (iv.status || 'CONFIRMED'),
+      countdown: isSlotPending ? 'Slot Needed' : (iv.status === 'SCHEDULED' ? 'Rescheduled' : 'Upcoming'),
       reminderMinutes: reminderInfo?.reminderMinutes || 10,
       diffMinutes: diffMin,
       avatarColor: 'bg-[#00a884]',
@@ -228,6 +254,7 @@ export default function InterviewsView({ setActiveTab }) {
       if (!interviews || interviews.length === 0) return;
 
       interviews.forEach((item) => {
+        if (item.isSlotPending) return;
         const diff = getInterviewDiffMinutes(item.date, item.time);
         const threshold = item.reminderMinutes || 10;
 
@@ -380,6 +407,152 @@ export default function InterviewsView({ setActiveTab }) {
     }
   };
 
+  const handleOpenCandidateScheduler = (item) => {
+    if (!isRecruiter) return;
+    setSchedulingInterview(item);
+
+    const tomorrow = new Date(Date.now() + 86400000);
+    const tomorrowISO = tomorrow.toISOString().split('T')[0];
+
+    let dateDefault = tomorrowISO;
+    if (item.date && !item.isSlotPending) {
+      try {
+        const parsed = parseInterviewDateTime(item.date, item.time);
+        if (parsed && !isNaN(parsed.getTime())) {
+          dateDefault = parsed.toISOString().split('T')[0];
+        } else {
+          const direct = new Date(item.date);
+          if (!isNaN(direct.getTime())) {
+            dateDefault = direct.toISOString().split('T')[0];
+          }
+        }
+      } catch {
+        dateDefault = tomorrowISO;
+      }
+    }
+    setSlotDate(dateDefault);
+
+    const popularSlots = [
+      '10:00 AM - 10:45 AM IST',
+      '11:30 AM - 12:15 PM IST',
+      '02:00 PM - 02:45 PM IST',
+      '03:30 PM - 04:15 PM IST',
+      '05:00 PM - 05:45 PM IST'
+    ];
+
+    if (item.time && popularSlots.includes(item.time)) {
+      setSlotTime(item.time);
+      setSlotCustomTime('');
+    } else if (item.time && !item.isSlotPending) {
+      setSlotTime('custom');
+      setSlotCustomTime(item.time);
+    } else {
+      setSlotTime('02:00 PM - 02:45 PM IST');
+      setSlotCustomTime('');
+    }
+
+    const currentRem = getReminderSetting(item.id, item.candidateName);
+    setSlotReminder(String(currentRem?.reminderMinutes || item.reminderMinutes || 10));
+    setSlotRound(item.round || 'Round 2 - Performance Marketing, Paid Ads & ROAS Optimization');
+  };
+
+  const handleSaveCandidateSchedule = async (e) => {
+    e.preventDefault();
+    if (!schedulingInterview) return;
+
+    if (!slotDate) {
+      triggerToast('Please pick an interview date');
+      return;
+    }
+
+    const rawTime = slotTime === 'custom' ? slotCustomTime : slotTime;
+    if (!rawTime || !rawTime.trim()) {
+      triggerToast('Please specify a time slot (IST)');
+      return;
+    }
+
+    setSavingSlot(true);
+    try {
+      let formattedDate = slotDate;
+      if (slotDate.includes('-')) {
+        const [y, m, d] = slotDate.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        if (!isNaN(dt.getTime())) {
+          formattedDate = dt.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+        }
+      }
+
+      let formattedTime = rawTime.trim();
+      if (!formattedTime.toUpperCase().includes('IST')) {
+        formattedTime = `${formattedTime} IST`;
+      }
+
+      const reminderVal = parseInt(slotReminder, 10) || 10;
+
+      // 1. Call backend updateInterview
+      await api.updateInterview(schedulingInterview.id, {
+        interview_date: formattedDate,
+        interview_time: formattedTime,
+        round: slotRound || schedulingInterview.round,
+        status: 'CONFIRMED'
+      });
+
+      // 2. Persist reminder in localStorage
+      try {
+        const raw = localStorage.getItem('uptrix_interview_reminders') || '{}';
+        const parsed = JSON.parse(raw);
+        const remObj = {
+          reminderMinutes: reminderVal,
+          candidateName: schedulingInterview.candidateName,
+          jobTitle: schedulingInterview.jobTitle,
+          round: slotRound || schedulingInterview.round,
+          time: formattedTime,
+          date: formattedDate
+        };
+        parsed[schedulingInterview.id] = remObj;
+        if (schedulingInterview.candidateName) {
+          parsed[schedulingInterview.candidateName.toLowerCase()] = remObj;
+        }
+        localStorage.setItem('uptrix_interview_reminders', JSON.stringify(parsed));
+        window.dispatchEvent(new Event('storage'));
+      } catch (err) {
+        console.error('Error saving reminder setting:', err);
+      }
+
+      // 3. Reload interviews
+      await loadInterviews();
+
+      // 4. Toast
+      triggerToast(`✨ Scheduled for ${schedulingInterview.candidateName}: ${formattedDate} at ${formattedTime} (${reminderVal}m reminder active)`);
+
+      // 5. Trigger toast preview
+      setActiveReminderToast({
+        id: schedulingInterview.id,
+        candidateName: schedulingInterview.candidateName,
+        jobTitle: schedulingInterview.jobTitle,
+        round: slotRound || schedulingInterview.round,
+        time: formattedTime,
+        date: formattedDate,
+        meetUrl: slotMeetUrl?.trim() || null,
+        reminderMinutes: reminderVal,
+        diffMinutes: reminderVal,
+        message: `You have an interview at this time (before ${reminderVal} min of interview)`
+      });
+
+      // 6. Close modal
+      setSchedulingInterview(null);
+    } catch (err) {
+      triggerToast(`Error scheduling interview: ${err.message || 'Failed to save'}`);
+    } finally {
+      setSavingSlot(false);
+    }
+  };
+
   const handleDeleteInterview = async (id) => {
     if (!isRecruiter) return;
     try {
@@ -391,28 +564,30 @@ export default function InterviewsView({ setActiveTab }) {
     }
   };
 
-  const confirmedCount = interviews.filter(i => i.status === 'CONFIRMED').length;
-  const scheduledCount = interviews.filter(i => i.status === 'SCHEDULED').length;
+  const pendingSlotCount = interviews.filter(i => i.isSlotPending).length;
+  const confirmedCount = interviews.filter(i => !i.isSlotPending && i.status === 'CONFIRMED').length;
+  const scheduledCount = interviews.filter(i => i.isSlotPending || i.status === 'SCHEDULED').length;
   const completedCount = interviews.filter(i => i.status === 'COMPLETED').length;
 
-  const nextInterview = interviews[0];
+  const validScheduledInterviews = interviews.filter(i => !i.isSlotPending);
+  const nextInterview = validScheduledInterviews[0];
   const nextSessionTitle = nextInterview
     ? `${nextInterview.date || 'Upcoming'}${nextInterview.time ? ` · ${nextInterview.time}` : ''}`
-    : 'None Scheduled';
+    : (pendingSlotCount > 0 ? `${pendingSlotCount} Slot(s) Pending` : 'None Scheduled');
   const nextSessionSub = nextInterview
     ? `${nextInterview.mode || 'Meeting'} Room Ready (${nextInterview.partnerName || 'Candidate'})`
-    : 'Awaiting scheduled sessions';
+    : (pendingSlotCount > 0 ? 'Awaiting recruiter date & slot entry' : 'Awaiting scheduled sessions');
 
   const readinessTitle = interviews.length > 0
-    ? (confirmedCount === interviews.length ? '100% Confirmed' : `${confirmedCount} of ${interviews.length} Confirmed`)
+    ? (pendingSlotCount > 0 ? `${pendingSlotCount} Slot(s) Needed` : (confirmedCount === interviews.length ? '100% Confirmed' : `${confirmedCount} of ${interviews.length} Confirmed`))
     : 'Pipeline Clear';
   const readinessSub = interviews.length > 0
-    ? 'Meeting links verified & ready'
+    ? (pendingSlotCount > 0 ? 'Enter date & slot in table below' : 'Meeting links verified & ready')
     : 'Awaiting candidate scheduling';
 
   const filteredInterviews = interviews.filter(item => {
-    if (activeFilter === 'confirmed' && item.status !== 'CONFIRMED') return false;
-    if (activeFilter === 'scheduled' && item.status !== 'SCHEDULED') return false;
+    if (activeFilter === 'confirmed' && (item.isSlotPending || item.status !== 'CONFIRMED')) return false;
+    if (activeFilter === 'scheduled' && (!item.isSlotPending && item.status !== 'SCHEDULED')) return false;
     if (activeFilter === 'completed' && item.status !== 'COMPLETED') return false;
 
     if (searchQuery.trim()) {
@@ -881,21 +1056,54 @@ export default function InterviewsView({ setActiveTab }) {
 
                       {/* Date & Time (IST) */}
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                          <Calendar className="w-3.5 h-3.5 text-[#00a884] shrink-0" />
-                          <span>{item.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[0.68rem] text-slate-500 mt-1">
-                          <div className="flex items-center gap-1 font-semibold text-slate-700">
-                            <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>{item.time}</span>
-                          </div>
-                          {item.countdown && (
-                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[0.62rem] font-bold">
-                              {item.countdown}
+                        {item.isSlotPending ? (
+                          <div className="flex flex-col items-start gap-1.5">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 font-extrabold text-[0.72rem] shadow-2xs">
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
+                              <span>Slot Not Scheduled</span>
                             </span>
-                          )}
-                        </div>
+                            {isRecruiter && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCandidateScheduler(item)}
+                                className="inline-flex items-center gap-1 text-[0.68rem] font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
+                                <Calendar className="w-3 h-3 text-indigo-600" />
+                                <span>Enter Date & Slot (IST) →</span>
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                                <Calendar className="w-3.5 h-3.5 text-[#00a884] shrink-0" />
+                                <span>{item.date}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[0.68rem] text-slate-500 mt-1">
+                                <div className="flex items-center gap-1 font-semibold text-slate-700">
+                                  <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{item.time}</span>
+                                </div>
+                                {item.countdown && (
+                                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[0.62rem] font-bold">
+                                    {item.countdown}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {isRecruiter && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCandidateScheduler(item)}
+                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 cursor-pointer border-none bg-transparent transition-colors"
+                                title="Reschedule Date, Slot & Reminder"
+                              >
+                                <Calendar className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Reminder Alert */}
@@ -905,20 +1113,39 @@ export default function InterviewsView({ setActiveTab }) {
                             <Bell className="w-3 h-3 text-amber-600 animate-pulse" />
                             <span>{item.reminderMinutes || 10}m before</span>
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleTriggerReminderToast(item)}
-                            className="text-[0.62rem] font-bold text-indigo-600 hover:text-indigo-800 hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
-                            title="Trigger interview reminder toaster preview"
-                          >
-                            <span>🔔 Test Toast</span>
-                          </button>
+                          {isRecruiter ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCandidateScheduler(item)}
+                              className="text-[0.62rem] font-bold text-indigo-600 hover:text-indigo-800 hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
+                              title="Set or change reminder alert"
+                            >
+                              <span>Set Reminder</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleTriggerReminderToast(item)}
+                              className="text-[0.62rem] font-bold text-indigo-600 hover:text-indigo-800 hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
+                              title="Trigger interview reminder toaster preview"
+                            >
+                              <span>🔔 Test Toast</span>
+                            </button>
+                          )}
                         </div>
                       </td>
 
                       {/* Status */}
                       <td className="py-4 px-5 text-center whitespace-nowrap">
                         {(() => {
+                          if (item.isSlotPending) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span>Slot Needed</span>
+                              </span>
+                            );
+                          }
                           const diff = getInterviewDiffMinutes(item.date, item.time);
                           const threshold = item.reminderMinutes || 10;
                           if (diff !== null && diff <= threshold && diff >= 0) {
@@ -974,9 +1201,31 @@ export default function InterviewsView({ setActiveTab }) {
                             </button>
                           )}
 
-                          {/* Recruiter: Management (Details, Delete) */}
+                          {/* Recruiter: Management (Slot / Reschedule, Details, Delete) */}
                           {isRecruiter && (
                             <>
+                              {item.isSlotPending ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCandidateScheduler(item)}
+                                  className="py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[0.68rem] font-bold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
+                                  title="Enter interview date, slot and reminder"
+                                >
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  <span>Enter Slot & Reminder</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenCandidateScheduler(item)}
+                                  className="py-1.5 px-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-[0.68rem] font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                                  title="Reschedule / Edit Date, Slot & Reminder"
+                                >
+                                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>Edit Slot</span>
+                                </button>
+                              )}
+
                               <button
                                 type="button"
                                 onClick={() => setSelectedInterviewDetails(item)}
@@ -1030,6 +1279,221 @@ export default function InterviewsView({ setActiveTab }) {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: SCHEDULE CANDIDATE DATE, SLOT & REMINDER ── */}
+      {schedulingInterview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative max-h-[92vh] overflow-y-auto no-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm shadow-2xs">
+                  {schedulingInterview.initials || 'CA'}
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>Enter Date, Slot & Reminder</span>
+                    {schedulingInterview.isSlotPending && (
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[0.65rem] font-black">
+                        Slot Needed
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    For: <strong className="text-slate-800">{schedulingInterview.candidateName}</strong> · {schedulingInterview.jobTitle}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSchedulingInterview(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCandidateSchedule} className="space-y-4 text-xs">
+              {/* Round of Interview */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Round of Interview *
+                </label>
+                <select
+                  value={slotRound}
+                  onChange={e => setSlotRound(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none cursor-pointer"
+                >
+                  <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening</option>
+                  <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization</option>
+                  <option value="Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization">Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization</option>
+                  <option value="Round 4 - Brand Strategy & Marketing Campaign Leadership">Round 4 - Brand Strategy & Marketing Campaign Leadership</option>
+                  <option value="Final Round - Head of Marketing / Executive & Culture Fit">Final Round - Head of Marketing / Executive & Culture Fit</option>
+                  <option value="HR Discussion & Offer Negotiation">HR Discussion & Offer Negotiation</option>
+                </select>
+              </div>
+
+              {/* Date Selection */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">
+                    Interview Date (IST) *
+                  </label>
+                  {/* Quick Date Presets */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSlotDate(new Date().toISOString().split('T')[0])}
+                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSlotDate(new Date(Date.now() + 86400000).toISOString().split('T')[0])}
+                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                    >
+                      Tomorrow
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSlotDate(new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0])}
+                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                    >
+                      +2 Days
+                    </button>
+                  </div>
+                </div>
+
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  value={slotDate}
+                  onChange={e => setSlotDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none"
+                />
+
+                {slotDate && (
+                  <div className="text-[0.7rem] text-indigo-700 font-semibold flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-indigo-500" />
+                    <span>
+                      Selected: {(() => {
+                        try {
+                          const [y, m, d] = slotDate.split('-').map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                            weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'
+                          });
+                        } catch { return slotDate; }
+                      })()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Time Slot (IST) Selection */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                <label className="block font-bold text-slate-700">
+                  Select Time Slot (IST) *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    '10:00 AM - 10:45 AM IST',
+                    '11:30 AM - 12:15 PM IST',
+                    '02:00 PM - 02:45 PM IST',
+                    '03:30 PM - 04:15 PM IST',
+                    '05:00 PM - 05:45 PM IST',
+                    'Custom Slot'
+                  ].map(slot => {
+                    const isSelected = slot === 'Custom Slot' ? slotTime === 'custom' : slotTime === slot;
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => {
+                          if (slot === 'Custom Slot') {
+                            setSlotTime('custom');
+                            if (!slotCustomTime) setSlotCustomTime('04:00 PM - 04:45 PM IST');
+                          } else {
+                            setSlotTime(slot);
+                          }
+                        }}
+                        className={`py-2 px-2 rounded-xl border text-[0.72rem] font-bold transition-all cursor-pointer text-center ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {slotTime === 'custom' && (
+                  <div className="pt-2">
+                    <label className="block font-bold text-slate-600 text-[0.7rem] mb-1">
+                      Enter Custom Slot (IST)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 04:30 PM - 05:15 PM IST"
+                      value={slotCustomTime}
+                      onChange={e => setSlotCustomTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Reminder Alert Interval */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
+                <label className="block font-bold text-slate-800 flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Interview Reminder Alert *</span>
+                </label>
+                <select
+                  value={slotReminder}
+                  onChange={e => setSlotReminder(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-amber-300 font-bold bg-white text-slate-800 text-xs focus:border-amber-600 outline-none cursor-pointer"
+                >
+                  <option value="5">🔔 5 minutes before interview</option>
+                  <option value="10">🔔 10 minutes before interview (Default & Recommended)</option>
+                  <option value="15">🔔 15 minutes before interview</option>
+                  <option value="30">🔔 30 minutes before interview</option>
+                  <option value="60">🔔 1 hour before interview</option>
+                  <option value="1440">🔔 1 day before interview</option>
+                </select>
+                <p className="text-[0.68rem] text-slate-500 font-medium">
+                  Recruiter and candidate will receive notification badges and toaster alerts before this interview begins.
+                </p>
+              </div>
+
+              {/* Form Actions */}
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSchedulingInterview(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSlot}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{savingSlot ? 'Saving Schedule...' : 'Save Date, Slot & Reminder'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

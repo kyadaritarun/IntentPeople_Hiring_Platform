@@ -146,6 +146,14 @@ def update_interview(
         interview.status = data.status
     if data.notes is not None:
         interview.notes = data.notes
+    if data.round is not None:
+        interview.round = data.round
+    if data.interviewer_name is not None:
+        interview.interviewer_name = data.interviewer_name
+    if data.mode is not None:
+        interview.mode = data.mode
+    if data.duration is not None:
+        interview.duration = data.duration
     if data.meet_url is not None:
         interview.meet_url = data.meet_url
         interview.meeting_url = data.meet_url
