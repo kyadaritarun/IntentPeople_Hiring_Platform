@@ -767,61 +767,706 @@ export default function Landing({ onNavigateToAuth }) {
         </div>
       </section>
 
-      {/* WORKFLOW */}
-      <section id="workflow" className="bg-white py-24">
-        <div className="mx-auto max-w-[1120px] px-5">
-          <div className="mx-auto max-w-[600px] text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
-              A simpler way to hire
+      {/* UNIFIED ECOSYSTEM */}
+      <section id="ecosystem" className="bg-slate-50/60 py-16 sm:py-20">
+        <div className="mx-auto max-w-[1140px] px-5 sm:px-8">
+          {/* Header */}
+          <div className="text-center">
+            <div className="inline-flex items-center rounded-full bg-[#EDE9FE] px-3.5 py-1">
+              <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6366F1]">
+                Unified Ecosystem
+              </span>
+            </div>
+
+            <h2 className="mt-3.5 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[34px] leading-tight">
+              Built for Both Sides of Exceptional Growth Hiring.
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              From posting a job to making a hire, Uptrix streamlines the entire
-              process.
+            <p className="mx-auto mt-3 max-w-2xl text-xs sm:text-[13px] leading-relaxed text-slate-500">
+              Whether you are an ambitious team scaling headcount or a top-tier digital marketer seeking your next career leap, Uptrix delivers unfair operational leverage.
             </p>
           </div>
 
-          <div className="mt-14 grid gap-3 md:grid-cols-5">
-            <Step number="1" title="Create Job" text="Post your requirements" />
-            <Step number="2" title="Discover Talent" text="Get AI-matched candidates" />
-            <Step number="3" title="Shortlist" text="Review top talent" />
-            <Step number="4" title="Interview" text="Schedule interviews" />
-            <Step number="5" title="Hire" text="Make the right hire" />
+          {/* BLOCK 1: FOR RECRUITERS & GROWTH HEADS (WHITE CARD) */}
+          <div className="mt-12 rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-10 shadow-xl shadow-slate-200/50">
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[50%_50%] lg:gap-10">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-[#EEF2FF] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
+                  <Building2 className="h-3 w-3" />
+                  <span>For Recruiters &amp; Growth Heads</span>
+                </div>
+
+                <h3 className="mt-3.5 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl leading-snug">
+                  Autonomous Talent Sourcing with 94%+ Precision Calibration.
+                </h3>
+
+                <p className="mt-2.5 text-xs sm:text-[13px] leading-relaxed text-slate-500">
+                  Eliminate weeks of manual LinkedIn crawling and unqualified applications. Source directly from a verified pool of vetted growth marketers with authenticated track records.
+                </p>
+
+                <div className="mt-5 space-y-2.5">
+                  {/* Item 1 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 transition hover:bg-[#F1F5F9]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EDE9FE] text-[#6366F1]">
+                      <BarChart3 className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        Real-time Campaign ROI &amp; CAC Skill Proof
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                        Inspect verified historical ad spend scale, RoAS figures, and authentic organic traffic curves.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Item 2 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 transition hover:bg-[#F1F5F9]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F3E8FF] text-[#9333EA]">
+                      <LayoutDashboard className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        Unified Pipeline &amp; Assessment Scorecards
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                        Multi-stage recruiter Kanban with integrated scorecard rubrics, calendar syncing, and fast-track offers.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Item 3 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 transition hover:bg-[#F1F5F9]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#CCFBF1] text-[#0D9488]">
+                      <Zap className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        One-Click Multi-Candidate Outreach
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                        Send hyper-personalized interview invites with response rates exceeding 78% in under 24 hours.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-4">
+                  <a
+                    href="#pricing"
+                    className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 transition hover:bg-indigo-500 cursor-pointer"
+                  >
+                    Hire Talent with Precision
+                    <ArrowRight size={14} />
+                  </a>
+                  <a
+                    href="#workflow"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 transition hover:text-indigo-600 cursor-pointer"
+                  >
+                    Request Recruiter Demo
+                    <ChevronRight size={14} />
+                  </a>
+                </div>
+              </div>
+
+              {/* Recruiter Workspace Window */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-[#0E1322] shadow-2xl shadow-slate-300/40">
+                <div className="flex items-center justify-between border-b border-white/10 bg-[#161C2C] px-4 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="text-[10px] font-medium tracking-wide text-slate-300">
+                    TalentFlow AI • Recruiter Pipeline Workspace
+                  </div>
+                  <div className="rounded-md border border-indigo-400/30 bg-indigo-500/20 px-2 py-0.5 text-[9px] font-bold text-indigo-300">
+                    Scorecard 96%
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-3">
+                    <div className="flex items-center gap-2 rounded-lg bg-white/5 px-2.5 py-1 text-[10px] text-slate-400">
+                      <Search size={11} />
+                      <span>Search role: Performance Marketer...</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
+                      <span className="rounded border border-indigo-500/30 bg-indigo-600/30 px-2 py-0.5 text-indigo-300">Calibrated (34)</span>
+                      <span className="rounded bg-white/5 px-2 py-0.5">Shortlist (18)</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#171E30] p-2.5 transition hover:bg-[#1E2740]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-500/30 bg-indigo-600/30 text-xs font-bold text-indigo-300">
+                          SC
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-white">Sarah Chen</span>
+                            <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">96% Match</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400">Lead Growth Marketer • RoAS 4.6x</p>
+                        </div>
+                      </div>
+                      <span className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-xs">
+                        Interviewing
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#171E30] p-2.5 transition hover:bg-[#1E2740]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-purple-500/30 bg-purple-600/30 text-xs font-bold text-purple-300">
+                          RV
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-white">Rahul Verma</span>
+                            <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">94% Match</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400">SEO Architect • D2C Scale</p>
+                        </div>
+                      </div>
+                      <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
+                        Offer Ready
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border border-white/5 bg-[#171E30] p-2.5 transition hover:bg-[#1E2740]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-teal-500/30 bg-teal-600/30 text-xs font-bold text-teal-300">
+                          MV
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-white">Marcus Vance</span>
+                            <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">91% Match</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400">Paid Media Lead • B2B SaaS</p>
+                        </div>
+                      </div>
+                      <span className="rounded-lg bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-slate-300">
+                        Shortlisted
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3.5 flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 text-[10px] text-slate-400">
+                    <span>Verified CAC Proof: <strong className="text-white">Active</strong></span>
+                    <span>Historical Spend: <strong className="text-emerald-400">$1.8M+</strong></span>
+                    <span>Response Rate: <strong className="text-indigo-300">82%</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BLOCK 2: FOR ELITE GROWTH MARKETERS (DARK CARD) */}
+          <div className="mt-8 rounded-3xl border border-white/5 bg-[#171B26] p-6 sm:p-10 shadow-2xl text-white">
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[50%_50%] lg:gap-10">
+              {/* Candidate Portfolio Window (Left side) */}
+              <div className="order-2 lg:order-1 overflow-hidden rounded-2xl border border-white/10 bg-[#0C101A] shadow-2xl shadow-black/60">
+                <div className="flex items-center justify-between border-b border-white/10 bg-[#141824] px-4 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-400">
+                    app.uptrix.ai/talent/sarah-chen
+                  </div>
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
+                    Verified Talent
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-sm">
+                        SC
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-white">Sarah Chen</span>
+                          <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                        </div>
+                        <p className="text-[10px] text-slate-400">Head of Growth • 6+ yrs • Ex-Unicorn D2C</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Benchmark</div>
+                      <div className="text-xs font-bold text-emerald-400">Top 2% Percentile</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-white/5 bg-[#121624] p-3">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-semibold text-slate-300">Verified Growth &amp; RoAS Curve</span>
+                      <span className="font-bold text-emerald-400">+240% YoY Scale</span>
+                    </div>
+                    <div className="mt-2 h-20 w-full">
+                      <svg viewBox="0 0 300 70" className="h-full w-full overflow-visible">
+                        <defs>
+                          <linearGradient id="talentCurveGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M 0,55 C 40,50 80,45 120,32 C 160,20 200,28 240,12 C 270,3 290,5 300,2 L 300,70 L 0,70 Z"
+                          fill="url(#talentCurveGradient)"
+                        />
+                        <path
+                          d="M 0,55 C 40,50 80,45 120,32 C 160,20 200,28 240,12 C 270,3 290,5 300,2"
+                          fill="none"
+                          stroke="#10B981"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="240" cy="12" r="3.5" fill="#10B981" />
+                        <circle cx="300" cy="2" r="3.5" fill="#34D399" />
+                      </svg>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500">
+                      <span>Q1 CAC: $38</span>
+                      <span>Q2 Spend: $850k</span>
+                      <span>Q3 RoAS: 4.8x</span>
+                      <span>Q4 Scale: +240%</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-1.5">
+                    <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-950/20 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[10px] font-bold text-white">Fintech Unicorn (Series B)</span>
+                        <span className="text-[9px] font-semibold text-emerald-400">• $135k - $150k + Equity</span>
+                      </div>
+                      <span className="text-[9px] font-semibold text-slate-400">Direct Inbound</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Copy & Features (Right side) */}
+              <div className="order-1 lg:order-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                  <ShieldCheck className="h-3 w-3" />
+                  <span>For Elite Growth Marketers</span>
+                </div>
+
+                <h3 className="mt-3.5 text-xl font-extrabold tracking-tight text-white sm:text-2xl leading-snug">
+                  Showcase Verified Proof of Work. Get Handpicked Inbound Offers.
+                </h3>
+
+                <p className="mt-2.5 text-xs sm:text-[13px] leading-relaxed text-slate-400">
+                  Say goodbye to blind job board submissions and recruiter black holes. Present verified campaign milestones directly to decision-makers who recognize your exact worth.
+                </p>
+
+                <div className="mt-5 space-y-2.5">
+                  {/* Item 1 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition hover:bg-white/[0.07]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+                      <TrendingUp className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">
+                        Verified Portfolio &amp; Performance Logs
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                        Sync authenticated benchmarks: verified RoAS gains, SEO traffic leaps, and paid spend volume.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Item 2 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition hover:bg-white/[0.07]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-400">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">
+                        Transparent Salary Benchmarks (No Guesswork)
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                        Know your precise percentile band ($115k-$145k+) and receive direct interview requests with upfront compensation.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Item 3 */}
+                  <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition hover:bg-white/[0.07]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">
+                        Direct Access to Tier-1 Startups &amp; Agencies
+                      </h4>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-slate-400">
+                        Skip external middlemen recruiters. Talk straight to Heads of Growth, CMOs, and scaling founders.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-4">
+                  <a
+                    href="#solutions"
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/30 transition hover:bg-emerald-500 cursor-pointer"
+                  >
+                    Join Verified Talent Network
+                    <ArrowRight size={14} />
+                  </a>
+                  <a
+                    href="#workflow"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-300 transition hover:text-white cursor-pointer"
+                  >
+                    Explore Candidate Perks
+                    <ChevronRight size={14} />
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="bg-slate-50 py-24">
-        <div className="mx-auto max-w-[1120px] px-5">
-          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[2px] text-indigo-600">
-                Everything you need
-              </p>
+      {/* WORKFLOW - STREAMLINED PROCESS */}
+      <section id="workflow" className="bg-[#FAFBFD] py-20 sm:py-24 border-y border-slate-100">
+        <div className="mx-auto max-w-[1140px] px-5 sm:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center rounded-full bg-[#EDE9FE] px-3.5 py-1">
+              <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6366F1]">
+                Streamlined Process
+              </span>
+            </div>
 
-              <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
-                Hire better, with less work.
+            <h2 className="mt-3.5 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              A simpler, predictable way to hire.
+            </h2>
+
+            <p className="mt-3 text-xs sm:text-[13px] leading-relaxed text-slate-500 max-w-xl mx-auto">
+              From posting a requirement to welcoming your new team member, Uptrix compresses month-long cycles into a single week.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {/* Step 1: Create Job */}
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4F46E5] text-xs font-bold text-white shadow-sm shadow-indigo-200">
+                  1
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-slate-900">Create Job</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Post your requirements or sync existing JD in seconds. AI structures your criteria automatically.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="h-4 w-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Step 2: Discover Talent */}
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#7C3AED] text-xs font-bold text-white shadow-sm shadow-purple-200">
+                  2
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-slate-900">Discover Talent</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Instant AI matching provides a calibrated pool of active candidates scored across verified parameters.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="h-4 w-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Step 3: Shortlist */}
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2563EB] text-xs font-bold text-white shadow-sm shadow-blue-200">
+                  3
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-slate-900">Shortlist</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Review enriched dossiers, verified work portfolios, and quantitative ROI case reviews.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="h-4 w-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                  <line x1="10" y1="18" x2="14" y2="18" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Step 4: Interview */}
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3B82F6] text-xs font-bold text-white shadow-sm shadow-indigo-200">
+                  4
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-slate-900">Interview</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  One-click integrated scheduling with custom technical scorecard rubrics ready for your interviewers.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="h-4 w-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Step 5: Hire */}
+            <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#059669] text-xs font-bold text-white shadow-sm shadow-emerald-200">
+                  5
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-slate-900">Hire</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                  Roll out standardized offers, onboard smoothly, and track initial 90-day trajectory.
+                </p>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <svg className="h-4 w-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 21l4.5-9 6 6-9 4.5z" />
+                  <path d="M11.5 14l3.5 3.5" />
+                  <path d="M17 9l4-4" />
+                  <path d="M19 13l3 1" />
+                  <path d="M13 7l1-3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES - FULL SUITE CAPABILITY */}
+      <section id="features" className="bg-[#F8F9FD] py-16 sm:py-20">
+        <div className="mx-auto max-w-[1140px] px-5 sm:px-8">
+          {/* Header */}
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <div className="inline-flex items-center rounded-full bg-[#EDE9FE] px-3.5 py-1">
+                <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6366F1]">
+                  Full Suite Capability
+                </span>
+              </div>
+
+              <h2 className="mt-3.5 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl leading-tight">
+                Everything You Need to Hire Better,<br className="hidden sm:inline" /> with Less Work.
               </h2>
 
-              <p className="mt-3 text-sm text-slate-500">
-                Powerful features to streamline your hiring process.
+              <p className="mt-2.5 max-w-xl text-xs sm:text-[13px] leading-relaxed text-slate-500">
+                Engineered specifically for performance marketers, growth engineers, and scaling heads of marketing.
               </p>
             </div>
 
             <a
-              href="#features"
-              className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+              href="#ecosystem"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
             >
-              View all features
-              <ArrowRight size={15} />
+              Explore Full Platform Architecture
+              <ArrowRight size={14} />
             </a>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <FeatureCard key={feature.title} {...feature} />
-            ))}
+          {/* Cards Grid */}
+          <div className="mt-10">
+            {/* Top Row: 2 Large Cards */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Card 1: Autonomous Candidate Matching Engine */}
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-7 shadow-lg shadow-slate-200/40 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#6366F1]">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+                        <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+                        <path d="M12 18V5" />
+                        <path d="M8 9h8" />
+                        <path d="M7 13h10" />
+                      </svg>
+                    </div>
+                    <span className="rounded-md border border-indigo-100 bg-[#EEF2FF] px-2.5 py-1 text-[10px] font-bold text-indigo-600">
+                      Neural Engine V4.2
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-bold text-slate-900">
+                    Autonomous Candidate Matching Engine
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    Continuous algorithmic ranking cross-referencing candidate performance against 38+ performance marketing disciplines, CAC targets, and specific stack fluency.
+                  </p>
+
+                  {/* Calibration Bar Box */}
+                  <div className="mt-6 rounded-2xl border border-slate-100 bg-[#F8FAFC] p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Live Calibration Accuracy</span>
+                      </div>
+                      <span className="text-base font-extrabold text-indigo-600">98.4%</span>
+                    </div>
+
+                    <div className="my-2.5 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                      <div className="h-full w-[98.4%] rounded-full bg-indigo-600" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-medium text-slate-400">Indexed across 38+ growth channels</span>
+                      <span className="font-semibold text-emerald-600">0.3s Query Latency</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 text-xs font-bold text-indigo-600">
+                  Includes Google Ads, Meta, TikTok DSP, Klaviyo, &amp; GA4
+                </div>
+              </div>
+
+              {/* Card 2: Deep Candidate Dossiers */}
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-7 shadow-lg shadow-slate-200/40 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#9333EA]">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <circle cx="12" cy="10" r="3" />
+                        <path d="M7 21v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </div>
+                    <span className="rounded-md border border-purple-100 bg-[#F3E8FF] px-2.5 py-1 text-[10px] font-bold text-purple-600">
+                      Verified Logs
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-bold text-slate-900">
+                    Deep Candidate Dossiers
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    Full 360° candidate profiles equipped with verified revenue proofs, real spend accounts, and authenticated peer reviews.
+                  </p>
+
+                  {/* Badges Row */}
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[#F8FAFC] px-3 py-1.5 text-xs font-semibold text-slate-700">
+                      <CheckCircle2 size={13} className="text-emerald-500" />
+                      <span>RoAS Authenticated</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[#F8FAFC] px-3 py-1.5 text-xs font-semibold text-slate-700">
+                      <BarChart3 size={13} className="text-indigo-500" />
+                      <span>Spend Scale Log</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[#F8FAFC] px-3 py-1.5 text-xs font-semibold text-slate-700">
+                      <MessageSquare size={13} className="text-purple-500" />
+                      <span>Peer Endorsement</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-400">Exportable in PDF / CSV formats</span>
+                  <a href="#solutions" className="font-bold text-indigo-600 hover:underline">
+                    1-Click Export
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row: 3 Medium Cards */}
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+              {/* Card 3: Verified Skill Benchmarking */}
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-6 shadow-lg shadow-slate-200/40 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#CCFBF1] text-[#0D9488]">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+
+                  <h3 className="mt-4 text-base font-bold text-slate-900">
+                    Verified Skill Benchmarking
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    Automated audits of candidate case studies against benchmarked cohorts in D2C, B2B SaaS, and Mobile App marketing.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 text-[11px]">
+                  <span className="font-medium text-slate-500">Blind Testing Rubric</span>
+                  <span className="font-bold text-emerald-600">100% Anti-Cheat</span>
+                </div>
+              </div>
+
+              {/* Card 4: Zero-Latency Pipeline */}
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-6 shadow-lg shadow-slate-200/40 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#6366F1]">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="18" height="18" x="3" y="3" rx="2" />
+                      <path d="M9 8v8" />
+                      <path d="M15 8v5" />
+                    </svg>
+                  </div>
+
+                  <h3 className="mt-4 text-base font-bold text-slate-900">
+                    Zero-Latency Pipeline
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    Drag-and-drop Kanban workspace with split-screen candidate review, custom tags, and bulk candidate actions.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 text-[11px]">
+                  <span className="font-medium text-slate-500">Active Pipeline Stages</span>
+                  <span className="font-bold text-indigo-600">Kanban + Split View</span>
+                </div>
+              </div>
+
+              {/* Card 5: Hiring Velocity Analytics */}
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200/70 bg-white p-6 shadow-lg shadow-slate-200/40 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#9333EA]">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+
+                  <h3 className="mt-4 text-base font-bold text-slate-900">
+                    Hiring Velocity Analytics
+                  </h3>
+
+                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                    Real-time dashboards for time-to-hire, funnel bottlenecks, compensation band distributions, and Slack / ATS integration.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 text-[11px]">
+                  <span className="font-medium text-slate-500">Average Speed</span>
+                  <span className="font-bold text-emerald-600">4.2 Days to Offer</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
