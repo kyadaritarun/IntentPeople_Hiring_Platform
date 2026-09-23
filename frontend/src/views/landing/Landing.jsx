@@ -5,13 +5,17 @@ import {
   BarChart3,
   Briefcase,
   Check,
+  CheckCircle,
+  CheckCircle2,
   ChevronRight,
   ChevronDown,
   Building2,
   UserCheck,
   FileText,
   Search,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
   Users,
   Zap,
   Target,
@@ -401,123 +405,363 @@ export default function Landing({ onNavigateToAuth }) {
         </div>
       </section>
 
-      {/* VALUE CARDS */}
-      <section className="py-20">
-        <div className="mx-auto grid max-w-[1120px] gap-5 px-5 md:grid-cols-3">
-          <ValueCard
-            icon={Users}
-            title="Find the Right Talent"
-            text="Access pre-vetted digital marketing professionals across multiple channels."
-          />
-          <ValueCard
-            icon={Zap}
-            title="Evaluate Faster"
-            text="AI-powered matching and smart filters help you find the best fit in minutes."
-          />
-          <ValueCard
-            icon={BarChart3}
-            title="Manage End-to-End"
-            text="From posting jobs to onboarding — handle everything in one platform."
-          />
+      {/* ENTERPRISE EFFICIENCY SECTION */}
+      <section className="bg-slate-50/50 py-14 sm:py-16">
+        <div className="mx-auto max-w-[1080px] px-5 text-center">
+          <div className="inline-flex items-center rounded-full bg-[#EDE9FE] px-3.5 py-0.5">
+            <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6366F1]">
+              Enterprise Efficiency
+            </span>
+          </div>
+
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[34px] leading-tight">
+            Built for Speed. Engineered for Precision.
+          </h2>
+
+          <p className="mx-auto mt-2.5 max-w-xl text-xs sm:text-[13px] leading-relaxed text-slate-500">
+            Remove candidate noise and eliminate recruiter bottlenecks with our deterministic growth evaluation protocol.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-9 grid max-w-[1080px] gap-5 px-5 md:grid-cols-3">
+          {/* Card 1: Find the Right Talent */}
+          <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-lg shadow-slate-200/40 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#6366F1]">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 6h7" />
+                  <path d="M4 12h16" />
+                  <path d="M4 18h11" />
+                  <circle cx="16" cy="6" r="3" />
+                  <path d="m18.5 8.5 2 2" />
+                </svg>
+              </div>
+
+              <h3 className="text-[15px] font-bold text-slate-900">
+                Find the Right Talent
+              </h3>
+
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                Access pre-vetted digital marketing professionals across paid media, organic growth, CRO, and lifecycle automation with proven metrics.
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-slate-100 bg-[#F8FAFC] px-3.5 py-2">
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center text-teal-600">
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-700">
+                100% verified case study audits
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Evaluate Faster */}
+          <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-lg shadow-slate-200/40 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3E8FF] text-[#9333EA]">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+                  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+                  <path d="M12 18V5" />
+                  <path d="M8 9h8" />
+                  <path d="M7 13h10" />
+                </svg>
+              </div>
+
+              <h3 className="text-[15px] font-bold text-slate-900">
+                Evaluate Faster
+              </h3>
+
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                AI-powered dynamic benchmarking assesses campaign strategy, channel-specific CAC/LTV instincts, and operational agility in seconds.
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-slate-100 bg-[#F8FAFC] px-3.5 py-2">
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center text-indigo-600">
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m12 14 4-4" />
+                  <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                </svg>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-700">
+                Automated skill scoring
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3: Manage End-to-End */}
+          <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-lg shadow-slate-200/40 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#CCFBF1] text-[#0D9488]">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <circle cx="19" cy="5" r="2" />
+                  <circle cx="5" cy="5" r="2" />
+                  <circle cx="12" cy="21" r="2" />
+                  <path d="m14 10 3.5-3.5" />
+                  <path d="m10 10-3.5-3.5" />
+                  <path d="M12 15v4" />
+                </svg>
+              </div>
+
+              <h3 className="text-[15px] font-bold text-slate-900">
+                Manage End-to-End
+              </h3>
+
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                From automated role specification to real-time interviews, background clearance, and contracts — coordinate everything on one unified canvas.
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-slate-100 bg-[#F8FAFC] px-3.5 py-2">
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center text-teal-600">
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m11 17 2 2a1 1 0 0 0 1.4 0l6.6-6.6a1 1 0 0 0 0-1.4l-5-5a1 1 0 0 0-1.4 0L8 12" />
+                  <path d="m13 11 4 4" />
+                  <path d="m8 12-4.5 4.5a1 1 0 0 0 0 1.4l2.6 2.6a1 1 0 0 0 1.4 0L12 16" />
+                </svg>
+              </div>
+              <span className="text-[11px] font-semibold text-slate-700">
+                One-click contract offer flows
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* AI SECTION */}
-      <section id="solutions" className="relative overflow-hidden bg-[#080D27] py-24">
-        <div className="absolute -left-40 top-0 h-[500px] w-[500px] rounded-full bg-indigo-700/30 blur-[120px]" />
-        <div className="absolute right-0 top-20 h-[400px] w-[400px] rounded-full bg-purple-700/20 blur-[120px]" />
+      <section id="solutions" className="relative overflow-hidden bg-[#080D27] py-14 sm:py-16">
+        <div className="absolute -left-40 top-0 h-[450px] w-[450px] rounded-full bg-indigo-700/25 blur-[120px]" />
+        <div className="absolute right-0 top-20 h-[350px] w-[350px] rounded-full bg-purple-700/20 blur-[120px]" />
 
-        <div className="relative mx-auto grid max-w-[1120px] items-center gap-14 px-5 lg:grid-cols-[42%_58%]">
+        <div className="relative mx-auto grid max-w-[1080px] items-center gap-8 px-5 lg:grid-cols-[44%_56%]">
           <div className="text-white">
-            <p className="mb-4 text-[12px] font-bold uppercase tracking-[2px] text-indigo-300">
-              Smarter hiring with AI
-            </p>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 backdrop-blur-sm">
+              <Sparkles className="h-3 w-3 text-indigo-300" />
+              <span className="text-[10px] font-bold tracking-[1.5px] uppercase text-indigo-200">
+                Smarter hiring with AI
+              </span>
+            </div>
 
-            <h2 className="text-[38px] font-bold leading-[1.1] tracking-[-1.5px] sm:text-[46px]">
-              AI-powered
-              <br />
-              talent matching
+            <h2 className="mt-3.5 text-2xl font-extrabold leading-[1.15] tracking-[-0.5px] text-white sm:text-[32px]">
+              AI-powered talent matching at molecular precision.
             </h2>
 
-            <p className="mt-5 max-w-[470px] text-[15px] leading-7 text-slate-300">
-              Our AI analyzes skills, experience, and hiring intent to match
-              you with the most relevant candidates — so you can focus on what
-              matters.
+            <p className="mt-4 max-w-[440px] text-xs sm:text-[13px] leading-relaxed text-slate-300">
+              Our deep learning model indexes candidate performance across 38+ performance marketing disciplines, comparing historical CAC results, spend scale, and channel versatility against your exact hiring specifications.
             </p>
+
+            <div className="mt-6 space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                  <Check className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs font-medium text-slate-200">
+                  Replaces manual resume screening entirely
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                  <Check className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs font-medium text-slate-200">
+                  Verified proof-of-work performance logs
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                  <Check className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs font-medium text-slate-200">
+                  Direct live candidate intent scoring
+                </span>
+              </div>
+            </div>
 
             <a
               href="#workflow"
-              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 cursor-pointer"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 transition hover:bg-indigo-500 cursor-pointer"
             >
               See How It Works
-              <ArrowRight size={15} />
+              <ArrowRight size={14} />
             </a>
           </div>
 
           <div className="relative">
-            <div className="rounded-3xl border border-white/10 bg-white p-7 shadow-2xl shadow-black/40">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <img
-                    src="https://i.pravatar.cc/100?img=12"
-                    className="h-14 w-14 rounded-full object-cover"
-                    alt=""
-                  />
-
+            <div className="rounded-2xl border border-white/10 bg-[#161B26] p-4 sm:p-5 shadow-xl shadow-black/50">
+              {/* Profile & Calibrated Match */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-indigo-500/40 bg-[#0F1424] text-base font-bold text-white shadow-inner">
+                    RV
+                  </div>
                   <div>
-                    <h3 className="font-bold text-slate-900">Rahul Verma</h3>
-                    <p className="text-sm text-slate-500">SEO Specialist</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      5+ years experience
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-[15px] font-bold text-white">Rahul Verma</h3>
+                      <CheckCircle className="h-3.5 w-3.5 text-slate-400" />
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      SEO Specialist &amp; Growth Architect • 5+ years experience
                     </p>
                   </div>
                 </div>
 
-                <div className="flex h-28 w-28 items-center justify-center rounded-full border-[10px] border-green-100">
-                  <div className="text-center">
-                    <div className="text-2xl font-extrabold text-slate-900">
+                <div className="flex items-center gap-2.5 self-start rounded-xl border border-white/5 bg-[#202738] px-3 py-1.5 sm:self-auto">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black leading-none tracking-tight text-emerald-400">
                       94%
                     </div>
-                    <div className="text-[11px] font-semibold text-green-600">
-                      Match
+                    <div className="mt-0.5 text-[7px] font-bold uppercase tracking-wider text-slate-400">
+                      Calibrated Match
                     </div>
+                  </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                    <Target className="h-4 w-4" />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-7 flex flex-wrap gap-2">
-                {["SEO", "SEM", "Google Ads", "+3 more"].map((item) => (
+              {/* Skills Tag Row */}
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                {["Technical SEO", "SEM & Performance", "Google Ads Elite", "Programmatic Backlinking"].map((skill) => (
                   <span
-                    key={item}
-                    className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600"
+                    key={skill}
+                    className="rounded-md border border-white/5 bg-[#202738] px-2.5 py-1 text-[11px] font-medium text-slate-200"
                   >
-                    {item}
+                    {skill}
                   </span>
                 ))}
+                <span className="rounded-md border border-white/5 bg-[#1A1F2D] px-2.5 py-1 text-[11px] font-semibold text-slate-400">
+                  +5 More Verified
+                </span>
               </div>
-            </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <MatchItem
-                icon={<Check />}
-                title="Skills match"
-                text="Core skills align with your requirements"
-              />
-              <MatchItem
-                icon={<Target />}
-                title="Experience match"
-                text="Relevant experience in digital marketing"
-              />
-              <MatchItem
-                icon={<Users />}
-                title="Cultural fit"
-                text="Matches your company preferences"
-              />
-              <MatchItem
-                icon={<Sparkles />}
-                title="High intent"
-                text="Actively looking for new opportunities"
-              />
+              {/* 2x2 Criteria Grid */}
+              <div className="mt-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-[#1B2131] p-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/5 text-slate-300">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-200">Skills Match</h4>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
+                      Core skills align 98% with your role technical requirements.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-[#1B2131] p-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/5 text-slate-300">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-200">Experience Match</h4>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
+                      Managed &gt;₹1.2Cr annual ad spend across high-growth D2C.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-[#1B2131] p-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                    <Users className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-200">Cultural Fit</h4>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
+                      Matches fast-turnaround, asynchronous, data-led team cadence.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-[#1B2131] p-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/5 text-slate-300">
+                    <Zap className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-200">High Intent</h4>
+                    <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">
+                      Available within 14 days, active on interview requests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Row */}
+              <div className="mt-3.5 flex flex-col items-center justify-between gap-2.5 border-t border-white/5 pt-3 text-xs sm:flex-row">
+                <span className="text-[10px] font-medium text-slate-400">
+                  Dossier generated in 1.4s via Neural Parser
+                </span>
+                <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-md border border-white/10 bg-[#252C3E] px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:bg-[#2F374D]"
+                  >
+                    Full Audit PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md shadow-indigo-600/30 transition hover:bg-indigo-500"
+                  >
+                    Fast-Track Candidate
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -583,62 +827,65 @@ export default function Landing({ onNavigateToAuth }) {
       </section>
 
       {/* TESTIMONIAL */}
-      <section id="about" className="bg-[#F5F4FF] py-24">
-        <div className="mx-auto max-w-[1120px] px-5">
-          <div className="grid items-center gap-12 lg:grid-cols-[38%_62%]">
+      <section id="about" className="bg-[#F6F7FD] py-16 sm:py-20">
+        <div className="mx-auto max-w-[1140px] px-5 sm:px-8">
+          <div className="grid items-center gap-10 lg:grid-cols-[40%_60%]">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[2px] text-indigo-600">
+              <p className="text-[11px] font-bold uppercase tracking-[1.5px] text-indigo-600">
                 Testimonials
               </p>
 
-              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
-                Loved by hiring teams worldwide
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl leading-tight">
+                Loved by hiring teams<br className="hidden sm:inline" /> worldwide.
               </h2>
 
-              <p className="mt-4 text-sm leading-6 text-slate-500">
-                See what our customers say about using Uptrix to build their
-                teams.
+              <p className="mt-3 max-w-[360px] text-xs sm:text-[13px] leading-relaxed text-slate-500">
+                See what talent leaders and founders say about using Uptrix to accelerate their performance marketing hires.
               </p>
 
-              <div className="mt-6 flex gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    size={17}
-                    fill="currentColor"
-                    className="text-indigo-500"
-                  />
-                ))}
+              <div className="mt-5 flex items-center gap-1.5">
+                <div className="flex items-center gap-1 text-amber-400">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      fill="currentColor"
+                      className="text-amber-400"
+                    />
+                  ))}
+                </div>
+                <span className="ml-2 text-xs font-semibold text-slate-700">
+                  4.9 / 5 across 200+ companies
+                </span>
               </div>
             </div>
 
-            <div className="relative rounded-3xl border border-white bg-white p-8 shadow-xl shadow-indigo-100/60 sm:p-10">
-              <div className="absolute right-7 top-5 text-6xl font-serif text-indigo-100 select-none">
-                “
+            <div className="relative rounded-3xl border border-white bg-white p-7 shadow-xl shadow-indigo-100/50 sm:p-9">
+              {/* Stylized Quote Mark */}
+              <div className="pointer-events-none absolute right-8 top-4 text-7xl font-serif font-black leading-none text-indigo-100 select-none">
+                ”
               </div>
 
-              <p className="relative max-w-[650px] text-lg font-medium leading-8 text-slate-700">
-                “Uptrix has completely transformed our hiring process. We found
-                amazing digital marketing talent much faster than traditional
-                methods. The AI matching is spot on.”
+              <p className="relative max-w-xl text-base font-medium leading-relaxed text-slate-800 sm:text-lg">
+                “Uptrix has completely transformed our hiring process. We found amazing digital marketing talent much faster than traditional recruitment methods. The AI matching is spot on.”
               </p>
 
-              <div className="mt-8 flex items-center gap-4">
-                <img
-                  src="https://i.pravatar.cc/100?img=44"
-                  alt=""
-                  className="h-12 w-12 rounded-full"
-                />
+              <div className="mt-8 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-indigo-600/70 bg-[#EAE8FE] text-xs font-bold text-slate-900 shadow-sm">
+                    SK
+                  </div>
 
-                <div>
-                  <p className="font-bold text-slate-900">Sneha Kapoor</p>
-                  <p className="text-sm text-slate-500">
-                    Marketing Head, GrowthX
-                  </p>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">Sneha Kapoor</h4>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Marketing Head, GrowthX
+                    </p>
+                  </div>
                 </div>
 
-                <div className="ml-auto hidden text-xl font-bold text-slate-800 sm:block">
-                  Growth<span className="text-indigo-600">X</span>
+                <div className="rounded-lg bg-[#EFEFFE] px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-xs">
+                  Growth <span className="font-black text-indigo-600">X</span>
                 </div>
               </div>
             </div>
@@ -901,45 +1148,85 @@ export default function Landing({ onNavigateToAuth }) {
       </section>
 
       {/* FOOTER */}
-      <footer id="resources" className="border-t border-slate-100 bg-white">
-        <div className="mx-auto grid max-w-[1120px] gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <a href="#" className="inline-flex items-center gap-2 mb-3">
-              <img
-                src="/logo.svg"
-                alt="Uptrix"
-                className="h-8 w-auto object-contain select-none"
-              />
-            </a>
+      <footer id="resources" className="border-t border-slate-200/60 bg-[#F6F8FC] py-14">
+        <div className="mx-auto max-w-[1140px] px-5 sm:px-8">
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[30%_17.5%_17.5%_17.5%_17.5%]">
+            <div>
+              <a href="#" className="inline-flex items-center gap-2">
+                <img
+                  src="/logo.svg"
+                  alt="Uptrix"
+                  className="h-8 w-auto object-contain select-none"
+                />
+              </a>
 
-            <p className="max-w-[280px] text-sm leading-6 text-slate-500">
-              The future of hiring digital marketing talent.
-            </p>
+              <p className="mt-4 max-w-[280px] text-xs leading-relaxed text-slate-500">
+                Autonomous AI scouting, evaluation, and pipeline acceleration for elite digital marketing and growth professionals.
+              </p>
+
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3.5 py-1.5 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="text-[11px] font-medium text-slate-600">
+                  All systems operational
+                </span>
+              </div>
+            </div>
+
+            <FooterColumn
+              title="Platform"
+              links={[
+                "AI Precision Match",
+                "Growth Skill Graph",
+                "Workflow Engine",
+                "Enterprise Suite",
+              ]}
+            />
+
+            <FooterColumn
+              title="Solutions"
+              links={[
+                "Scaleup Agencies",
+                "B2B SaaS Teams",
+                "E-Commerce Giants",
+                "Pricing Tiers",
+              ]}
+            />
+
+            <FooterColumn
+              title="Company"
+              links={[
+                "Case Studies",
+                "Customer Proof",
+                "Security & AI Trust",
+                "Careers",
+              ]}
+            />
+
+            <FooterColumn
+              title="Legal & Privacy"
+              links={[
+                "Privacy Policy",
+                "Terms of Service",
+                "SOC-2 Report",
+                "AI Ethics Notice",
+              ]}
+            />
           </div>
 
-          <FooterColumn
-            title="Product"
-            links={["Features", "Pricing", "Integrations", "Changelog"]}
-          />
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-slate-200/60 pt-8 text-xs text-slate-500 sm:flex-row">
+            <p>© 2025 Uptrix Technologies Inc. Built for executive-level growth recruitment.</p>
 
-          <FooterColumn
-            title="Company"
-            links={["About Us", "Careers", "Contact", "Partners"]}
-          />
-
-          <FooterColumn
-            title="Resources"
-            links={["Help Center", "Guides", "Community", "Status"]}
-          />
-        </div>
-
-        <div className="mx-auto flex max-w-[1120px] flex-col justify-between gap-4 border-t border-slate-100 px-5 py-6 text-xs text-slate-400 sm:flex-row">
-          <p>© 2026 Uptrix. All rights reserved.</p>
-
-          <div className="flex gap-5">
-            <span>Terms</span>
-            <span>Privacy</span>
-            <span>Cookies</span>
+            <div className="flex items-center gap-6">
+              <a href="#" className="transition hover:text-indigo-600">
+                Privacy
+              </a>
+              <a href="#" className="transition hover:text-indigo-600">
+                Terms
+              </a>
+              <a href="#" className="transition hover:text-indigo-600">
+                Security
+              </a>
+            </div>
           </div>
         </div>
       </footer>
@@ -1242,9 +1529,11 @@ function FeatureCard({ icon: Icon, title, description }) {
 function FooterColumn({ title, links }) {
   return (
     <div>
-      <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+        {title}
+      </h4>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5">
         {links.map((link) => (
           <a
             href="#"
