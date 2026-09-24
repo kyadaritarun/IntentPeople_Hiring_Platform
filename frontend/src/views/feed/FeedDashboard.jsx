@@ -3,11 +3,11 @@ import {
   Home, Briefcase, MapPin, Building2, Users, Bookmark, Calendar,
   Image as ImageIcon, Video, FileText, Send, X, Plus, Sparkles, CheckCircle2,
   ShieldCheck, TrendingUp, Eye, Search, Clock, Zap, Target, Bell,
-  ChevronRight, ChevronLeft, User, PenLine, Moon, Sun, LogOut,
+  ChevronRight, ChevronLeft, ChevronDown, ChevronUp, User, PenLine, Moon, Sun, LogOut,
   CalendarCheck, CalendarOff, UsersRound, LayoutDashboard, PlusCircle,
   HelpCircle, Check, Copy, Folder, ArrowUpRight, Activity, Rocket,
   ClipboardList, Laptop, Brain, Shield, BarChart3, Code, UserPlus,
-  MessageSquare, Menu, Share2, Globe
+  MessageSquare, Menu, Share2, Globe, Server, Layers, Crown, Sliders
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api';
@@ -34,6 +34,7 @@ const SupportDeskView = lazy(() => import('../common/SupportDeskView'));
 const ApplicationStatusView = lazy(() => import('../recruiter/ApplicationStatusView'));
 const RecruiterDocumentsView = lazy(() => import('../recruiter/RecruiterDocumentsView'));
 const NotificationModal = lazy(() => import('../../components/NotificationModal'));
+const UnifiedRoleDashboard = lazy(() => import('../dashboard/UnifiedRoleDashboard'));
 
 // Universal view loading fallback
 function ViewLoadingFallback({ message = "Loading Uptrix Platform..." }) {
@@ -146,6 +147,19 @@ export default function FeedDashboard({
   const [activeSidebarItem, setActiveSidebarItem] = useState(() => normalizeTab(activeTab || (isStaff ? 'dashboard' : 'home')));
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showToast, setShowToast] = useState(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const prevWidthRef = useRef(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
@@ -356,121 +370,112 @@ export default function FeedDashboard({
     { name: 'Ananya Roy', role: 'Digital Marketer & SEO Lead', email: 'ananya@growth.io' },
   ];
 
-  // ── Role-tailored sidebar menu items ─────────────────────
-  const adminSidebarSections = [
-    {
-      title: 'OPERATIONS',
-      items: [
-        { id: 'admin_dashboard', label: 'Dashboard', icon: LayoutDashboard, tab: 'admin_dashboard' },
-        { id: 'add_staff', label: 'Add staff member', icon: UserPlus, tab: 'add_staff' },
-        { id: 'manage_jobs', label: 'Jobs', icon: Briefcase, tab: 'manage_jobs' },
-        { id: 'applicants', label: 'Application status', icon: CheckCircle2, tab: 'applicants_view' }
-      ]
-    },
-    {
-      title: 'COMMUNICATIONS',
-      items: [
-        { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' },
-        { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' }
-      ]
-    },
-    {
-      title: 'ORGANIZATION & HELP',
-      items: [
-        { id: 'company_profile', label: 'Company profile', icon: Building2, tab: 'company_profile' },
-        { id: 'staff_documents', label: 'Staff document', icon: Folder, tab: 'staff_documents' },
-        { id: 'support', label: 'Support & help', icon: HelpCircle, tab: 'support' }
-      ]
-    }
+  // ── Role-tailored sidebar menu items (simple flat list) ──
+  const candidateNavItems = [
+    { id: 'home', label: 'Dashboard', icon: LayoutDashboard, tab: 'home' },
+    { id: 'find_jobs', label: 'Find Jobs', icon: Search, tab: 'job_search' },
+    { id: 'my_applications', label: 'My Applications', icon: Briefcase, tab: 'my_applications' },
+    { id: 'saved_jobs', label: 'Saved Jobs', icon: Bookmark, tab: 'saved_jobs' },
+    { id: 'my_interviews', label: 'Calendar / Interviews', icon: Calendar, tab: 'interviews' },
+    { id: 'skill_advisory', label: 'Monthly Analysis', icon: TrendingUp, tab: 'skill_advisory' },
+    { id: 'profile', label: 'Candidate Profile', icon: User, tab: 'profile' },
+    { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
+    { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 
-  const recruiterSidebarSections = [
-    {
-      title: 'OPERATIONS',
-      items: [
-        { id: 'recruiter_dashboard', label: 'Recruiter Dashboard', icon: LayoutDashboard, tab: 'recruiter_dashboard' },
-        { id: 'post_job', label: 'Post Job', icon: PlusCircle, tab: 'post_job' },
-        { id: 'manage_jobs', label: 'Manage Jobs', icon: Briefcase, tab: 'manage_jobs' },
-        { id: 'search_candidates', label: 'Search Candidates', icon: Search, tab: 'search_candidates' },
-        { id: 'applicants', label: 'Applicants', icon: Users, tab: 'applicants_view' },
-        { id: 'application_status', label: 'Application Status', icon: CheckCircle2, tab: 'application_status' }
-      ]
-    },
-    {
-      title: 'COMMUNICATIONS',
-      items: [
-        { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
-        { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' }
-      ]
-    },
-    {
-      title: 'ACCOUNT & DOCUMENTS',
-      items: [
-        { id: 'company_profile', label: 'My Profile', icon: User, tab: 'company_profile' },
-        { id: 'documents', label: 'My Documents', icon: Folder, tab: 'documents' },
-        { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
-      ]
-    }
+  const recruiterNavItems = [
+    { id: 'recruiter_dashboard', label: 'Dashboard', icon: LayoutDashboard, tab: 'recruiter_dashboard' },
+    { id: 'post_job', label: 'Post New Job', icon: PlusCircle, tab: 'post_job' },
+    { id: 'manage_jobs', label: 'Manage Jobs', icon: Briefcase, tab: 'manage_jobs' },
+    { id: 'applicants', label: 'Applicants Pipeline', icon: Users, tab: 'applicants_view' },
+    { id: 'search_candidates', label: 'Search Candidates', icon: Search, tab: 'search_candidates' },
+    { id: 'application_status', label: 'Application Status', icon: CheckCircle2, tab: 'application_status' },
+    { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' },
+    { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
+    { id: 'documents', label: 'Recruiter Documents', icon: Folder, tab: 'documents' },
+    { id: 'company_profile', label: 'Company Profile', icon: Building2, tab: 'company_profile' },
+    { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 
-  const managerSidebarSections = [
-    {
-      title: 'OPERATIONS',
-      items: [
-        { id: 'hiring_manager_dashboard', label: 'Manager Dashboard', icon: LayoutDashboard, tab: 'hiring_manager_dashboard' },
-        { id: 'manage_jobs', label: 'Active Requisitions', icon: Briefcase, tab: 'manage_jobs' },
-        { id: 'applicants', label: 'Review Candidates', icon: Users, tab: 'applicants_view' }
-      ]
-    },
-    {
-      title: 'COMMUNICATIONS',
-      items: [
-        { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
-        { id: 'interviews', label: 'Scheduled Interviews', icon: Calendar, tab: 'interviews' }
-      ]
-    },
-    {
-      title: 'ACCOUNT & DOCUMENTS',
-      items: [
-        { id: 'company_profile', label: 'My Profile', icon: User, tab: 'company_profile' },
-        { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
-      ]
-    }
+  const adminNavItems = [
+    { id: 'admin_dashboard', label: 'Dashboard', icon: LayoutDashboard, tab: 'admin_dashboard' },
+    { id: 'add_staff', label: 'Add Staff Member', icon: UserPlus, tab: 'add_staff' },
+    { id: 'manage_jobs', label: 'Jobs Oversight', icon: Briefcase, tab: 'manage_jobs' },
+    { id: 'applicants', label: 'Application Pipeline', icon: CheckCircle2, tab: 'applicants_view' },
+    { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' },
+    { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
+    { id: 'staff_documents', label: 'Staff Documents', icon: Folder, tab: 'staff_documents' },
+    { id: 'company_profile', label: 'Company Profile', icon: Building2, tab: 'company_profile' },
+    { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 
-  const candidateSidebarSections = [
-    {
-      title: 'OPERATIONS',
-      items: [
-        { id: 'home', label: 'Home', icon: Home, isInternal: true },
-        { id: 'find_jobs', label: 'Find Jobs', icon: Search, tab: 'job_search' },
-        { id: 'my_applications', label: 'My Applications', icon: Briefcase, tab: 'my_applications' },
-        { id: 'saved_jobs', label: 'Saved Jobs', icon: Bookmark, tab: 'saved_jobs' },
-        { id: 'skill_advisory', label: 'Monthly Analysis', icon: TrendingUp, tab: 'skill_advisory' }
-      ]
-    },
-    {
-      title: 'COMMUNICATIONS',
-      items: [
-        { id: 'my_interviews', label: 'My Interviews', icon: Calendar, tab: 'interviews' }
-      ]
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { id: 'profile', label: 'Candidate Profile', icon: User, tab: 'profile' },
-        { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
-      ]
-    }
+  const managerNavItems = [
+    { id: 'hiring_manager_dashboard', label: 'Dashboard', icon: LayoutDashboard, tab: 'hiring_manager_dashboard' },
+    { id: 'manage_jobs', label: 'Active Requisitions', icon: Briefcase, tab: 'manage_jobs' },
+    { id: 'applicants', label: 'Review Candidates', icon: Users, tab: 'applicants_view' },
+    { id: 'interviews', label: 'Scheduled Interviews', icon: Calendar, tab: 'interviews' },
+    { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
+    { id: 'company_profile', label: 'My Profile', icon: User, tab: 'company_profile' },
+    { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 
-  const currentSidebarSections = isAdmin
-    ? adminSidebarSections
+  const currentRoleNavItems = isAdmin
+    ? adminNavItems
     : isRecruiter
-      ? recruiterSidebarSections
+      ? recruiterNavItems
       : isHiringManager
-        ? managerSidebarSections
-        : candidateSidebarSections;
+        ? managerNavItems
+        : candidateNavItems;
+
+  const getPageTitle = (tab) => {
+    switch (tab) {
+      case 'home':
+      case 'recruiter_dashboard':
+      case 'admin_dashboard':
+      case 'hiring_manager_dashboard':
+        return 'Dashboard';
+      case 'find_jobs':
+      case 'job_search':
+        return 'Find Jobs';
+      case 'my_applications':
+        return 'My Applications';
+      case 'saved_jobs':
+        return 'Saved Jobs';
+      case 'skill_advisory':
+        return 'Monthly Analysis';
+      case 'interviews':
+      case 'my_interviews':
+        return 'Interviews';
+      case 'messages':
+        return 'Internal Messages';
+      case 'profile':
+      case 'candidate_profile':
+        return 'Candidate Profile';
+      case 'post_job':
+        return 'Post a New Job';
+      case 'manage_jobs':
+        return 'Manage Jobs';
+      case 'search_candidates':
+        return 'Search Candidates';
+      case 'applicants':
+      case 'applicants_view':
+        return 'Applicants Pipeline';
+      case 'application_status':
+        return 'Application Status';
+      case 'company_profile':
+        return 'Company Profile';
+      case 'add_staff':
+        return 'Add Staff Member';
+      case 'staff_documents':
+      case 'documents':
+      case 'recruiter_documents':
+        return 'Document Vault';
+      case 'support':
+        return 'Support Desk';
+      default:
+        return 'Dashboard';
+    }
+  };
 
   const handleNavClick = (item) => {
     if (item.id === 'create_post') {
@@ -492,7 +497,7 @@ export default function FeedDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] text-slate-800 flex flex-col font-sans select-none antialiased" style={{ fontFamily: BODY_FONT }}>
+    <div className="min-h-screen bg-[#F8F9FD] text-slate-800 flex font-sans select-none antialiased" style={{ fontFamily: BODY_FONT }}>
 
       <style>{`
         @keyframes uptrixRise { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
@@ -502,235 +507,310 @@ export default function FeedDashboard({
 
       {/* Toast Alert */}
       {showToast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900 text-white shadow-2xl border border-teal-500/40 text-xs font-medium animate-bounce">
-          <CheckCircle2 className="w-4 h-4 text-[#00a884]" />
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900 text-white shadow-2xl border border-indigo-500/40 text-xs font-medium animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-[#5C59E8]" />
           {showToast}
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 1. TOP HEADER BAR                                                         */}
-      {/* ========================================================================= */}
-      <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 shadow-xs">
+      {/* Mobile Drawer Overlay Backdrop */}
+      {!sidebarCollapsed && (
+        <div
+          onClick={() => setSidebarCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 min-[1025px]:hidden transition-opacity"
+        />
+      )}
 
-        {/* Brand Logo & Responsive Sidebar Trigger */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mobile/Tablet Menu Button for screens <= 1024px */}
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-600 hover:text-black hover:bg-slate-100 border border-slate-200 min-[1025px]:hidden flex items-center justify-center cursor-pointer transition-colors"
-            title={sidebarCollapsed ? "Open sidebar menu" : "Close sidebar menu"}
-          >
-            {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
-          </button>
-
+      {/* ========================================================================= */}
+      {/* LEFT SIDEBAR - SERVER 360 / UPTRIX 360 MODERN LAYOUT                      */}
+      {/* ========================================================================= */}
+      <aside
+        className={`${sidebarCollapsed ? 'w-20' : 'w-64'
+          } min-h-screen h-screen sticky top-0 bg-white border-r border-slate-200/80 shrink-0 flex flex-col justify-between transition-all duration-300 z-40 ${sidebarCollapsed ? 'max-[1024px]:-translate-x-full' : 'max-[1024px]:fixed max-[1024px]:left-0 max-[1024px]:top-0 shadow-2xl min-[1025px]:shadow-none'
+          }`}
+      >
+        {/* Top: Brand Header */}
+        <div className={`h-20 border-b border-slate-100 shrink-0 flex items-center ${sidebarCollapsed ? 'flex-col justify-center gap-1.5 px-2' : 'justify-between px-5'}`}>
           <div
-            className="flex items-center gap-2.5 cursor-pointer select-none"
-            onClick={() => handleTabChange('home')}
-            title="Uptrix Home"
+            onClick={() => {
+              if (sidebarCollapsed) {
+                setSidebarCollapsed(false);
+              } else {
+                handleTabChange('home');
+              }
+            }}
+            className="flex items-center cursor-pointer select-none"
+            title="Uptrix"
           >
             <img
               src="/logo.svg"
               alt="Uptrix Logo"
-              loading="lazy"
-              decoding="async"
-              className="h-8 sm:h-9 object-contain hover:opacity-90 transition-opacity"
+              className={`${sidebarCollapsed ? 'h-6 max-w-[46px]' : 'h-8 sm:h-9 max-w-[145px]'} object-contain hover:opacity-90 transition-all`}
             />
           </div>
-        </div>
 
-        {/* Right Header Controls: Notification, Dark Toggle, Logout */}
-        <div className="flex items-center gap-3 sm:gap-4">
-
-          {/* Internal Messages shortcut (Staff Only) */}
-          {isStaff && (
-            <button
-              type="button"
-              onClick={() => handleTabChange('messages')}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors relative border-none bg-transparent cursor-pointer ${activeSidebarItem === 'messages' ? 'text-black bg-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-                }`}
-              title="Internal Staff Messages"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-[#00a884] ring-2 ring-white"></span>
-            </button>
-          )}
-
-          {/* Notifications Bell with Popover Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors relative border-none cursor-pointer ${showNotifDropdown ? 'text-black bg-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 bg-transparent'
-                }`}
-              title="Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotifsCount > 0 && (
-                <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse"></span>
-              )}
-            </button>
-
-            {showNotifDropdown && (
-              <NotificationModal
-                onClose={() => setShowNotifDropdown(false)}
-                isDropdown={true}
-                onUpdateUnreadCount={setUnreadNotifsCount}
-              />
-            )}
-          </div>
-
-
-          {/* Teal LOGOUT Button */}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to log out?')) {
-                logout();
-              }
-            }}
-            className="px-4 py-1.5 rounded-lg bg-black hover:bg-slate-800 text-white text-xs font-bold tracking-wide transition-all shadow-xs flex items-center gap-1.5 border-none cursor-pointer"
-            title="Log out of session"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            LOGOUT
-          </button>
-
-        </div>
-      </header>
-
-      {/* ========================================================================= */}
-      {/* 2. BODY LAYOUT: SIDEBAR + DYNAMIC MAIN WORKSPACE                          */}
-      {/* ========================================================================= */}
-      <div className="flex-1 flex gap-3 sm:gap-4 pt-3 sm:pt-4 px-2.5 sm:px-4 pb-0 min-h-[calc(100vh-4rem)]">
-
-        {/* ======================================================================= */}
-        {/* LEFT SIDEBAR - Floating Rounded Card with Fixed Bottom Profile          */}
-        {/* ======================================================================= */}
-        <aside className={`${sidebarCollapsed ? 'w-16' : 'w-56 sm:w-64'} h-[calc(100vh-4.75rem)] sm:h-[calc(100vh-5rem)] sticky top-[4.75rem] sm:top-[5rem] bg-white border border-b-0 border-slate-200/80 rounded-t-2xl shrink-0 flex flex-col justify-between shadow-xs transition-all duration-200 z-30`}>
-
-          {/* Small Collapse/Expand Toggle Circle Button on edge */}
+          {/* Collapse/Expand Chevron Button */}
           <button
             type="button"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-black hover:bg-slate-800 text-white flex items-center justify-center shadow-md border-2 border-white hover:scale-105 transition-all z-40 cursor-pointer"
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="w-7 h-7 rounded-lg bg-[#F4F3FF] hover:bg-[#EBE9FE] text-[#5C59E8] flex items-center justify-center cursor-pointer transition-colors border-none"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
+        </div>
 
-          {/* Navigation Categories Container - Scrollable independently if needed */}
-          <div className={`py-4 px-2 sm:px-3 space-y-4 flex-1 min-h-0 rounded-t-2xl ${sidebarCollapsed ? 'overflow-visible' : 'overflow-y-auto no-scrollbar'}`}>
-            {currentSidebarSections.map((section, idx) => (
-              <div key={section.title || idx}>
-                {!sidebarCollapsed && (
-                  <h3
-                    className="text-[0.68rem] font-extrabold uppercase tracking-wider px-3 mb-1.5 transition-colors select-none text-[#00a884]"
-                  >
-                    {section.title}
-                  </h3>
-                )}
-                <div className="space-y-1">
-                  {section.items.map((item) => {
-                    const isActive = activeSidebarItem === item.id ||
-                      (item.tab && activeSidebarItem === item.tab) ||
-                      (item.id === 'profile' && (activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile'));
-                    return (
-                      <div key={item.id} className="relative group">
-                        <button
-                          type="button"
-                          onClick={() => handleNavClick(item)}
-                          className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-10' : 'justify-between px-3 py-2'} rounded-xl text-xs font-semibold transition-all border-none cursor-pointer ${isActive
-                            ? 'bg-[#F6F7FB] font-bold text-black shadow-xs border border-slate-300/80'
-                            : 'bg-transparent text-slate-600 hover:text-black hover:bg-[#F6F7FB]/80'
-                            }`}
-                        >
-                          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} min-w-0`}>
-                            <item.icon
-                              className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-black' : 'text-slate-400 group-hover:text-black'}`}
-                            />
-                            {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                          </div>
-                          {isActive && !sidebarCollapsed && (
-                            <div
-                              className="w-1.5 h-1.5 rounded-full bg-black"
-                            />
-                          )}
-                        </button>
+        {/* Middle: Navigation Scroll Container (Simple flat list, no dropdowns) */}
+        <div className="flex-1 overflow-y-auto no-scrollbar py-4 px-3 space-y-1.5">
+          {currentRoleNavItems.map((item) => {
+            const isActive =
+              activeSidebarItem === item.id ||
+              (item.tab && activeSidebarItem === item.tab) ||
+              (item.id === 'recruiter_dashboard' && (activeSidebarItem === 'recruiter_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+              (item.id === 'admin_dashboard' && (activeSidebarItem === 'admin_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+              (item.id === 'hiring_manager_dashboard' && (activeSidebarItem === 'hiring_manager_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+              (item.id === 'home' && (activeSidebarItem === 'home' || activeSidebarItem === 'dashboard')) ||
+              (item.id === 'profile' && (activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile')) ||
+              (item.id === 'applicants' && (activeSidebarItem === 'applicants' || activeSidebarItem === 'applicants_view'));
 
-                        {/* Floating Tooltip when Sidebar is Closed/Collapsed */}
-                        {sidebarCollapsed && (
-                          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
-                            <span>{item.label}</span>
-                            <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom User Profile Section - Permanently Fixed at Bottom, never moves */}
-          <div className="p-3 border-t border-slate-200/80 bg-white shrink-0 select-none relative group">
-            <div
-              onClick={() => {
-                handleTabChange(isStaff ? 'company_profile' : 'profile');
-                if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
-                  setSidebarCollapsed(true);
-                }
-              }}
-              className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'} p-1.5 rounded-xl cursor-pointer transition-colors select-none ${(activeSidebarItem === 'profile' || activeSidebarItem === 'company_profile')
-                ? 'bg-[#F6F7FB] border border-slate-300/80 shadow-xs'
-                : 'hover:bg-[#F6F7FB]'
-                }`}
-            >
-              <div className="relative shrink-0">
-                <div
-                  className="w-9 h-9 rounded-full font-bold flex items-center justify-center text-sm border overflow-hidden bg-black text-white border-black"
+            return (
+              <div key={item.id} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => handleNavClick(item)}
+                  className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center h-11 px-0' : 'justify-start gap-3 px-3.5 py-2.5'
+                    } rounded-xl text-xs font-semibold transition-all border-none cursor-pointer ${isActive
+                      ? 'text-[#5C59E8] font-bold bg-[#F4F3FF]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#F8F9FD]'
+                    }`}
+                  title={sidebarCollapsed ? item.label : undefined}
                 >
-                  {user?.profile?.avatar_url ? (
-                    <img src={user.profile.avatar_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover rounded-full" />
-                  ) : firstName.charAt(0).toUpperCase()}
-                </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
-              </div>
-              {!sidebarCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <div
-                    className={`text-xs font-bold truncate transition-colors ${(activeSidebarItem === 'profile' || activeSidebarItem === 'company_profile') ? 'text-black' : 'text-slate-800'}`}
-                  >
-                    {userName}
-                  </div>
-                  <div className="text-[0.65rem] text-slate-400 truncate">{userTitle}</div>
-                </div>
-              )}
-            </div>
+                  <item.icon
+                    className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#5C59E8]' : 'text-slate-400 group-hover:text-slate-600'
+                      }`}
+                  />
+                  {!sidebarCollapsed && (
+                    <span className="truncate">{item.label}</span>
+                  )}
+                </button>
 
-            {/* Profile Tooltip when Sidebar is Collapsed */}
-            {sidebarCollapsed && (
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex flex-col select-none">
-                <span>{userName}</span>
-                <span className="text-[0.65rem] text-slate-400 font-normal">{userTitle}</span>
-                <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                {/* Active vertical right indicator bar */}
+                {isActive && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-l-full bg-[#5C59E8]" />
+                )}
+
+                {/* Collapsed Tooltip Flyout */}
+                {sidebarCollapsed && (
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                    <span>{item.label}</span>
+                    <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom: User Profile & Notifications Section (In Sidebar Only) */}
+        <div className="p-3 border-t border-slate-100 bg-white shrink-0 relative" ref={profileDropdownRef}>
+          {sidebarCollapsed ? (
+            <div className="flex flex-col items-center gap-2.5 py-1">
+              {/* Collapsed Notifications Bell */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => setShowNotifDropdown(true)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors relative border-none bg-transparent cursor-pointer"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                  )}
+                </button>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                  <span>Notifications {unreadNotifsCount > 0 ? `(${unreadNotifsCount})` : ''}</span>
+                  <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                </div>
+              </div>
+
+              {/* Collapsed User Avatar */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] p-0.5 shadow-sm hover:ring-2 hover:ring-[#FF7043]/30 transition-all border-none cursor-pointer flex items-center justify-center"
+                  title={userName}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xs bg-[#FF7043]">
+                    {user?.profile?.avatar_url ? (
+                      <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      firstName.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                </button>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex flex-col select-none">
+                  <span>{userName}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">{userTitle || role}</span>
+                  <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50/80 transition-colors">
+              {/* User Profile Info - Clicking opens profile menu */}
+              <div
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none"
+                title="View account options"
+              >
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                    {user?.profile?.avatar_url ? (
+                      <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      firstName.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-900 truncate">{userName}</div>
+                  <div className="text-[11px] text-slate-400 truncate">{userTitle || role}</div>
+                </div>
+              </div>
+
+              {/* Notification Bell Icon */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowNotifDropdown(true)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors relative border-none bg-transparent cursor-pointer shrink-0"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadNotifsCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Profile Dropdown Menu */}
+          {showProfileDropdown && (
+            <div className={`absolute ${sidebarCollapsed ? 'left-full bottom-0 ml-3 w-64' : 'left-3 right-3 bottom-full mb-2'} bg-white rounded-2xl shadow-2xl border border-slate-100 p-2.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150`}>
+              <div className="flex items-center gap-3 p-2 border-b border-slate-100 mb-2">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-sm shrink-0">
+                  {user?.profile?.avatar_url ? (
+                    <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    firstName.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-900 truncate">{userName}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{user?.email}</div>
+                  <span className="inline-block mt-0.5 px-2 py-0.2 rounded-full text-[9px] font-extrabold bg-[#F4F3FF] text-[#5C59E8]">
+                    {role}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  handleTabChange(isStaff ? 'company_profile' : 'profile');
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors border-none bg-transparent cursor-pointer text-left"
+              >
+                <User className="w-4 h-4 text-slate-400" />
+                <span>My Profile</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  handleTabChange('support');
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors border-none bg-transparent cursor-pointer text-left"
+              >
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <span>Help &amp; Support</span>
+              </button>
+
+              <div className="my-1 border-t border-slate-100" />
+
+              <button
+                onClick={() => {
+                  setShowProfileDropdown(false);
+                  if (window.confirm('Are you sure you want to log out?')) {
+                    logout();
+                  }
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+              >
+                <LogOut className="w-4 h-4 text-rose-500" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Mobile Hamburger Menu button (visible on <=1024px when sidebar is collapsed) */}
+      {sidebarCollapsed && (
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(false)}
+          className="min-[1025px]:hidden fixed top-3 left-3 z-30 p-2.5 rounded-xl bg-white shadow-md border border-slate-200 text-slate-700 hover:text-black hover:bg-slate-50 flex items-center justify-center cursor-pointer transition-colors"
+          title="Open menu"
+        >
+          <Menu className="w-5 h-5 text-slate-700" />
+        </button>
+      )}
+
+      {/* Notifications Modal */}
+      {showNotifDropdown && (
+        <Suspense fallback={null}>
+          <NotificationModal
+            onClose={() => setShowNotifDropdown(false)}
+            isDropdown={false}
+            onUpdateUnreadCount={setUnreadNotifsCount}
+          />
+        </Suspense>
+      )}
+
+      {/* ========================================================================= */}
+      {/* RIGHT MAIN CONTENT AREA: MAIN WORKSPACE                                   */}
+      {/* ========================================================================= */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F8F9FD]">
+
+        {/* ── DYNAMIC MAIN WORKSPACE CONTENT ── */}
+        <main className="flex-1 overflow-y-auto bg-[#F8F9FD]">
+
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {/* UNIFIED ROLE-BASED DASHBOARD (CANDIDATE, RECRUITER, ADMIN, MANAGER)     */}
+          {/* ═══════════════════════════════════════════════════════════════════════ */}
+          {(activeSidebarItem === 'home' ||
+            activeSidebarItem === 'dashboard' ||
+            activeSidebarItem === 'recruiter_dashboard' ||
+            activeSidebarItem === 'admin_dashboard' ||
+            activeSidebarItem === 'hiring_manager_dashboard') && (
+              <div className="min-h-full bg-[#F8F9FD]">
+                <Suspense fallback={<ViewLoadingFallback message="Loading Uptrix Dashboard..." />}>
+                  <UnifiedRoleDashboard
+                    role={role}
+                    user={user}
+                    onNavigateTab={handleTabChange}
+                  />
+                </Suspense>
               </div>
             )}
-          </div>
 
-        </aside>
-
-        {/* ======================================================================= */}
-        {/* DYNAMIC MAIN VIEW: ALL FEATURES RENDERED IN SAME UNIFIED DASHBOARD     */}
-        {/* ======================================================================= */}
-        <main className="flex-1 min-w-0 h-[calc(100vh-4.75rem)] sm:h-[calc(100vh-5rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-slate-200/80 bg-[#F6F7FB] shadow-xs">
-
-          {/* ═══════════════════════════════════════════════════════════════════════ */}
-          {/* (A) HOME / RECRUITER DASHBOARD PAGE                                     */}
-          {/* ═══════════════════════════════════════════════════════════════════════ */}
-          {activeSidebarItem === 'home' && (
+          {false && (
             <div className="min-h-full" style={{ background: PAPER }}>
 
               {/* ─── HERO ─── */}
@@ -1097,15 +1177,6 @@ export default function FeedDashboard({
               </div>
             )}
 
-            {/* 7A. ADMINISTRATOR DASHBOARD */}
-            {(activeSidebarItem === 'admin_dashboard' || (isAdmin && activeSidebarItem === 'dashboard')) && (
-              <div className="min-h-full">
-                <AdminDashboard
-                  setActiveTab={handleTabChange}
-                  setSelectedJobId={setSelectedJobId}
-                />
-              </div>
-            )}
 
             {/* 7A-2. ADD STAFF MEMBER & STAFF DIRECTORY IN-PAGE VIEW */}
             {(activeSidebarItem === 'add_staff' || activeSidebarItem === 'staff_directory') && (
@@ -1124,19 +1195,6 @@ export default function FeedDashboard({
               </div>
             )}
 
-            {/* 7B. RECRUITER DASHBOARD */}
-            {(activeSidebarItem === 'recruiter_dashboard' || (isRecruiter && activeSidebarItem === 'dashboard')) && (
-              <div className="min-h-full">
-                <RecruiterDashboard setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
-              </div>
-            )}
-
-            {/* 7C. HIRING MANAGER DASHBOARD */}
-            {(activeSidebarItem === 'hiring_manager_dashboard' || (isHiringManager && activeSidebarItem === 'dashboard')) && (
-              <div className="min-h-full">
-                <HiringManagerDashboard setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
-              </div>
-            )}
 
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* 8. POST JOB VIEW                                                    */}
@@ -1718,8 +1776,7 @@ export default function FeedDashboard({
         </main>
       </div>
 
-
-
+      {/* Upgrade to PRO Modal */}
     </div>
   );
 }
