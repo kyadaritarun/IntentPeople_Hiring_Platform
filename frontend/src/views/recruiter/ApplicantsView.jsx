@@ -6,7 +6,7 @@ import {
   Building2, Printer, X, Eye, Award, GraduationCap, Compass, DollarSign, Calendar,
   Search, LayoutGrid, List, SlidersHorizontal, CheckSquare, Square, 
   ChevronDown, Check, ArrowUpDown, Layers, AlertCircle, ArrowUpRight,
-  Trophy, Zap, Target, Brain, TrendingUp, BarChart3, Star, Crown
+  Trophy, Zap, Target, Brain, TrendingUp, BarChart3, Star, Crown, HelpCircle
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -2219,6 +2219,47 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     </div>
                   )}
 
+                  {/* Candidate Screening Answers */}
+                  {Array.isArray(selectedApp.screening_answers) && selectedApp.screening_answers.length > 0 && (
+                    <div className="bg-indigo-50/60 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-2xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-indigo-100">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px]">
+                            <HelpCircle className="w-3.5 h-3.5" />
+                          </span>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                            Candidate Screening Responses
+                          </h4>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                          {selectedApp.screening_answers.length} answered
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {selectedApp.screening_answers.map((ans, idx) => (
+                          <div key={idx} className="bg-white border border-indigo-100/90 rounded-xl p-3.5 shadow-2xs space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="w-5 h-5 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-0.5 border border-indigo-200/60">
+                                Q{idx + 1}
+                              </span>
+                              <p className="text-xs font-bold text-slate-800 leading-snug">
+                                {ans.question || `Screening Question ${idx + 1}`}
+                              </p>
+                            </div>
+                            <div className="ml-7 p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 text-xs font-semibold text-slate-900">
+                              {ans.answer ? (
+                                <span className="text-indigo-950 font-bold">{ans.answer}</span>
+                              ) : (
+                                <span className="text-slate-400 italic">No answer provided</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions: PDF Export & Resume & Portfolio */}
                   <div className="flex items-center gap-2.5 pt-4 border-t border-slate-100 flex-wrap">
                     <button
@@ -2339,6 +2380,12 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                                 <div className="text-[0.68rem] text-slate-500 truncate">
                                   {c.email || c.phone || 'No direct contact'}
                                 </div>
+                                {Array.isArray(app.screening_answers) && app.screening_answers.length > 0 && (
+                                  <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200/80 w-fit">
+                                    <HelpCircle className="w-2.5 h-2.5" />
+                                    <span>{app.screening_answers.length} Screening Q&A</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -2680,6 +2727,23 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                         </div>
                       </div>
                     </div>
+
+                    {/* Screening Questions & Answers in PDF Dossier */}
+                    {Array.isArray(pdfModalData.app?.screening_answers) && pdfModalData.app.screening_answers.length > 0 && (
+                      <div className="space-y-2 p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
+                        <div className="text-[0.68rem] font-extrabold text-indigo-900 uppercase tracking-wider">
+                          Candidate Screening Questions & Answers
+                        </div>
+                        <div className="space-y-2">
+                          {pdfModalData.app.screening_answers.map((ans, idx) => (
+                            <div key={idx} className="p-2 rounded bg-white border border-indigo-100/70 text-xs">
+                              <div className="font-bold text-slate-800">Q{idx + 1}: {ans.question}</div>
+                              <div className="font-semibold text-indigo-950 mt-0.5">{ans.answer || 'No answer'}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* 7. Work Experience */}
                     <div className="space-y-2">

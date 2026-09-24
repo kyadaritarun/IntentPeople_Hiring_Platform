@@ -11,6 +11,7 @@ class Application(Base):
     candidate_id = Column(Integer, ForeignKey("portal_candidates.id"), nullable=False)
     status = Column(String, default="APPLIED") # APPLIED, UNDER_REVIEW, SHORTLISTED, INTERVIEW_SCHEDULED, SELECTED, REJECTED
     cover_letter = Column(Text, nullable=True)
+    screening_answers = Column(JSON, default=list, nullable=True) # Candidate responses to job screening questions
     fit_score = Column(Float, nullable=True, default=None)        # AI fit score (0-100)
     fit_breakdown = Column(JSON, nullable=True, default=None)     # Per-dimension breakdown
     applied_at = Column(DateTime, default=datetime.utcnow)

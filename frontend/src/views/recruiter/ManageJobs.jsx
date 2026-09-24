@@ -402,6 +402,14 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                               </span>
                             </>
                           )}
+                          {Array.isArray(job.screening_questions) && job.screening_questions.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                                {job.screening_questions.length} Screening {job.screening_questions.length === 1 ? 'Q' : 'Qs'}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </td>
 

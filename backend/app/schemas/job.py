@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 
 class JobCreate(BaseModel):
     title: str
@@ -29,6 +29,7 @@ class JobCreate(BaseModel):
     monthly_budget_range: Optional[str] = None
     decision_authority: Optional[str] = None
     success_horizon: Optional[str] = None
+    screening_questions: Optional[List[Any]] = None
 
 class JobStatusUpdate(BaseModel):
     status: str
@@ -61,4 +62,5 @@ class JobUpdate(BaseModel):
     monthly_budget_range: Optional[str] = None
     decision_authority: Optional[str] = None
     success_horizon: Optional[str] = None
+    screening_questions: Optional[List[Any]] = None
 

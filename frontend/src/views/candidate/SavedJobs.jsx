@@ -3,7 +3,7 @@ import {
   Bookmark, Briefcase, MapPin, Building2, ExternalLink, 
   Trash2, Send, CheckCircle2, DollarSign, Clock, Search, 
   Filter, ShieldCheck, ChevronRight, ArrowUpRight, Sparkles, 
-  Eye, X, Check, RefreshCw, Layers, Zap, AlertCircle, Compass
+  Eye, X, Check, RefreshCw, Layers, Zap, AlertCircle, Compass, HelpCircle
 } from 'lucide-react';
 import { api } from '../../api';
 
@@ -29,6 +29,8 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   // Modals
   const [applyModalJob, setApplyModalJob] = useState(null);
   const [coverLetter, setCoverLetter] = useState('');
+  const [screeningAnswers, setScreeningAnswers] = useState({});
+  const [screeningErrors, setScreeningErrors] = useState({});
   const [applying, setApplying] = useState(false);
   const [viewDetailsJob, setViewDetailsJob] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
@@ -97,19 +99,48 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
     if (e) e.stopPropagation();
     setApplyModalJob(job);
     setCoverLetter('');
+    setScreeningAnswers({});
+    setScreeningErrors({});
   };
 
   const handleSubmitApplication = async (e) => {
     e.preventDefault();
     if (!applyModalJob) return;
 
+    // Validate screening questions
+    const questions = applyModalJob.screening_questions || [];
+    const errors = {};
+    for (const q of questions) {
+      if (q.required) {
+        const val = screeningAnswers[q.id];
+        if (val === undefined || val === null || String(val).trim() === '') {
+          errors[q.id] = 'This question is required.';
+        }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setScreeningErrors(errors);
+      return;
+    }
+    setScreeningErrors({});
+
+    const formattedAnswers = questions.map(q => ({
+      question_id: q.id,
+      question: q.question,
+      answer: screeningAnswers[q.id] !== undefined ? String(screeningAnswers[q.id]).trim() : '',
+      type: q.type
+    }));
+
     setApplying(true);
     try {
-      await api.applyJob(applyModalJob.id, coverLetter);
+      await api.applyJob(applyModalJob.id, coverLetter, formattedAnswers);
       setAppliedJobsMap(prev => ({ ...prev, [applyModalJob.id]: 'APPLIED' }));
       showToast(`🎉 Application submitted for "${applyModalJob.title}"!`);
       setApplyModalJob(null);
       setCoverLetter('');
+      setScreeningAnswers({});
+      setScreeningErrors({});
     } catch (err) {
       alert(err.message || 'Failed to submit application');
     } finally {
@@ -470,7 +501,131 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
               </div>
             </div>
 
-            <form onSubmit={handleSubmitApplication} className="p-6 space-y-4">
+            <form onSubmit={handleSubmitApplication} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Screening Questions */}
+              {Array.isArray(applyModalJob.screening_questions) && applyModalJob.screening_questions.length > 0 && (
+                <div className="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100/90 space-y-3.5">
+                  <div className="flex items-center gap-2 pb-2 border-b border-indigo-100">
+                    <HelpCircle className="w-4 h-4 text-indigo-600" />
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Employer Screening Questions ({applyModalJob.screening_questions.length})
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Please answer the questions below to submit your application.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {applyModalJob.screening_questions.map((q, qIdx) => (
+                      <div key={q.id || qIdx} className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                        <label className="block text-xs font-bold text-slate-800 leading-snug">
+                          <span className="text-indigo-600 mr-1.5 font-black">Q{qIdx + 1}.</span>
+                          {q.question} {q.required && <span className="text-rose-500">*</span>}
+                        </label>
+
+                        {/* Type: Choice */}
+                        {q.type === 'choice' && (
+                          <div className="space-y-1.5 pt-1">
+                            {(q.options || []).map((opt, optIdx) => (
+                              <label 
+                                key={optIdx} 
+                                className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                                  screeningAnswers[q.id] === opt 
+                                    ? 'bg-indigo-50/70 border-indigo-500 text-indigo-950 font-bold shadow-2xs' 
+                                    : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`sq_saved_${q.id}`}
+                                  value={opt}
+                                  checked={screeningAnswers[q.id] === opt}
+                                  onChange={() => {
+                                    setScreeningAnswers(prev => ({ ...prev, [q.id]: opt }));
+                                    if (screeningErrors[q.id]) {
+                                      setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 text-indigo-600 focus:ring-0"
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Type: Yes / No */}
+                        {q.type === 'yes_no' && (
+                          <div className="flex items-center gap-2 pt-1">
+                            {['Yes', 'No'].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  setScreeningAnswers(prev => ({ ...prev, [q.id]: opt }));
+                                  if (screeningErrors[q.id]) {
+                                    setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                                  }
+                                }}
+                                className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                  screeningAnswers[q.id] === opt
+                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Type: Number */}
+                        {q.type === 'number' && (
+                          <input
+                            type="number"
+                            value={screeningAnswers[q.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setScreeningAnswers(prev => ({ ...prev, [q.id]: val }));
+                              if (screeningErrors[q.id]) {
+                                setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                              }
+                            }}
+                            placeholder="e.g. 3"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white"
+                          />
+                        )}
+
+                        {/* Type: Text */}
+                        {(!q.type || q.type === 'text') && (
+                          <textarea
+                            rows={2}
+                            value={screeningAnswers[q.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setScreeningAnswers(prev => ({ ...prev, [q.id]: val }));
+                              if (screeningErrors[q.id]) {
+                                setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                              }
+                            }}
+                            placeholder="Your answer..."
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white leading-relaxed"
+                          />
+                        )}
+
+                        {screeningErrors[q.id] && (
+                          <p className="text-[11px] font-bold text-rose-600 mt-1 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {screeningErrors[q.id]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Personalized Cover Letter / Note

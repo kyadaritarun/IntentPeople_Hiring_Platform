@@ -5,7 +5,7 @@ import {
   ArrowUpRight, TrendingUp, ShieldCheck, ChevronRight,
   SlidersHorizontal, Check, RefreshCw, Eye, Zap, Layers,
   Target, FileText, Users, AlertCircle, Compass, Copy, Bot, Plus,
-  AlertTriangle, ShieldAlert
+  AlertTriangle, ShieldAlert, HelpCircle
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -29,6 +29,8 @@ export default function JobSearch({ setActiveTab }) {
   const [aiModalJob, setAiModalJob] = useState(null);
   const [copiedPitch, setCopiedPitch] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
+  const [screeningAnswers, setScreeningAnswers] = useState({});
+  const [screeningErrors, setScreeningErrors] = useState({});
   const [applying, setApplying] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState({});
   const [addingSkillName, setAddingSkillName] = useState(null);
@@ -193,19 +195,23 @@ export default function JobSearch({ setActiveTab }) {
 
   const handleOpenApply = (job) => {
     setCoverLetter('');
+    setScreeningAnswers({});
+    setScreeningErrors({});
     setSelectedJob(job);
   };
 
-  const executeSubmitApplication = async (job, letter) => {
+  const executeSubmitApplication = async (job, letter, answers = []) => {
     if (!job) return;
     setApplying(true);
     try {
-      await api.applyJob(job.id, letter);
+      await api.applyJob(job.id, letter, answers);
       setAppliedJobs(prev => ({ ...prev, [job.id]: true }));
       alert(`🎉 Application submitted successfully for '${job.title}'!`);
       setSelectedJob(null);
       setAiModalJob(null);
       setCoverLetter('');
+      setScreeningAnswers({});
+      setScreeningErrors({});
       setLowMatchPrompt(null);
     } catch (err) {
       alert(err.message || 'Failed to submit application');
@@ -218,12 +224,38 @@ export default function JobSearch({ setActiveTab }) {
     e.preventDefault();
     if (!selectedJob) return;
 
+    // Validate screening questions
+    const questions = selectedJob.screening_questions || [];
+    const errors = {};
+    for (const q of questions) {
+      if (q.required) {
+        const val = screeningAnswers[q.id];
+        if (val === undefined || val === null || String(val).trim() === '') {
+          errors[q.id] = 'This question is required.';
+        }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setScreeningErrors(errors);
+      return;
+    }
+    setScreeningErrors({});
+
+    const formattedAnswers = questions.map(q => ({
+      question_id: q.id,
+      question: q.question,
+      answer: screeningAnswers[q.id] !== undefined ? String(screeningAnswers[q.id]).trim() : '',
+      type: q.type
+    }));
+
     // If skills match or JD match is low (< 50%), trigger the professional advisory popup
     const match = computeProfileMatch(selectedJob, candidateProfile);
     if (match.skillsScore < 50 || match.jdScore < 50 || match.score < 50) {
       setLowMatchPrompt({
         job: selectedJob,
         coverLetter: coverLetter,
+        screeningAnswers: formattedAnswers,
         skillsScore: match.skillsScore,
         jdScore: match.jdScore,
         matchedCount: match.matchedCount,
@@ -232,7 +264,7 @@ export default function JobSearch({ setActiveTab }) {
       return;
     }
 
-    await executeSubmitApplication(selectedJob, coverLetter);
+    await executeSubmitApplication(selectedJob, coverLetter, formattedAnswers);
   };
 
   const handleAddSkillToProfile = async (skillToAdd) => {
@@ -1679,6 +1711,131 @@ export default function JobSearch({ setActiveTab }) {
                 }
                 return null;
               })()}
+
+              {/* Employer Screening Questions */}
+              {Array.isArray(selectedJob.screening_questions) && selectedJob.screening_questions.length > 0 && (
+                <div className="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100/90 space-y-3.5">
+                  <div className="flex items-center gap-2 pb-2 border-b border-indigo-100">
+                    <HelpCircle className="w-4 h-4 text-indigo-600" />
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Employer Screening Questions ({selectedJob.screening_questions.length})
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Please answer the questions below to submit your application.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {selectedJob.screening_questions.map((q, qIdx) => (
+                      <div key={q.id || qIdx} className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                        <label className="block text-xs font-bold text-slate-800 leading-snug">
+                          <span className="text-indigo-600 mr-1.5 font-black">Q{qIdx + 1}.</span>
+                          {q.question} {q.required && <span className="text-rose-500">*</span>}
+                        </label>
+
+                        {/* Type: Choice */}
+                        {q.type === 'choice' && (
+                          <div className="space-y-1.5 pt-1">
+                            {(q.options || []).map((opt, optIdx) => (
+                              <label 
+                                key={optIdx} 
+                                className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                                  screeningAnswers[q.id] === opt 
+                                    ? 'bg-indigo-50/70 border-indigo-500 text-indigo-950 font-bold shadow-2xs' 
+                                    : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`sq_${q.id}`}
+                                  value={opt}
+                                  checked={screeningAnswers[q.id] === opt}
+                                  onChange={() => {
+                                    setScreeningAnswers(prev => ({ ...prev, [q.id]: opt }));
+                                    if (screeningErrors[q.id]) {
+                                      setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 text-indigo-600 focus:ring-0"
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Type: Yes / No */}
+                        {q.type === 'yes_no' && (
+                          <div className="flex items-center gap-2 pt-1">
+                            {['Yes', 'No'].map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  setScreeningAnswers(prev => ({ ...prev, [q.id]: opt }));
+                                  if (screeningErrors[q.id]) {
+                                    setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                                  }
+                                }}
+                                className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                  screeningAnswers[q.id] === opt
+                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
+                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Type: Number */}
+                        {q.type === 'number' && (
+                          <input
+                            type="number"
+                            value={screeningAnswers[q.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setScreeningAnswers(prev => ({ ...prev, [q.id]: val }));
+                              if (screeningErrors[q.id]) {
+                                setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                              }
+                            }}
+                            placeholder="e.g. 3"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white"
+                          />
+                        )}
+
+                        {/* Type: Text */}
+                        {(!q.type || q.type === 'text') && (
+                          <textarea
+                            rows={2}
+                            value={screeningAnswers[q.id] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setScreeningAnswers(prev => ({ ...prev, [q.id]: val }));
+                              if (screeningErrors[q.id]) {
+                                setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
+                              }
+                            }}
+                            placeholder="Your answer..."
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white leading-relaxed"
+                          />
+                        )}
+
+                        {screeningErrors[q.id] && (
+                          <p className="text-[11px] font-bold text-rose-600 mt-1 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> {screeningErrors[q.id]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Note to Hiring Manager (Optional)
@@ -2209,7 +2366,7 @@ export default function JobSearch({ setActiveTab }) {
               <button
                 type="button"
                 disabled={applying}
-                onClick={() => executeSubmitApplication(lowMatchPrompt.job, lowMatchPrompt.coverLetter)}
+                onClick={() => executeSubmitApplication(lowMatchPrompt.job, lowMatchPrompt.coverLetter, lowMatchPrompt.screeningAnswers)}
                 className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-black shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none disabled:opacity-50"
               >
                 {applying ? (

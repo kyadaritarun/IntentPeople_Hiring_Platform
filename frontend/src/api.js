@@ -270,17 +270,21 @@ export const api = {
   },
 
   // Applications
-  async applyJob(jobId, coverLetter) {
-    let res = await fetch(`${API_BASE}/jobs/${jobId}/apply`, {
+  async applyJob(jobId, coverLetter, screeningAnswers = []) {
+    const payload = (typeof coverLetter === 'object' && coverLetter !== null)
+      ? coverLetter
+      : { cover_letter: coverLetter || '', screening_answers: screeningAnswers || [] };
+
+    let res = await fetch(`${API_BASE}/applications/job/${jobId}/apply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ cover_letter: coverLetter })
+      body: JSON.stringify(payload)
     });
-    if (res.status === 404) {
-      res = await fetch(`${API_BASE}/applications/job/${jobId}/apply`, {
+    if (!res.ok && res.status === 404) {
+      res = await fetch(`${API_BASE}/jobs/${jobId}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ cover_letter: coverLetter })
+        body: JSON.stringify(payload)
       });
     }
     return handleResponse(res);

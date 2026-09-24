@@ -176,7 +176,37 @@ def seed():
                 "availability_requirement": "Immediate / 15-30 Days",
                 "must_have_capabilities": "Proven track record scaling Meta & Google ad spend profitably (> ₹50L/mo). Deep expertise in GA4, post-iOS tracking, and CAPI setup.",
                 "preferred_capabilities": "Experience leading creative strategy and collaborating with video editors and copywriters.",
-                "description": "Scale paid acquisition campaigns across Meta, Google Search & YouTube. Own multi-crore ad budgets and optimize full-funnel CAC to LTV metrics for high-growth client portfolios."
+                "description": "Scale paid acquisition campaigns across Meta, Google Search & YouTube. Own multi-crore ad budgets and optimize full-funnel CAC to LTV metrics for high-growth client portfolios.",
+                "screening_questions": [
+                    {
+                        "id": "sq_seed_1",
+                        "question": "How many years of hands-on experience do you have managing Meta & Google Ads budgets?",
+                        "type": "choice",
+                        "options": ["1 - 2 years", "3 - 5 years", "6+ years"],
+                        "required": True
+                    },
+                    {
+                        "id": "sq_seed_2",
+                        "question": "What is the highest monthly ad budget you have independently managed?",
+                        "type": "choice",
+                        "options": ["Under ₹10 Lakhs", "₹10L - ₹50L", "₹50L - ₹1 Crore", "₹1 Crore+"],
+                        "required": True
+                    },
+                    {
+                        "id": "sq_seed_3",
+                        "question": "Are you comfortable working in our hybrid office model in Hyderabad?",
+                        "type": "yes_no",
+                        "options": ["Yes", "No"],
+                        "required": True
+                    },
+                    {
+                        "id": "sq_seed_4",
+                        "question": "Share a brief link or summary of your highest ROAS performance marketing campaign.",
+                        "type": "text",
+                        "options": [],
+                        "required": False
+                    }
+                ]
             },
             {
                 "title": "Full Stack Growth Engineer (React & Node.js)",
@@ -194,7 +224,23 @@ def seed():
                 "availability_requirement": "Immediate or 30 Days",
                 "must_have_capabilities": "Strong proficiency in React.js, modern JavaScript/TypeScript, RESTful API architecture, and database design.",
                 "preferred_capabilities": "Familiarity with marketing analytics APIs, server-side tracking, and web performance optimization.",
-                "description": "Build high-converting landing pages, interactive product funnels, and martech integrations. Collaborate with marketing and analytics teams to engineer viral user loops and seamless checkout flows."
+                "description": "Build high-converting landing pages, interactive product funnels, and martech integrations. Collaborate with marketing and analytics teams to engineer viral user loops and seamless checkout flows.",
+                "screening_questions": [
+                    {
+                        "id": "sq_seed_5",
+                        "question": "How many years of production experience do you have with React.js and TypeScript?",
+                        "type": "choice",
+                        "options": ["1 - 2 years", "3 - 5 years", "5+ years"],
+                        "required": True
+                    },
+                    {
+                        "id": "sq_seed_6",
+                        "question": "Please link your GitHub profile or personal portfolio.",
+                        "type": "text",
+                        "options": [],
+                        "required": True
+                    }
+                ]
             },
             {
                 "title": "Technical SEO & Organic Growth Strategist",
@@ -370,9 +416,13 @@ def seed():
                     preferred_capabilities=jdata.get("preferred_capabilities"),
                     product_service=uptrix_company.product_service or "Uptrix Full-Service Digital Marketing & Engineering Platform",
                     business_model=uptrix_company.business_model or "B2B Enterprise",
-                    growth_stage=uptrix_company.growth_stage or "Series B / Growth"
+                    growth_stage=uptrix_company.growth_stage or "Series B / Growth",
+                    screening_questions=jdata.get("screening_questions", [])
                 ))
                 jobs_added_count += 1
+            else:
+                if jdata.get("screening_questions") and not existing_job.screening_questions:
+                    existing_job.screening_questions = jdata.get("screening_questions")
 
         db.flush()
 

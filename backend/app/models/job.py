@@ -36,6 +36,7 @@ class Job(Base):
     monthly_budget_range = Column(String, nullable=True)
     decision_authority = Column(String, nullable=True)
     success_horizon = Column(String, nullable=True)
+    screening_questions = Column(JSON, default=list, nullable=True) # List of custom screening questions
     created_at = Column(DateTime, default=datetime.utcnow)
 
     company = relationship("Company", back_populates="jobs")

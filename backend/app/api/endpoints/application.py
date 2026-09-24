@@ -61,6 +61,7 @@ def _build_applicant_response(a, cand, job, cand_user=None):
         "job_work_mode": job.work_mode if job else "",
         "status": a.status,
         "cover_letter": a.cover_letter,
+        "screening_answers": a.screening_answers or [],
         "fit_score": a.fit_score,
         "fit_breakdown": a.fit_breakdown,
         "applied_at": a.applied_at.isoformat() if a.applied_at else None,
@@ -133,6 +134,7 @@ def apply_job(job_id: int, data: schemas.ApplicationCreate, user: models.User = 
         candidate_id=candidate.id,
         status="APPLIED",
         cover_letter=data.cover_letter,
+        screening_answers=data.screening_answers or [],
         fit_score=fit_score,
         fit_breakdown=fit_breakdown,
     )

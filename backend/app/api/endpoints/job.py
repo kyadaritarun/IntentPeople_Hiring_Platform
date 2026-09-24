@@ -60,6 +60,7 @@ def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, loca
             "work_mode": j.work_mode,
             "job_type": j.job_type,
             "status": j.status,
+            "screening_questions": j.screening_questions or [],
             "applicant_count": applicant_count,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "business_context": b_context,
@@ -133,6 +134,7 @@ def get_my_jobs(user: models.User = Depends(get_current_user), db: Session = Dep
             "work_mode": j.work_mode,
             "job_type": j.job_type,
             "status": j.status,
+            "screening_questions": j.screening_questions or [],
             "applicant_count": applicant_count,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "business_context": b_context,
@@ -197,7 +199,8 @@ def create_job(data: schemas.JobCreate, user: models.User = Depends(get_current_
         team_support=data.team_support or (company.team_support if company else None),
         monthly_budget_range=data.monthly_budget_range or (company.monthly_budget_range if company else None),
         decision_authority=data.decision_authority or (company.decision_authority if company else None),
-        success_horizon=data.success_horizon or (company.success_horizon if company else None)
+        success_horizon=data.success_horizon or (company.success_horizon if company else None),
+        screening_questions=data.screening_questions or []
     )
     db.add(job)
     db.commit()
@@ -276,7 +279,8 @@ def apply_to_job(job_id: int, data: schemas.ApplicationCreate, user: models.User
         job_id=job_id,
         candidate_id=candidate.id,
         status="APPLIED",
-        cover_letter=data.cover_letter
+        cover_letter=data.cover_letter,
+        screening_answers=data.screening_answers or []
     )
     db.add(app)
 
@@ -325,6 +329,7 @@ def get_saved_jobs(user: models.User = Depends(get_current_user), db: Session = 
             "salary_max": j.salary_max,
             "description": j.description,
             "skills": j.skills or [],
+            "screening_questions": j.screening_questions or [],
             "date_saved": sr.created_at.isoformat() if sr.created_at else None,
             "dateSaved": sr.created_at.strftime("%b %d, %Y") if sr.created_at else "Saved recently"
         })

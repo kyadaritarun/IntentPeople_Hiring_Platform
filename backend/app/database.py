@@ -39,6 +39,8 @@ def ensure_columns_exist():
         with engine.connect() as conn:
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS fit_score DOUBLE PRECISION;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS fit_breakdown JSON;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS screening_questions JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS screening_answers JSON DEFAULT \'[]\'::json;'))
             conn.commit()
     except Exception as e:
         pass
