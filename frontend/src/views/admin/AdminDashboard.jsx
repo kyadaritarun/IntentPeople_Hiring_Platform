@@ -71,12 +71,12 @@ export default function AdminDashboard({
   const loadData = () => {
     api.getJobs()
       .then(list => setJobs(list || []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
 
     api.getTeamMembers()
       .then(members => setTeamMembers(members || []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingTeam(false));
   };
 
@@ -577,7 +577,7 @@ export default function AdminDashboard({
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer ${newMember.role === 'RECRUITER'
                       ? 'border-2 border-[#1D4ED8] bg-blue-50/50 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-900">Recruiter</span>
@@ -593,7 +593,7 @@ export default function AdminDashboard({
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer ${newMember.role === 'HIRING_MANAGER'
                       ? 'border-2 border-[#7E22CE] bg-purple-50/50 shadow-xs'
                       : 'border-slate-200 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-900">Hiring Manager</span>

@@ -605,17 +605,20 @@ export default function InterviewsView({ setActiveTab }) {
     return true;
   });
 
+  const inputClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
+  const selectClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer';
+
   return (
-    <div className="p-4 sm:p-8 max-w-10xl mx-auto space-y-6 select-text text-slate-800">
+    <div
+      className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
 
       {/* ── Top Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
-                <Calendar className="w-4 h-4" />
-              </span>
+            <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
               {isRecruiter
                 ? 'Candidate Interview Pipeline'
                 : isAdmin
@@ -626,18 +629,18 @@ export default function InterviewsView({ setActiveTab }) {
             </h1>
 
             {isAdmin && (
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[0.68rem] font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-semibold">
                 Admin · Read Only
               </span>
             )}
             {isHiringManager && (
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-[#7E22CE] text-[0.68rem] font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-semibold">
                 Hiring Manager · Read & Join
               </span>
             )}
           </div>
 
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
             {isRecruiter
               ? 'Coordinate live technical evaluations, track scheduled video sessions, and record candidate assessment scores.'
               : isAdmin
@@ -653,9 +656,9 @@ export default function InterviewsView({ setActiveTab }) {
             <button
               type="button"
               onClick={handleOpenScheduleModal}
-              className="px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               <span>Schedule Interview</span>
             </button>
           </div>
@@ -664,14 +667,14 @@ export default function InterviewsView({ setActiveTab }) {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-lg animate-in fade-in">
+        <div className="p-3.5 px-4 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-lg animate-in fade-in">
           <span>{toastMessage}</span>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer ml-4"
+            className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer ml-4 p-0.5"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -685,10 +688,10 @@ export default function InterviewsView({ setActiveTab }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[0.68rem] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
                   <span>Upcoming Interview Alert</span>
                   {activeReminderToast.diffMinutes !== undefined && activeReminderToast.diffMinutes !== null && (
-                    <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono text-[0.62rem]">
+                    <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono text-[10px]">
                       {activeReminderToast.diffMinutes <= 0 ? 'LIVE NOW' : `in ~${activeReminderToast.diffMinutes}m`}
                     </span>
                   )}
@@ -703,22 +706,22 @@ export default function InterviewsView({ setActiveTab }) {
                 </button>
               </div>
 
-              <p className="text-xs font-black text-white mt-1 leading-snug">
+              <p className="text-xs font-bold text-white mt-1 leading-snug">
                 {activeReminderToast.message || "You have an interview at this time (before 10 min of interview)"}
               </p>
 
-              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60 text-[0.72rem] text-slate-300 space-y-1">
+              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60 text-xs text-slate-300 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Candidate:</span>
-                  <span className="font-bold text-white truncate max-w-[170px]">{activeReminderToast.candidateName}</span>
+                  <span className="font-semibold text-white truncate max-w-[170px]">{activeReminderToast.candidateName}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Target Role:</span>
-                  <span className="font-semibold text-slate-200 truncate max-w-[170px]">{activeReminderToast.jobTitle}</span>
+                  <span className="font-medium text-slate-200 truncate max-w-[170px]">{activeReminderToast.jobTitle}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Round:</span>
-                  <span className="font-semibold text-indigo-300 truncate max-w-[170px]">{activeReminderToast.round}</span>
+                  <span className="font-medium text-indigo-300 truncate max-w-[170px]">{activeReminderToast.round}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Scheduled:</span>
@@ -734,14 +737,14 @@ export default function InterviewsView({ setActiveTab }) {
                     if (found) setSelectedInterviewDetails(found);
                     setActiveReminderToast(null);
                   }}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 border-none cursor-pointer shadow-xs"
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white font-semibold text-xs flex items-center justify-center gap-1.5 border-none cursor-pointer shadow-xs transition-colors"
                 >
                   <span>View Session Details</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveReminderToast(null)}
-                  className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border-none cursor-pointer"
+                  className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border-none cursor-pointer transition-colors"
                 >
                   Dismiss
                 </button>
@@ -751,68 +754,87 @@ export default function InterviewsView({ setActiveTab }) {
         </div>
       )}
 
-      {/* ── Quick Metrics Bar ── */}
+      {/* ── Quick Metrics Bar (Compact) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Upcoming Rounds
-          </span>
-          <div className="text-xl font-black text-slate-900 flex items-center justify-between">
-            <span>{interviews.length} Scheduled</span>
-            <span className={`w-2 h-2 rounded-full ${interviews.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              Upcoming Rounds
+            </span>
+            <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">Active pipeline sessions</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none">
+            {interviews.length} Scheduled
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0">Active pipeline sessions</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-amber-600 block mb-1">
-            Next Session
-          </span>
-          <div className="text-base sm:text-lg font-black text-amber-700 flex items-center justify-between">
-            <span className="truncate" title={nextSessionTitle}>{nextSessionTitle}</span>
-            <Clock className="w-5 h-5 text-amber-500 shrink-0 ml-2" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">
+              Next Session
+            </span>
+            <div className="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block truncate">{nextSessionSub}</span>
+          <div className="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-none truncate" title={nextSessionTitle}>
+            {nextSessionTitle}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0 truncate">{nextSessionSub}</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-teal-600 block mb-1">
-            Readiness & Status
-          </span>
-          <div className="text-xl font-black text-[#00a884] flex items-center justify-between">
-            <span>{readinessTitle}</span>
-            <ShieldCheck className="w-5 h-5 text-[#00a884]" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-[#00a884] uppercase tracking-wider">
+              Readiness & Status
+            </span>
+            <div className="w-6 h-6 rounded-md bg-teal-50 text-[#00a884] flex items-center justify-center">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">{readinessSub}</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none truncate">
+            {readinessTitle}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0 truncate">{readinessSub}</p>
         </div>
       </div>
 
       {/* ── In-Page Segmented Tab Filter & Quick Search Bar ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Status Tabs */}
-        <div className="inline-flex p-0.5 bg-slate-100 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar shrink-0">
+        <div className="inline-flex p-1 bg-slate-100/80 rounded-xl overflow-x-auto no-scrollbar shrink-0 gap-1">
           {[
             { id: 'all', label: 'All Interviews', count: interviews.length },
             { id: 'confirmed', label: 'Confirmed', count: confirmedCount },
             { id: 'scheduled', label: 'Scheduled', count: scheduledCount },
             { id: 'completed', label: 'Completed', count: completedCount }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${activeFilter === tab.id
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'bg-transparent text-slate-600 hover:text-slate-900'
+          ].map(tab => {
+            const isActive = activeFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                    : 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.2 rounded-md text-[0.65rem] font-bold ${activeFilter === tab.id ? 'bg-slate-100 text-slate-900' : 'bg-slate-200 text-slate-600'
-                }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                    isActive ? 'bg-slate-100 text-slate-900' : 'bg-slate-200/80 text-slate-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Input & Timezone Notice */}
@@ -824,7 +846,7 @@ export default function InterviewsView({ setActiveTab }) {
               placeholder="Search candidate, role, round..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-[#00a884] rounded-xl text-xs text-slate-800 outline-none transition-all placeholder:text-slate-400"
+              className="w-full pl-8 pr-7 py-2 bg-white focus:bg-white border border-slate-200/90 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 rounded-xl text-xs text-slate-800 outline-none transition-all placeholder:text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
             />
             {searchQuery && (
               <button
@@ -837,21 +859,21 @@ export default function InterviewsView({ setActiveTab }) {
             )}
           </div>
 
-          <div className="hidden lg:block text-[0.68rem] text-slate-400 font-medium whitespace-nowrap px-1">
-            Times displayed in <span className="font-bold text-slate-700">IST</span>
+          <div className="hidden lg:block text-[11px] text-slate-400 font-medium whitespace-nowrap px-1">
+            Times displayed in <span className="font-semibold text-slate-700">IST</span>
           </div>
         </div>
       </div>
 
       {/* ── Candidate Interview Pipeline Table / Empty State ── */}
       {filteredInterviews.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-10 sm:p-14 text-center shadow-2xs">
-          <div className="w-14 h-14 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center mx-auto mb-4 shadow-2xs">
-            <Calendar className="w-7 h-7" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-10 sm:p-14 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-[#5C59E8] flex items-center justify-center mx-auto mb-3">
+            <Calendar className="w-6 h-6" />
           </div>
           {interviews.length === 0 ? (
             <>
-              <h3 className="text-base font-extrabold text-slate-900">
+              <h3 className="text-sm font-semibold text-slate-900">
                 {isRecruiter
                   ? 'No Candidate Interviews Scheduled'
                   : isAdmin
@@ -860,7 +882,7 @@ export default function InterviewsView({ setActiveTab }) {
                       ? 'No Scheduled Interviews'
                       : 'No Scheduled Interviews Yet'}
               </h3>
-              <p className="text-xs text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
                 {isRecruiter
                   ? 'When you schedule an interview from the Application Status & Hiring Funnel or schedule one directly, it will appear here in this table with one-click Google Meet, Zoom, or Teams links.'
                   : isAdmin
@@ -870,11 +892,11 @@ export default function InterviewsView({ setActiveTab }) {
                       : 'You do not have any scheduled interviews right now. When a recruiter schedules an interview round for your application, it will appear here with your conference link.'}
               </p>
               {isRecruiter ? (
-                <div className="flex items-center justify-center gap-2.5 mt-5 flex-wrap">
+                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
                   <button
                     type="button"
                     onClick={handleOpenScheduleModal}
-                    className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-1.5 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Schedule Interview</span>
@@ -883,7 +905,7 @@ export default function InterviewsView({ setActiveTab }) {
                     <button
                       type="button"
                       onClick={() => setActiveTab('application_status')}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border-none cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border-none cursor-pointer flex items-center gap-1.5 transition-colors"
                     >
                       <span>Go to Hiring Funnel</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -892,11 +914,11 @@ export default function InterviewsView({ setActiveTab }) {
                 </div>
               ) : !isStaff ? (
                 typeof setActiveTab === 'function' && (
-                  <div className="flex items-center justify-center gap-2.5 mt-5 flex-wrap">
+                  <div className="flex items-center justify-center gap-2.5 mt-4 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setActiveTab('my_applications')}
-                      className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold border-none cursor-pointer shadow-xs flex items-center gap-1.5 transition-colors"
                     >
                       <span>View My Applications</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -907,14 +929,14 @@ export default function InterviewsView({ setActiveTab }) {
             </>
           ) : (
             <>
-              <h3 className="text-base font-extrabold text-slate-900">No matching interviews found</h3>
-              <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto">
+              <h3 className="text-sm font-semibold text-slate-900">No matching interviews found</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                 No interviews match the current filter "{activeFilter}" {searchQuery ? `or search "${searchQuery}"` : ''}.
               </p>
               <button
                 type="button"
                 onClick={() => { setActiveFilter('all'); setSearchQuery(''); }}
-                className="mt-4 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold border-none cursor-pointer shadow-xs"
+                className="mt-4 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border-none cursor-pointer transition-colors"
               >
                 Clear Filter & Search ({interviews.length})
               </button>
@@ -922,11 +944,11 @@ export default function InterviewsView({ setActiveTab }) {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-200/80 bg-slate-50/75 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-5">{isStaff ? 'Candidate & Target Role' : 'Interviewer & Role'}</th>
                   <th className="py-3.5 px-5">Round of Interview</th>
                   <th className="py-3.5 px-5">Date & Slot (IST)</th>
@@ -935,33 +957,32 @@ export default function InterviewsView({ setActiveTab }) {
                   <th className="py-3.5 px-5 text-right">{isAdmin ? 'Access' : 'Actions'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-medium">
+              <tbody className="divide-y divide-slate-100 text-xs font-normal">
                 {filteredInterviews.map((item) => {
-                  const isConfirmed = item.status === 'CONFIRMED';
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
                       {/* Candidate & Role */}
-                      <td className="py-4 px-5">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl ${item.avatarColor || 'bg-slate-900'} text-white font-black flex items-center justify-center text-xs shrink-0 shadow-2xs`}>
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-semibold flex items-center justify-center text-xs shrink-0 ring-1 ring-slate-200/70">
                             {item.initials || 'CA'}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-black text-slate-900 truncate flex items-center gap-1.5 text-xs sm:text-sm">
+                            <div className="font-semibold text-slate-900 truncate flex items-center gap-1.5 text-xs sm:text-sm">
                               <span>{item.partnerName || (isRecruiter ? 'Candidate' : 'Interviewer')}</span>
                               {item.partnerRole && (
-                                <span className="text-[0.68rem] font-normal text-slate-400">({item.partnerRole})</span>
+                                <span className="text-[11px] font-normal text-slate-400">({item.partnerRole})</span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1.5 text-[0.68rem] text-slate-500 mt-0.5 truncate">
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5 truncate">
                               <button
                                 type="button"
                                 onClick={() => setSelectedInterviewDetails(item)}
-                                className="font-bold text-slate-900 hover:text-indigo-600 hover:underline truncate inline-flex items-center gap-1 cursor-pointer no-underline group border-none bg-transparent p-0 text-left"
+                                className="font-semibold text-slate-800 hover:text-[#5C59E8] hover:underline truncate inline-flex items-center gap-1 cursor-pointer no-underline group border-none bg-transparent p-0 text-left transition-colors"
                                 title="View interview details"
                               >
                                 <span>{item.jobTitle}</span>
-                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-[#5C59E8] group-hover:translate-x-0.5 transition-all shrink-0" />
                               </button>
                               {item.companyName && (
                                 <>
@@ -978,8 +999,8 @@ export default function InterviewsView({ setActiveTab }) {
                       </td>
 
                       {/* Assessment Round & Topics */}
-                      <td className="py-4 px-5">
-                        <div className="font-bold text-slate-800 text-xs truncate max-w-[200px]" title={item.round}>
+                      <td className="py-3.5 px-5">
+                        <div className="font-semibold text-slate-800 text-xs truncate max-w-[200px]" title={item.round}>
                           {item.round}
                         </div>
                         {item.topics && item.topics.length > 0 ? (
@@ -987,7 +1008,7 @@ export default function InterviewsView({ setActiveTab }) {
                             {item.topics.slice(0, 3).map((t, idx) => (
                               <span
                                 key={idx}
-                                className="px-1.5 py-0.2 rounded-md bg-slate-100 border border-slate-200/80 text-[0.62rem] font-bold text-slate-600"
+                                className="px-1.5 py-0.2 rounded bg-slate-100 text-[10px] font-medium text-slate-600"
                               >
                                 #{t}
                               </span>
@@ -995,7 +1016,7 @@ export default function InterviewsView({ setActiveTab }) {
                           </div>
                         ) : (
                           item.interviewer && (
-                            <div className="text-[0.68rem] text-slate-400 mt-0.5 truncate">
+                            <div className="text-[11px] text-slate-400 mt-0.5 truncate">
                               Lead: <span className="font-medium text-slate-600">{item.interviewer}</span>
                             </div>
                           )
@@ -1010,10 +1031,10 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedFeedbackModal({ item, feedback: fb })}
-                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.68rem] font-black bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-all cursor-pointer shadow-2xs"
+                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer shadow-2xs"
                               >
-                                <Award className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Strong Hire / Offer Feedback</span>
+                                <Award className="w-3 h-3 text-emerald-600" />
+                                <span>Strong Hire / Offer</span>
                               </button>
                             );
                           }
@@ -1022,10 +1043,10 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedFeedbackModal({ item, feedback: fb })}
-                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.68rem] font-bold bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 transition-all cursor-pointer shadow-2xs"
+                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition-all cursor-pointer shadow-2xs"
                               >
-                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                                <span>Do Not Hire · Feedback Logged</span>
+                                <XCircle className="w-3 h-3 text-rose-600" />
+                                <span>Do Not Hire · Feedback</span>
                               </button>
                             );
                           }
@@ -1034,9 +1055,9 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedFeedbackModal({ item, feedback: fb })}
-                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.68rem] font-bold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 transition-all cursor-pointer shadow-2xs"
+                                className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-all cursor-pointer shadow-2xs"
                               >
-                                <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                                <RefreshCw className="w-3 h-3 text-amber-600" />
                                 <span>Next Round Feedback</span>
                               </button>
                             );
@@ -1045,30 +1066,30 @@ export default function InterviewsView({ setActiveTab }) {
                             <button
                               type="button"
                               onClick={() => setSelectedFeedbackModal({ item, feedback: fb })}
-                              className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.68rem] font-bold bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 transition-all cursor-pointer shadow-2xs"
+                              className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 transition-all cursor-pointer shadow-2xs"
                             >
-                              <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
-                              <span>View Interview Feedback</span>
+                              <MessageSquare className="w-3 h-3 text-purple-600" />
+                              <span>View Feedback</span>
                             </button>
                           );
                         })()}
                       </td>
 
                       {/* Date & Time (IST) */}
-                      <td className="py-4 px-5 whitespace-nowrap">
+                      <td className="py-3.5 px-5 whitespace-nowrap">
                         {item.isSlotPending ? (
                           <div className="flex flex-col items-start gap-1.5">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 font-extrabold text-[0.72rem] shadow-2xs">
-                              <AlertCircle className="w-3.5 h-3.5 text-amber-600 animate-pulse shrink-0" />
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 font-semibold text-[11px] shadow-2xs">
+                              <AlertCircle className="w-3 h-3 text-amber-600 animate-pulse shrink-0" />
                               <span>Slot Not Scheduled</span>
                             </span>
                             {isRecruiter && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenCandidateScheduler(item)}
-                                className="inline-flex items-center gap-1 text-[0.68rem] font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer bg-transparent border-none p-0"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#5C59E8] hover:underline cursor-pointer bg-transparent border-none p-0"
                               >
-                                <Calendar className="w-3 h-3 text-indigo-600" />
+                                <Calendar className="w-3 h-3 text-[#5C59E8]" />
                                 <span>Enter Date & Slot (IST) →</span>
                               </button>
                             )}
@@ -1076,17 +1097,17 @@ export default function InterviewsView({ setActiveTab }) {
                         ) : (
                           <div className="flex items-center justify-between gap-2">
                             <div>
-                              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                              <div className="flex items-center gap-1.5 font-semibold text-slate-900 text-xs">
                                 <Calendar className="w-3.5 h-3.5 text-[#00a884] shrink-0" />
                                 <span>{item.date}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-[0.68rem] text-slate-500 mt-1">
-                                <div className="flex items-center gap-1 font-semibold text-slate-700">
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                                <div className="flex items-center gap-1 font-medium text-slate-600">
                                   <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                                   <span>{item.time}</span>
                                 </div>
                                 {item.countdown && (
-                                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[0.62rem] font-bold">
+                                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">
                                     {item.countdown}
                                   </span>
                                 )}
@@ -1096,7 +1117,7 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => handleOpenCandidateScheduler(item)}
-                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 cursor-pointer border-none bg-transparent transition-colors"
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#5C59E8] cursor-pointer border-none bg-transparent transition-colors"
                                 title="Reschedule Date, Slot & Reminder"
                               >
                                 <Calendar className="w-3.5 h-3.5" />
@@ -1107,9 +1128,9 @@ export default function InterviewsView({ setActiveTab }) {
                       </td>
 
                       {/* Reminder Alert */}
-                      <td className="py-4 px-5 text-center whitespace-nowrap">
+                      <td className="py-3.5 px-5 text-center whitespace-nowrap">
                         <div className="inline-flex flex-col items-center gap-1">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[0.68rem] font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                             <Bell className="w-3 h-3 text-amber-600 animate-pulse" />
                             <span>{item.reminderMinutes || 10}m before</span>
                           </span>
@@ -1117,7 +1138,7 @@ export default function InterviewsView({ setActiveTab }) {
                             <button
                               type="button"
                               onClick={() => handleOpenCandidateScheduler(item)}
-                              className="text-[0.62rem] font-bold text-indigo-600 hover:text-indigo-800 hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
+                              className="text-[10px] font-semibold text-[#5C59E8] hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
                               title="Set or change reminder alert"
                             >
                               <span>Set Reminder</span>
@@ -1126,7 +1147,7 @@ export default function InterviewsView({ setActiveTab }) {
                             <button
                               type="button"
                               onClick={() => handleTriggerReminderToast(item)}
-                              className="text-[0.62rem] font-bold text-indigo-600 hover:text-indigo-800 hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
+                              className="text-[10px] font-semibold text-[#5C59E8] hover:underline border-none bg-transparent cursor-pointer inline-flex items-center gap-0.5"
                               title="Trigger interview reminder toaster preview"
                             >
                               <span>🔔 Test Toast</span>
@@ -1136,11 +1157,11 @@ export default function InterviewsView({ setActiveTab }) {
                       </td>
 
                       {/* Status */}
-                      <td className="py-4 px-5 text-center whitespace-nowrap">
+                      <td className="py-3.5 px-5 text-center whitespace-nowrap">
                         {(() => {
                           if (item.isSlotPending) {
                             return (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                                 <span>Slot Needed</span>
                               </span>
@@ -1150,7 +1171,7 @@ export default function InterviewsView({ setActiveTab }) {
                           const threshold = item.reminderMinutes || 10;
                           if (diff !== null && diff <= threshold && diff >= 0) {
                             return (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.68rem] font-black bg-amber-500 text-white shadow-xs animate-pulse">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs animate-pulse">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white" />
                                 <span>In ~{diff}m (Upcoming)</span>
                               </span>
@@ -1158,7 +1179,7 @@ export default function InterviewsView({ setActiveTab }) {
                           }
                           if (diff !== null && diff < 0 && diff >= -60) {
                             return (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.68rem] font-black bg-emerald-600 text-white shadow-xs">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
                                 <span>Live Now</span>
                               </span>
@@ -1166,13 +1187,13 @@ export default function InterviewsView({ setActiveTab }) {
                           }
                           if (item.status === 'COMPLETED' || (diff !== null && diff < -60)) {
                             return (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
                                 <span>Completed</span>
                               </span>
                             );
                           }
                           return (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               <span>Upcoming ({item.status})</span>
                             </span>
@@ -1181,11 +1202,11 @@ export default function InterviewsView({ setActiveTab }) {
                       </td>
 
                       {/* Actions / Access */}
-                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Administrator: Strict Read-Only */}
                           {isAdmin && (
-                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-500 text-[0.68rem] font-bold">
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-500 text-[10px] font-semibold">
                               Read-Only
                             </span>
                           )}
@@ -1195,20 +1216,20 @@ export default function InterviewsView({ setActiveTab }) {
                             <button
                               type="button"
                               onClick={() => setSelectedInterviewDetails(item)}
-                              className="py-1.5 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-[0.68rem] font-bold transition-colors cursor-pointer bg-white shadow-2xs"
+                              className="py-1.5 px-2.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                             >
                               Details
                             </button>
                           )}
 
-                          {/* Recruiter: Management (Slot / Reschedule, Details, Delete) */}
+                          {/* Recruiter: Management */}
                           {isRecruiter && (
                             <>
                               {item.isSlotPending ? (
                                 <button
                                   type="button"
                                   onClick={() => handleOpenCandidateScheduler(item)}
-                                  className="py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[0.68rem] font-bold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
+                                  className="py-1.5 px-3 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-xs font-semibold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
                                   title="Enter interview date, slot and reminder"
                                 >
                                   <Calendar className="w-3.5 h-3.5" />
@@ -1218,10 +1239,10 @@ export default function InterviewsView({ setActiveTab }) {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenCandidateScheduler(item)}
-                                  className="py-1.5 px-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 text-[0.68rem] font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                                  className="py-1.5 px-2.5 rounded-lg border border-indigo-200/80 bg-indigo-50/70 hover:bg-indigo-100 text-[#4845D2] text-xs font-semibold transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
                                   title="Reschedule / Edit Date, Slot & Reminder"
                                 >
-                                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                                  <Calendar className="w-3.5 h-3.5 text-[#5C59E8]" />
                                   <span>Edit Slot</span>
                                 </button>
                               )}
@@ -1229,7 +1250,7 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedInterviewDetails(item)}
-                                className="py-1.5 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-[0.68rem] font-bold transition-colors cursor-pointer bg-white shadow-2xs"
+                                className="py-1.5 px-2.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                               >
                                 Details
                               </button>
@@ -1237,7 +1258,7 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteInterview(item.id)}
-                                className="p-1.5 rounded-xl border border-slate-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer bg-white shadow-2xs"
+                                className="p-1.5 rounded-lg border border-slate-200/80 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                                 title="Remove interview from pipeline"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1251,7 +1272,7 @@ export default function InterviewsView({ setActiveTab }) {
                               <button
                                 type="button"
                                 onClick={() => setSelectedInterviewDetails(item)}
-                                className="py-1.5 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-[0.68rem] font-bold transition-colors cursor-pointer bg-white shadow-2xs"
+                                className="py-1.5 px-2.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                               >
                                 Details
                               </button>
@@ -1262,7 +1283,7 @@ export default function InterviewsView({ setActiveTab }) {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedFeedbackModal({ item, feedback: fb })}
-                                    className="px-2.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 text-[0.68rem] font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                                    className="px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs font-semibold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
                                     title="View interviewer feedback & evaluation notes"
                                   >
                                     <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
@@ -1285,20 +1306,20 @@ export default function InterviewsView({ setActiveTab }) {
 
       {/* ── MODAL: SCHEDULE CANDIDATE DATE, SLOT & REMINDER ── */}
       {schedulingInterview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative max-h-[92vh] overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-xl bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative max-h-[92vh] overflow-y-auto no-scrollbar">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-sm shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5C59E8] flex items-center justify-center font-bold text-sm shadow-2xs">
                   {schedulingInterview.initials || 'CA'}
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                     <span>Enter Date, Slot & Reminder</span>
                     {schedulingInterview.isSlotPending && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[0.65rem] font-black">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">
                         Slot Needed
                       </span>
                     )}
@@ -1312,7 +1333,7 @@ export default function InterviewsView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setSchedulingInterview(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1321,13 +1342,13 @@ export default function InterviewsView({ setActiveTab }) {
             <form onSubmit={handleSaveCandidateSchedule} className="space-y-4 text-xs">
               {/* Round of Interview */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 mb-1">
                   Round of Interview *
                 </label>
                 <select
                   value={slotRound}
                   onChange={e => setSlotRound(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none cursor-pointer"
+                  className={selectClass}
                 >
                   <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening</option>
                   <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization</option>
@@ -1339,9 +1360,9 @@ export default function InterviewsView({ setActiveTab }) {
               </div>
 
               {/* Date Selection */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="block font-bold text-slate-700">
+                  <label className="block font-semibold text-slate-700">
                     Interview Date (IST) *
                   </label>
                   {/* Quick Date Presets */}
@@ -1349,21 +1370,21 @@ export default function InterviewsView({ setActiveTab }) {
                     <button
                       type="button"
                       onClick={() => setSlotDate(new Date().toISOString().split('T')[0])}
-                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                      className="px-2 py-1 rounded-lg text-[10px] font-medium bg-white border border-slate-200 text-slate-600 hover:text-[#5C59E8] hover:border-indigo-300 cursor-pointer shadow-2xs"
                     >
                       Today
                     </button>
                     <button
                       type="button"
                       onClick={() => setSlotDate(new Date(Date.now() + 86400000).toISOString().split('T')[0])}
-                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                      className="px-2 py-1 rounded-lg text-[10px] font-medium bg-white border border-slate-200 text-slate-600 hover:text-[#5C59E8] hover:border-indigo-300 cursor-pointer shadow-2xs"
                     >
                       Tomorrow
                     </button>
                     <button
                       type="button"
                       onClick={() => setSlotDate(new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0])}
-                      className="px-2 py-1 rounded-lg text-[0.65rem] font-bold bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 cursor-pointer shadow-2xs"
+                      className="px-2 py-1 rounded-lg text-[10px] font-medium bg-white border border-slate-200 text-slate-600 hover:text-[#5C59E8] hover:border-indigo-300 cursor-pointer shadow-2xs"
                     >
                       +2 Days
                     </button>
@@ -1376,12 +1397,12 @@ export default function InterviewsView({ setActiveTab }) {
                   min={new Date().toISOString().split('T')[0]}
                   value={slotDate}
                   onChange={e => setSlotDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none"
+                  className={inputClass}
                 />
 
                 {slotDate && (
-                  <div className="text-[0.7rem] text-indigo-700 font-semibold flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-indigo-500" />
+                  <div className="text-[11px] text-[#5C59E8] font-medium flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-[#5C59E8]" />
                     <span>
                       Selected: {(() => {
                         try {
@@ -1397,8 +1418,8 @@ export default function InterviewsView({ setActiveTab }) {
               </div>
 
               {/* Time Slot (IST) Selection */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                <label className="block font-bold text-slate-700">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                <label className="block font-semibold text-slate-700">
                   Select Time Slot (IST) *
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1423,9 +1444,9 @@ export default function InterviewsView({ setActiveTab }) {
                             setSlotTime(slot);
                           }
                         }}
-                        className={`py-2 px-2 rounded-xl border text-[0.72rem] font-bold transition-all cursor-pointer text-center ${
+                        className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer text-center ${
                           isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
@@ -1437,7 +1458,7 @@ export default function InterviewsView({ setActiveTab }) {
 
                 {slotTime === 'custom' && (
                   <div className="pt-2">
-                    <label className="block font-bold text-slate-600 text-[0.7rem] mb-1">
+                    <label className="block font-medium text-slate-600 text-xs mb-1">
                       Enter Custom Slot (IST)
                     </label>
                     <input
@@ -1446,22 +1467,22 @@ export default function InterviewsView({ setActiveTab }) {
                       placeholder="e.g. 04:30 PM - 05:15 PM IST"
                       value={slotCustomTime}
                       onChange={e => setSlotCustomTime(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 text-xs focus:border-indigo-600 outline-none"
+                      className={inputClass}
                     />
                   </div>
                 )}
               </div>
 
               {/* Reminder Alert Interval */}
-              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
-                <label className="block font-bold text-slate-800 flex items-center gap-1.5">
+              <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2">
+                <label className="block font-semibold text-slate-800 flex items-center gap-1.5">
                   <Bell className="w-3.5 h-3.5 text-amber-600" />
                   <span>Interview Reminder Alert *</span>
                 </label>
                 <select
                   value={slotReminder}
                   onChange={e => setSlotReminder(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-amber-300 font-bold bg-white text-slate-800 text-xs focus:border-amber-600 outline-none cursor-pointer"
+                  className={selectClass}
                 >
                   <option value="5">🔔 5 minutes before interview</option>
                   <option value="10">🔔 10 minutes before interview (Default & Recommended)</option>
@@ -1470,7 +1491,7 @@ export default function InterviewsView({ setActiveTab }) {
                   <option value="60">🔔 1 hour before interview</option>
                   <option value="1440">🔔 1 day before interview</option>
                 </select>
-                <p className="text-[0.68rem] text-slate-500 font-medium">
+                <p className="text-[11px] text-slate-500 font-normal">
                   Recruiter and candidate will receive notification badges and toaster alerts before this interview begins.
                 </p>
               </div>
@@ -1480,14 +1501,14 @@ export default function InterviewsView({ setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setSchedulingInterview(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingSlot}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>{savingSlot ? 'Saving Schedule...' : 'Save Date, Slot & Reminder'}</span>
@@ -1500,15 +1521,15 @@ export default function InterviewsView({ setActiveTab }) {
 
       {/* ── SCHEDULE MODAL ── */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-semibold text-slate-900">
                     Schedule Candidate Interview
                   </h3>
                   <p className="text-xs text-slate-400">Enter interview details and meeting link</p>
@@ -1518,7 +1539,7 @@ export default function InterviewsView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1527,7 +1548,7 @@ export default function InterviewsView({ setActiveTab }) {
             <form onSubmit={handleCreateInterview} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Candidate Name *
                   </label>
                   <input
@@ -1536,12 +1557,12 @@ export default function InterviewsView({ setActiveTab }) {
                     placeholder="e.g. Alex Morgan"
                     value={newCandidateName}
                     onChange={(e) => setNewCandidateName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Target Role / Requisition *
                   </label>
                   <input
@@ -1550,13 +1571,13 @@ export default function InterviewsView({ setActiveTab }) {
                     placeholder="e.g. Senior Full Stack Engineer"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Company / Organization
                 </label>
                 <input
@@ -1564,43 +1585,43 @@ export default function InterviewsView({ setActiveTab }) {
                   placeholder="e.g. Acme Innovations"
                   value={newCompany}
                   onChange={(e) => setNewCompany(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                  className={inputClass}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Date</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
                   <input
                     type="text"
                     placeholder="e.g. Sep 18, 2026"
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Time Slot (IST)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Time Slot (IST)</label>
                   <input
                     type="text"
                     placeholder="e.g. 2:30 PM - 3:15 PM IST"
                     value={newTime}
                     onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                     <span>Round of Interview *</span>
                   </label>
                   <select
                     value={newRound}
                     onChange={(e) => setNewRound(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
+                    className={selectClass}
                   >
                     <option value="Round 1: Technical Discovery & Core Skills">Round 1: Technical Discovery & Core Skills</option>
                     <option value="Round 2: System Architecture & Coding">Round 2: System Architecture & Coding</option>
@@ -1612,14 +1633,14 @@ export default function InterviewsView({ setActiveTab }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                     <Bell className="w-3.5 h-3.5 text-amber-500" />
                     <span>Interview Reminder Alert *</span>
                   </label>
                   <select
                     value={newReminder}
                     onChange={(e) => setNewReminder(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50/40 text-xs font-bold text-slate-800 focus:border-black outline-none cursor-pointer shadow-2xs"
+                    className={selectClass}
                   >
                     <option value="10">🔔 10 minutes before interview (Recommended)</option>
                     <option value="15">🔔 15 minutes before interview</option>
@@ -1627,7 +1648,7 @@ export default function InterviewsView({ setActiveTab }) {
                     <option value="60">🔔 1 hour before interview</option>
                     <option value="0">🔔 At exact time of interview (0 min)</option>
                   </select>
-                  <span className="text-[0.65rem] text-slate-400 mt-1 block">
+                  <span className="text-[11px] text-slate-400 mt-1 block">
                     Recruiter receives a toaster alert before interview starts.
                   </span>
                 </div>
@@ -1637,13 +1658,13 @@ export default function InterviewsView({ setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setShowScheduleModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold border-none cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors"
                 >
                   Confirm & Schedule Interview
                 </button>
@@ -1655,17 +1676,17 @@ export default function InterviewsView({ setActiveTab }) {
 
       {/* ── GOOGLE MEET DETAILS MODAL ── */}
       {selectedInterviewDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">{selectedInterviewDetails.jobTitle}</h3>
+                <h3 className="text-base font-semibold text-slate-900">{selectedInterviewDetails.jobTitle}</h3>
                 <p className="text-xs text-slate-400 truncate">{selectedInterviewDetails.partnerName} • {selectedInterviewDetails.round}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedInterviewDetails(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1676,9 +1697,9 @@ export default function InterviewsView({ setActiveTab }) {
               const fb = getInterviewFeedback(selectedInterviewDetails);
               if (!fb) return null;
               return (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-900 flex items-center gap-1.5">
                       <MessageSquare className="w-4 h-4 text-purple-600" />
                       <span>Interview Feedback & Notes</span>
                     </span>
@@ -1689,7 +1710,7 @@ export default function InterviewsView({ setActiveTab }) {
                         setSelectedInterviewDetails(null);
                         setSelectedFeedbackModal({ item: it, feedback: fb });
                       }}
-                      className="text-[#00a884] font-bold text-xs hover:underline bg-transparent border-none cursor-pointer"
+                      className="text-[#5C59E8] font-semibold text-xs hover:underline bg-transparent border-none cursor-pointer"
                     >
                       View Full Feedback →
                     </button>
@@ -1707,7 +1728,7 @@ export default function InterviewsView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setSelectedInterviewDetails(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer border-none shadow-xs"
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all cursor-pointer border-none shadow-xs"
               >
                 Close Details
               </button>
@@ -1718,17 +1739,17 @@ export default function InterviewsView({ setActiveTab }) {
 
       {/* ── INTERVIEW FEEDBACK & EVALUATION SCORECARD MODAL ── */}
       {selectedFeedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shadow-2xs shrink-0">
-                  <MessageSquare className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                  <MessageSquare className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-semibold text-slate-900">
                     Interview Evaluation & Feedback
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -1740,7 +1761,7 @@ export default function InterviewsView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setSelectedFeedbackModal(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1748,54 +1769,52 @@ export default function InterviewsView({ setActiveTab }) {
 
             {/* Recommendation Banner */}
             {selectedFeedbackModal.feedback.recommendation === 'HIRE' && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-1.5 animate-in fade-in">
-                <div className="flex items-center gap-2 font-black text-sm text-emerald-800">
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
                   <Award className="w-4.5 h-4.5 text-emerald-600" />
                   <span>🎉 Strong Hire / Offer Extended</span>
                 </div>
-                <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                <p className="text-xs text-emerald-800 leading-relaxed font-normal">
                   The hiring lead and interview panel have given a <strong>Strong Hire</strong> recommendation. An official offer has been extended!
                 </p>
               </div>
             )}
 
             {selectedFeedbackModal.feedback.recommendation === 'PASS' && (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1.5 animate-in fade-in">
-                <div className="flex items-center gap-2 font-black text-sm text-rose-800">
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2 font-bold text-sm text-rose-800">
                   <XCircle className="w-4.5 h-4.5 text-rose-600" />
                   <span>Interview Outcome · Application Concluded</span>
                 </div>
-                <p className="text-xs text-rose-800 leading-relaxed font-medium">
+                <p className="text-xs text-rose-800 leading-relaxed font-normal">
                   Interview round completed. The team has recorded feedback and concluded evaluation for this requisition.
                 </p>
               </div>
             )}
 
             {selectedFeedbackModal.feedback.recommendation === 'ADVANCE' && (
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 space-y-1.5 animate-in fade-in">
-                <div className="flex items-center gap-2 font-black text-sm text-amber-800">
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2 font-bold text-sm text-amber-800">
                   <RefreshCw className="w-4.5 h-4.5 text-amber-600" />
                   <span>🚀 Advanced to Next Round!</span>
                 </div>
-                <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                <p className="text-xs text-amber-800 leading-relaxed font-normal">
                   Candidate successfully passed this round and is advanced to the next stage in the hiring pipeline.
                 </p>
               </div>
             )}
 
-
-
             {/* Next Round Details if ADVANCE */}
             {(selectedFeedbackModal.feedback.roundLevel || selectedFeedbackModal.feedback.subject) && (
-              <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
+              <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
                 {selectedFeedbackModal.feedback.roundLevel && (
-                  <div className="font-bold text-slate-800">
-                    Next Round: <span className="text-amber-800">{selectedFeedbackModal.feedback.roundLevel}</span>
+                  <div className="font-semibold text-slate-800">
+                    Next Round: <span className="text-amber-800 font-bold">{selectedFeedbackModal.feedback.roundLevel}</span>
                   </div>
                 )}
                 {selectedFeedbackModal.feedback.subject && (
-                  <div className="font-medium text-slate-600">
-                    Subject / Focus: <span className="text-slate-900 font-bold">{selectedFeedbackModal.feedback.subject}</span>
+                  <div className="font-normal text-slate-600">
+                    Subject / Focus: <span className="text-slate-900 font-semibold">{selectedFeedbackModal.feedback.subject}</span>
                   </div>
                 )}
               </div>
@@ -1803,21 +1822,21 @@ export default function InterviewsView({ setActiveTab }) {
 
             {/* Summary Notes */}
             <div>
-              <span className="text-[0.68rem] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                 Evaluation Feedback & Summary Notes
               </span>
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-800 leading-relaxed font-medium shadow-2xs whitespace-pre-line">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-normal whitespace-pre-line">
                 {selectedFeedbackModal.feedback.notes || 'No written notes provided.'}
               </div>
             </div>
 
             {/* Metadata Footer */}
-            <div className="flex items-center justify-between text-[0.7rem] text-slate-400 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
               <span>Interviewer: <strong className="text-slate-700">{selectedFeedbackModal.feedback.interviewer || selectedFeedbackModal.item.interviewer || 'Hiring Lead'}</strong></span>
               <button
                 type="button"
                 onClick={() => setSelectedFeedbackModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border-none cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border-none cursor-pointer transition-colors"
               >
                 Close Feedback
               </button>

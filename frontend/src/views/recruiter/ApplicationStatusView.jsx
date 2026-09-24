@@ -521,194 +521,232 @@ export default function ApplicationStatusView({ setActiveTab }) {
   const hiredCount = funnelApps.filter(a => ['HIRED', 'SELECTED'].includes(a.status)).length;
   const rejectedCount = funnelApps.filter(a => a.status === 'REJECTED').length;
 
+  const TINTS = {
+    indigo: 'bg-[#5C59E8]/8 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/15',
+    orange: 'bg-[#FF7043]/8 text-[#E15A2C] ring-1 ring-inset ring-[#FF7043]/15',
+    emerald: 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15',
+    slate: 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200/70',
+    sky: 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200/80',
+    purple: 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200/80',
+    rose: 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200/80',
+    amber: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200/80',
+  };
+
+  const inputClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
+  const selectClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer';
+
   const getStatusPillStyle = (status) => {
     switch (status) {
       case 'HIRED':
       case 'SELECTED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-300/80';
       case 'INTERVIEW_SCHEDULED':
-        return 'bg-teal-50 text-[#00a884] border-teal-300';
+        return 'bg-[#5C59E8]/10 text-[#5C59E8] border-[#5C59E8]/30';
       case 'SHORTLISTED':
-        return 'bg-blue-50 text-blue-700 border-blue-300';
+        return 'bg-sky-50 text-sky-700 border-sky-300/80';
       case 'UNDER_REVIEW':
-        return 'bg-amber-50 text-amber-700 border-amber-300';
+        return 'bg-amber-50 text-amber-700 border-amber-300/80';
       case 'REJECTED':
-        return 'bg-rose-50 text-rose-700 border-rose-300';
+        return 'bg-rose-50 text-rose-700 border-rose-300/80';
       case 'APPLIED':
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-300';
+        return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 select-text text-slate-800">
+    <div
+      className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
 
       {/* ── Top Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="w-9 h-9 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold shadow-2xs border border-teal-100">
-              <CheckCircle2 className="w-4.5 h-4.5" />
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Application Status & Hiring Funnel
-            </h1>
-          </div>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-            Conduct multi-round candidate interviews, extend job offers, and record final hiring or post-interview rejection outcomes for shortlisted candidates.
+          <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
+            Application Status & Hiring Funnel
+          </h1>
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
+            Conduct multi-round candidate interviews, extend job offers, and record final hiring or post-interview outcomes for shortlisted talent.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={fetchApplications}
-            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-2xs"
+            className="p-2.5 rounded-xl border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
             title="Refresh candidate submissions"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#00a884]' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#5C59E8]' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-xl animate-in fade-in">
+        <div className="p-3.5 px-4 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-lg animate-in fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#00a884]" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer ml-4"
+            className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer ml-4 p-0.5"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* ── 4 Key Funnel KPI Cards ── */}
+      {/* ── 4 Key Funnel KPI Cards (Compact) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Shortlisted */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-blue-600 block mb-1">
-            Ready for Interview
-          </span>
-          <div className="text-xl font-black text-blue-700 flex items-center justify-between">
-            <span>{shortlistedCount} Shortlisted</span>
-            <Sparkles className="w-4.5 h-4.5 text-blue-500 shrink-0" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-sky-600 uppercase tracking-wider">
+              Ready for Interview
+            </span>
+            <div className="w-6 h-6 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">Passed initial screening</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none">
+            {shortlistedCount} Shortlisted
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0">Passed initial screening</p>
         </div>
 
         {/* Interviewing */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-[#00a884] block mb-1">
-            Active Interviewing
-          </span>
-          <div className="text-xl font-black text-[#00a884] flex items-center justify-between">
-            <span>{interviewingCount} Scheduled</span>
-            <Calendar className="w-4.5 h-4.5 text-[#00a884] shrink-0" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-[#5C59E8] uppercase tracking-wider">
+              Active Interviewing
+            </span>
+            <div className="w-6 h-6 rounded-md bg-[#5C59E8]/10 text-[#5C59E8] flex items-center justify-center">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">Rounds in progress</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none">
+            {interviewingCount} Scheduled
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0">Rounds in progress</p>
         </div>
 
         {/* Hired / Offers */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-emerald-600 block mb-1">
-            Offers & Hires
-          </span>
-          <div className="text-xl font-black text-emerald-700 flex items-center justify-between">
-            <span>{hiredCount} Hired</span>
-            <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">
+              Offers & Hires
+            </span>
+            <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">Successful placements</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none">
+            {hiredCount} Hired
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0">Successful placements</p>
         </div>
 
         {/* Rejections */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-          <span className="text-[0.68rem] font-bold uppercase tracking-wider text-rose-600 block mb-1">
-            Post-Interview Rejections
-          </span>
-          <div className="text-xl font-black text-rose-700 flex items-center justify-between">
-            <span>{rejectedCount} Archived</span>
-            <UserX className="w-4.5 h-4.5 text-rose-500 shrink-0" />
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.03)] px-4 py-3 transition-all">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-semibold text-rose-500 uppercase tracking-wider">
+              Post-Interview Rejections
+            </span>
+            <div className="w-6 h-6 rounded-md bg-rose-50 text-rose-500 flex items-center justify-center">
+              <UserX className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <span className="text-[0.65rem] text-slate-400 mt-1 block">Evaluated & dropped</span>
+          <div className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-none">
+            {rejectedCount} Archived
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 m-0">Evaluated & dropped</p>
         </div>
       </div>
 
       {/* ── Search, Requisition Filter & Funnel Tabs ── */}
-      <div className="space-y-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
+        {/* Top: Search and Requisition Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search candidate name, email, skills, or requisition..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-slate-50/50"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <select
-              value={selectedJobFilter}
-              onChange={(e) => setSelectedJobFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
-            >
-              <option value="ALL">All Requisitions ({uniqueJobs.length})</option>
-              {uniqueJobs.map(job => (
-                <option key={job} value={job}>{job}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                value={selectedJobFilter}
+                onChange={(e) => setSelectedJobFilter(e.target.value)}
+                className="text-xs font-semibold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-1"
+              >
+                <option value="ALL">All Requisitions ({uniqueJobs.length})</option>
+                {uniqueJobs.map(job => (
+                  <option key={job} value={job}>{job}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Funnel Stage Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-slate-100">
+        {/* Bottom: Funnel Stage Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100">
           {[
-            { id: 'ALL', label: 'All Shortlisted & Funnel', count: totalCount },
+            { id: 'ALL', label: 'All Candidates', count: totalCount },
             { id: 'SHORTLISTED', label: '⭐ Ready for Interview', count: shortlistedCount },
             { id: 'INTERVIEW_SCHEDULED', label: '🎙️ Interviewing', count: interviewingCount },
             { id: 'HIRED', label: '🏆 Hired / Offer', count: hiredCount },
             { id: 'REJECTED', label: '❌ Post-Interview Rejected', count: rejectedCount },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSelectedStage(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${selectedStage === tab.id
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+          ].map(tab => {
+            const isActive = selectedStage === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedStage(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#5C59E8] text-white shadow-xs font-semibold'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.2 rounded-md text-[0.65rem] font-bold ${selectedStage === tab.id ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ── Applications Funnel Pipeline Table ── */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         {loading ? (
           <div className="p-12 text-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#00a884]" />
-            <p className="text-xs font-bold">Loading candidate applications...</p>
+            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#5C59E8]" />
+            <p className="text-xs font-medium text-slate-500">Loading candidate applications...</p>
           </div>
         ) : filteredApps.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#5C59E8]/10 text-[#5C59E8] flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-extrabold text-slate-800">No candidates match your criteria</h3>
+            <h3 className="text-sm font-semibold text-slate-800">No candidates match your criteria</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
               Only candidates shortlisted from the Applicant Screening page enter this hiring funnel. Inbound, Under Review, and initial screening rejections remain in Applicant Screening.
             </p>
@@ -716,7 +754,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => { setSearchQuery(''); setSelectedStage('ALL'); setSelectedJobFilter('ALL'); }}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border-none cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border-none cursor-pointer transition-colors"
               >
                 Reset Filters
               </button>
@@ -724,7 +762,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setActiveTab('applicants_view')}
-                  className="px-4 py-2 rounded-xl bg-[#00a884] hover:bg-teal-700 text-white text-xs font-bold border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-xs font-medium border-none cursor-pointer shadow-xs flex items-center gap-1.5 transition-colors"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Go to Applicant Screening</span>
@@ -736,7 +774,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-200/80 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3 px-5">Candidate</th>
                   <th className="py-3 px-5">Applied Requisition</th>
                   <th className="py-3 px-5">Current Funnel Stage</th>
@@ -744,7 +782,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                   <th className="py-3 px-5 text-right">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-medium">
+              <tbody className="divide-y divide-slate-100 text-xs font-normal">
                 {filteredApps.map((app) => {
                   const cand = app.candidate || {};
                   const isUpdating = updatingId === app.id;
@@ -758,19 +796,19 @@ export default function ApplicationStatusView({ setActiveTab }) {
                   return (
                     <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
                       {/* Candidate Name & Info */}
-                      <td className="py-4 px-5">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-slate-900 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-semibold flex items-center justify-center text-xs shrink-0 ring-1 ring-slate-200/70">
                             {initials}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-black text-slate-900 truncate flex items-center gap-1.5">
+                            <div className="font-semibold text-slate-900 truncate flex items-center gap-1.5">
                               <span>{cand.full_name || 'Candidate'}</span>
                               {cand.resume_url && (
-                                <span title="Resume Attached" className="w-1.5 h-1.5 rounded-full bg-[#00a884]" />
+                                <span title="Resume Attached" className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               )}
                             </div>
-                            <div className="text-[0.68rem] text-slate-400 truncate mt-0.5">
+                            <div className="text-[11px] text-slate-400 truncate mt-0.5">
                               {cand.email || cand.phone || (cand.city ? `${cand.city}, ${cand.state || ''}` : 'Applicant')}
                             </div>
                           </div>
@@ -778,14 +816,14 @@ export default function ApplicationStatusView({ setActiveTab }) {
                       </td>
 
                       {/* Job Title & Location */}
-                      <td className="py-4 px-5">
-                        <div className="font-bold text-slate-900 truncate max-w-[200px]">
+                      <td className="py-3.5 px-5">
+                        <div className="font-medium text-slate-900 truncate max-w-[200px]">
                           {app.job_title}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[0.68rem] text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
                           <span>{app.job_location || 'Remote'}</span>
                           {app.job_work_mode && (
-                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-bold">
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                               {app.job_work_mode}
                             </span>
                           )}
@@ -793,13 +831,13 @@ export default function ApplicationStatusView({ setActiveTab }) {
                       </td>
 
                       {/* Current Funnel Stage */}
-                      <td className="py-4 px-5 whitespace-nowrap">
+                      <td className="py-3.5 px-5 whitespace-nowrap">
                         <div className="relative inline-block">
                           <select
                             disabled={isUpdating}
                             value={app.status}
                             onChange={(e) => handleStageChange(app.id, e.target.value)}
-                            className={`px-2.5 py-1 rounded-full text-[0.68rem] font-black border cursor-pointer outline-none transition-all ${getStatusPillStyle(app.status)}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] ${getStatusPillStyle(app.status)}`}
                           >
                             <option value="SHORTLISTED">⭐ Shortlisted</option>
                             <option value="INTERVIEW_SCHEDULED">🎙️ Interviewing</option>
@@ -811,17 +849,17 @@ export default function ApplicationStatusView({ setActiveTab }) {
                         </div>
                       </td>
 
-                      {/* Interviewing & Hiring Actions: ONLY Interview Round */}
-                      <td className="py-4 px-5 text-center">
+                      {/* Interviewing & Hiring Actions */}
+                      <td className="py-3.5 px-5 text-center">
                         <div className="flex items-center justify-center">
                           <button
                             type="button"
                             disabled={isUpdating}
                             onClick={() => openFeedbackModal(app)}
-                            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                            className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.03)] ${
                               feedbacks[app.id]
-                                ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300'
-                                : 'bg-purple-600 hover:bg-purple-700 text-white border-none'
+                                ? 'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200'
+                                : 'bg-[#5C59E8] hover:bg-[#4845D2] text-white border-none'
                             }`}
                             title="Open Interview Round Evaluation & Decision"
                           >
@@ -835,14 +873,14 @@ export default function ApplicationStatusView({ setActiveTab }) {
                       </td>
 
                       {/* Details Button */}
-                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setSelectedAppModal(app)}
-                          className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer bg-white shadow-2xs inline-flex items-center gap-1"
+                          className="p-1.5 px-2.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)] inline-flex items-center gap-1"
                           title="Inspect Candidate Submission & Profile"
                         >
-                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                          <Eye className="w-3.5 h-3.5 text-slate-400" />
                           <span>Dossier</span>
                         </button>
                       </td>
@@ -857,17 +895,17 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
       {/* ── MODAL 1: SCHEDULE / ADVANCE INTERVIEW MODAL ── */}
       {scheduleModalApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 space-y-4">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
-                  <Calendar className="w-5 h-5" />
+                <span className="w-9 h-9 rounded-xl bg-[#5C59E8]/10 text-[#5C59E8] flex items-center justify-center font-bold">
+                  <Calendar className="w-4.5 h-4.5" />
                 </span>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-semibold text-slate-900">
                     Schedule Candidate Interview
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -878,7 +916,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setScheduleModalApp(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -886,11 +924,11 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
             <form onSubmit={handleConfirmSchedule} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-600 mb-1">Interview Round</label>
+                <label className="block font-semibold text-slate-700 mb-1">Interview Round</label>
                 <select
                   value={interviewForm.round}
                   onChange={(e) => setInterviewForm({ ...interviewForm, round: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 outline-none focus:border-black cursor-pointer"
+                  className={selectClass}
                 >
                   <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening (SEO, SEM & Social)</option>
                   <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization (Google/Meta Ads)</option>
@@ -903,34 +941,34 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Interview Date</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Interview Date</label>
                   <input
                     type="date"
                     required
                     value={interviewForm.date}
                     onChange={(e) => setInterviewForm({ ...interviewForm, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 outline-none focus:border-black cursor-pointer"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Interview Time</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Interview Time</label>
                   <input
                     type="time"
                     required
                     value={interviewForm.time}
                     onChange={(e) => setInterviewForm({ ...interviewForm, time: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 outline-none focus:border-black cursor-pointer"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Meeting Mode *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Meeting Mode *</label>
                   <select
                     value={interviewForm.mode}
                     onChange={(e) => setInterviewForm({ ...interviewForm, mode: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 outline-none focus:border-black cursor-pointer"
+                    className={selectClass}
                   >
                     <option value="Google Meet">Google Meet (Video)</option>
                     <option value="Zoom">Zoom Meeting</option>
@@ -940,13 +978,13 @@ export default function ApplicationStatusView({ setActiveTab }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 mb-1">Lead Interviewer</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Lead Interviewer</label>
                   <input
                     type="text"
                     placeholder="Interviewer name or email"
                     value={interviewForm.interviewer}
                     onChange={(e) => setInterviewForm({ ...interviewForm, interviewer: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 outline-none focus:border-black"
+                    className={inputClass}
                   />
                 </div>
               </div>
@@ -954,7 +992,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               {/* Meeting Link / URL Input */}
               <div>
                 <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                  <label className="block font-bold text-slate-700 text-xs">
+                  <label className="block font-semibold text-slate-700 text-xs">
                     Meeting Link / Address
                   </label>
                   {interviewForm.mode === 'Google Meet' && (
@@ -962,7 +1000,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                       type="button"
                       onClick={handleAutoGenerateMeet}
                       disabled={generatingMeet}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-xl cursor-pointer transition-all shadow-xs border-none"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-[#5C59E8] hover:bg-[#4845D2] px-3 py-1 rounded-lg cursor-pointer transition-all shadow-xs border-none"
                     >
                       {generatingMeet ? (
                         <>
@@ -995,15 +1033,15 @@ export default function ApplicationStatusView({ setActiveTab }) {
                     }
                     value={interviewForm.meetingLink}
                     onChange={(e) => setInterviewForm({ ...interviewForm, meetingLink: e.target.value })}
-                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 font-semibold text-xs bg-white text-slate-800 outline-none focus:border-indigo-600"
+                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200/90 font-medium text-xs bg-white text-slate-800 outline-none focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                     <Video className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
                 {interviewForm.meetingLink && (
-                  <div className="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 border border-indigo-200/80 text-xs animate-in fade-in">
+                  <div className="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200/80 text-xs animate-in fade-in">
                     <div className="flex items-center gap-1.5 min-w-0 text-indigo-900 font-mono text-[0.72rem] truncate">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span className="truncate">{interviewForm.meetingLink}</span>
@@ -1015,7 +1053,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                           navigator.clipboard?.writeText(interviewForm.meetingLink);
                           triggerToast('Meeting link copied to clipboard!');
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[0.68rem] font-bold border-none cursor-pointer shadow-2xs"
+                        className="px-2.5 py-1 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-[0.68rem] font-semibold border-none cursor-pointer shadow-2xs"
                       >
                         Copy Link
                       </button>
@@ -1028,13 +1066,13 @@ export default function ApplicationStatusView({ setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setScheduleModalApp(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#00a884] hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none"
+                  className="px-4 py-2 rounded-lg bg-[#00a884] hover:bg-teal-700 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Confirm & Schedule</span>
@@ -1048,17 +1086,17 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
       {/* ── MODAL 2: CANDIDATE DETAILS / DOSSIER MODAL ── */}
       {selectedAppModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative space-y-5 max-h-[90vh] overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative space-y-5 max-h-[90vh] overflow-y-auto no-scrollbar">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white font-black flex items-center justify-center text-sm shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs">
                   {(selectedAppModal.candidate?.full_name || 'C').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-semibold text-slate-900">
                     {selectedAppModal.candidate?.full_name || 'Candidate Profile'}
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -1070,7 +1108,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setSelectedAppModal(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1093,13 +1131,13 @@ export default function ApplicationStatusView({ setActiveTab }) {
             </div>
 
             {/* Funnel Decision Bar */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-slate-800">Funnel Status & Decision:</span>
+                <span className="text-xs font-semibold text-slate-800">Funnel Status & Decision:</span>
                 <select
                   value={selectedAppModal.status}
                   onChange={(e) => handleStageChange(selectedAppModal.id, e.target.value)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black border cursor-pointer outline-none ${getStatusPillStyle(selectedAppModal.status)}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer outline-none shadow-[0_1px_2px_rgba(15,23,42,0.02)] ${getStatusPillStyle(selectedAppModal.status)}`}
                 >
                   <option value="SHORTLISTED">⭐ Shortlisted</option>
                   <option value="INTERVIEW_SCHEDULED">🎙️ Interviewing</option>
@@ -1110,12 +1148,12 @@ export default function ApplicationStatusView({ setActiveTab }) {
                 </select>
               </div>
 
-              {/* Dedicated Funnel Action Buttons: Single Interview Round Button */}
+              {/* Dedicated Funnel Action Buttons */}
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => openFeedbackModal(selectedAppModal)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer border-none"
+                  className="flex-1 py-2 px-4 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer border-none"
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Interview Round</span>
@@ -1128,15 +1166,15 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
             {/* Interview Feedback Card if feedback logged */}
             {feedbacks[selectedAppModal.id] && (
-              <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-2.5">
+              <div className="p-4 rounded-xl bg-purple-50/60 border border-purple-200/70 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-2xs">
+                    <span className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-2xs">
                       <MessageSquare className="w-3.5 h-3.5" />
                     </span>
-                    <span className="text-xs font-black text-purple-950">Interview Evaluation & Feedback</span>
+                    <span className="text-xs font-semibold text-purple-950">Interview Evaluation & Feedback</span>
                   </div>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[0.65rem] font-black border ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-[0.65rem] font-semibold border ${
                     feedbacks[selectedAppModal.id].recommendation === 'HIRE'
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                       : feedbacks[selectedAppModal.id].recommendation === 'ADVANCE'
@@ -1152,18 +1190,18 @@ export default function ApplicationStatusView({ setActiveTab }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[0.72rem]">
-                  <div className="bg-white/80 p-2.5 rounded-xl border border-purple-100">
-                    <span className="text-slate-500 font-bold block text-[0.65rem]">Domain Expertise</span>
-                    <span className="text-purple-900 font-black text-xs">★ {feedbacks[selectedAppModal.id].techScore} / 5</span>
+                  <div className="bg-white/80 p-2.5 rounded-lg border border-purple-100">
+                    <span className="text-slate-500 font-medium block text-[0.65rem]">Domain Expertise</span>
+                    <span className="text-purple-900 font-bold text-xs">★ {feedbacks[selectedAppModal.id].techScore} / 5</span>
                   </div>
-                  <div className="bg-white/80 p-2.5 rounded-xl border border-purple-100">
-                    <span className="text-slate-500 font-bold block text-[0.65rem]">Communication & Fit</span>
-                    <span className="text-purple-900 font-black text-xs">★ {feedbacks[selectedAppModal.id].commScore} / 5</span>
+                  <div className="bg-white/80 p-2.5 rounded-lg border border-purple-100">
+                    <span className="text-slate-500 font-medium block text-[0.65rem]">Communication & Fit</span>
+                    <span className="text-purple-900 font-bold text-xs">★ {feedbacks[selectedAppModal.id].commScore} / 5</span>
                   </div>
                 </div>
 
                 {feedbacks[selectedAppModal.id].notes && (
-                  <div className="bg-white/80 p-3 rounded-xl border border-purple-100 text-xs text-slate-700 leading-relaxed italic">
+                  <div className="bg-white/80 p-3 rounded-lg border border-purple-100 text-xs text-slate-700 leading-relaxed italic">
                     "{feedbacks[selectedAppModal.id].notes}"
                   </div>
                 )}
@@ -1180,7 +1218,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
             {/* Candidate Summary */}
             {selectedAppModal.candidate?.summary && (
               <div>
-                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                   Professional Bio / Pitch
                 </span>
                 <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/60 p-3 rounded-xl border border-slate-200/70">
@@ -1192,7 +1230,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
             {/* Cover Letter */}
             {selectedAppModal.cover_letter && (
               <div>
-                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                   Cover Letter
                 </span>
                 <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/60 p-3 rounded-xl border border-slate-200/70 whitespace-pre-wrap">
@@ -1204,14 +1242,14 @@ export default function ApplicationStatusView({ setActiveTab }) {
             {/* Skills */}
             {selectedAppModal.candidate?.skills && selectedAppModal.candidate.skills.length > 0 && (
               <div>
-                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
                   Verified Skills
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {selectedAppModal.candidate.skills.map((skill, sIdx) => (
                     <span
                       key={sIdx}
-                      className="px-2.5 py-1 rounded-lg bg-teal-50 text-[#00a884] border border-teal-200/60 text-xs font-bold"
+                      className="px-2.5 py-1 rounded-lg bg-[#5C59E8]/8 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/15 text-xs font-semibold"
                     >
                       {skill}
                     </span>
@@ -1228,7 +1266,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                     href={selectedAppModal.candidate.resume_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all no-underline shadow-xs flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all no-underline shadow-xs flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Download Official Resume</span>
@@ -1242,7 +1280,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                     href={selectedAppModal.candidate.portfolio_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all no-underline flex items-center gap-1.5"
+                    className="px-3 py-2 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-medium transition-all no-underline flex items-center gap-1.5"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Live Portfolio</span>
@@ -1253,7 +1291,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setSelectedAppModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
               >
                 Close Window
               </button>
@@ -1265,17 +1303,17 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
       {/* ── MODAL 3: CANDIDATE INTERVIEW FEEDBACK & EVALUATION SCORECARD ── */}
       {feedbackModalApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 space-y-4 max-h-[92vh] overflow-y-auto no-scrollbar">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shadow-2xs">
-                  <Calendar className="w-5 h-5" />
+                <span className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                  <Calendar className="w-4.5 h-4.5" />
                 </span>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-semibold text-slate-900">
                     Interview Round
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -1286,7 +1324,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
               <button
                 type="button"
                 onClick={() => setFeedbackModalApp(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1295,22 +1333,22 @@ export default function ApplicationStatusView({ setActiveTab }) {
             <form onSubmit={handleSaveFeedback} className="space-y-4 text-xs">
               {/* Interview Recommendation * */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1.5">
+                <label className="block font-semibold text-slate-700 mb-1.5">
                   Interview Recommendation *
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'ADVANCE', label: '🔄 Next Round', color: 'bg-amber-500 text-white border-amber-500' },
-                    { id: 'HIRE', label: '⭐ Strong Hire / Offer', color: 'bg-emerald-600 text-white border-emerald-600' },
-                    { id: 'PASS', label: '❌ Do Not Hire', color: 'bg-rose-600 text-white border-rose-600' },
+                    { id: 'ADVANCE', label: '🔄 Next Round', active: 'bg-amber-500 text-white border-amber-500 shadow-xs' },
+                    { id: 'HIRE', label: '⭐ Strong Hire / Offer', active: 'bg-emerald-600 text-white border-emerald-600 shadow-xs' },
+                    { id: 'PASS', label: '❌ Do Not Hire', active: 'bg-rose-600 text-white border-rose-600 shadow-xs' },
                   ].map(opt => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => setFeedbackForm(prev => ({ ...prev, recommendation: opt.id }))}
-                      className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
+                      className={`py-2 px-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer text-center ${
                         feedbackForm.recommendation === opt.id
-                          ? `${opt.color} shadow-xs font-extrabold`
+                          ? opt.active
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -1323,15 +1361,15 @@ export default function ApplicationStatusView({ setActiveTab }) {
               {/* DYNAMIC SECTION BASED ON INTERVIEW RECOMMENDATION */}
               {/* Option 1: Next Round -> show subject and round level */}
               {feedbackForm.recommendation === 'ADVANCE' && (
-                <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3 animate-in fade-in">
-                  <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-3 animate-in fade-in">
+                  <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
                     <RefreshCw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                     <span>Next Round Setup</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-bold text-slate-700 text-xs mb-1">
+                      <label className="block font-semibold text-slate-700 text-xs mb-1">
                         Subject *
                       </label>
                       <input
@@ -1340,18 +1378,18 @@ export default function ApplicationStatusView({ setActiveTab }) {
                         placeholder="e.g. SEO & SEM Strategy, Paid Social & Ads, Funnel CRO"
                         value={feedbackForm.subject}
                         onChange={e => setFeedbackForm(prev => ({ ...prev, subject: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-slate-800 text-xs focus:border-amber-600 focus:ring-1 focus:ring-amber-600 outline-none"
+                        className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 text-xs mb-1">
+                      <label className="block font-semibold text-slate-700 text-xs mb-1">
                         Round Level *
                       </label>
                       <select
                         value={feedbackForm.roundLevel}
                         onChange={e => setFeedbackForm(prev => ({ ...prev, roundLevel: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-800 text-xs focus:border-amber-600 outline-none cursor-pointer"
+                        className={selectClass}
                       >
                         <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening (SEO, SEM & Social)</option>
                         <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization (Google/Meta Ads)</option>
@@ -1367,12 +1405,12 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
               {/* Option 2: Strong Hire / Offer -> show congratulations */}
               {feedbackForm.recommendation === 'HIRE' && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-2 font-black text-sm text-emerald-800">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
                     <Award className="w-4.5 h-4.5 text-emerald-600" />
                     <span>🎉 Congratulations!</span>
                   </div>
-                  <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                  <p className="text-xs text-emerald-800 leading-relaxed font-normal">
                     Candidate will be extended an official offer and moved to the <strong>Hired / Offer Extended</strong> pipeline stage.
                   </p>
                 </div>
@@ -1380,20 +1418,20 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
               {/* Option 3: Do Not Hire -> show rejection alert */}
               {feedbackForm.recommendation === 'PASS' && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1 animate-in fade-in">
-                  <div className="flex items-center gap-2 font-black text-xs text-rose-700">
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-semibold text-xs text-rose-700">
                     <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                     <span>Candidate Will Be Dropped</span>
                   </div>
-                  <p className="text-[0.72rem] text-rose-700 font-medium">
+                  <p className="text-[0.72rem] text-rose-700 font-normal">
                     Candidate will be marked as Rejected post-interview and archived from the active hiring funnel.
                   </p>
                 </div>
               )}
 
-              {/* Evaluation Feedback & Summary Notes (Always shown for all recommendations) */}
+              {/* Evaluation Feedback & Summary Notes */}
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
+                <label className="block font-semibold text-slate-700 mb-1">
                   Evaluation Feedback & Summary Notes *
                 </label>
                 <textarea
@@ -1408,7 +1446,7 @@ export default function ApplicationStatusView({ setActiveTab }) {
                       ? 'Summarize feedback from current round, digital marketing skills tested, and objectives/focus areas for the next round...'
                       : 'Record reasons for rejection, gaps identified in marketing skills or culture fit...'
                   }
-                  className="w-full p-3 rounded-xl border border-slate-300 font-medium text-slate-800 text-xs focus:border-purple-600 focus:ring-1 focus:ring-purple-600 outline-none leading-relaxed"
+                  className="w-full p-3 rounded-xl border border-slate-200/90 font-medium text-slate-800 text-xs focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none leading-relaxed shadow-[0_1px_2px_rgba(15,23,42,0.02)] transition-all"
                 />
               </div>
 
@@ -1417,14 +1455,14 @@ export default function ApplicationStatusView({ setActiveTab }) {
                 <button
                   type="button"
                   onClick={() => setFeedbackModalApp(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingFeedback}
-                  className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50 ${
+                  className={`px-4 py-2 rounded-lg text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50 ${
                     feedbackForm.recommendation === 'HIRE'
                       ? 'bg-emerald-600 hover:bg-emerald-700'
                       : feedbackForm.recommendation === 'PASS'

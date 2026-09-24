@@ -272,19 +272,19 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
     switch (status) {
       case 'SELECTED':
       case 'HIRED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        return 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15 border-none';
       case 'INTERVIEW_SCHEDULED':
-        return 'bg-indigo-50 text-indigo-700 border-indigo-300';
+        return 'bg-[#5C59E8]/8 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/15 border-none';
       case 'SHORTLISTED':
-        return 'bg-blue-50 text-blue-700 border-blue-300';
+        return 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200/80 border-none';
       case 'UNDER_REVIEW':
-        return 'bg-amber-50 text-amber-700 border-amber-300';
+        return 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200/80 border-none';
       case 'APPLIED':
-        return 'bg-slate-100 text-slate-700 border-slate-300';
+        return 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200/70 border-none';
       case 'REJECTED':
-        return 'bg-rose-50 text-rose-700 border-rose-300';
+        return 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200/80 border-none';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200/70 border-none';
     }
   };
 
@@ -1146,23 +1146,23 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
   };
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 max-w-10xl mx-auto space-y-6 select-text text-slate-800">
+    <div
+      className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased select-text text-slate-800"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
       
       {/* ── 1. Clean Top Header Bar ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-1">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold border border-teal-100/80">
-              <Users className="w-4 h-4" />
-            </span>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
               Applicant Pipeline
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200/80">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200/70">
               {allApplications.length} total
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
             {selectedJobFilter === 'ALL'
               ? `Reviewing applicants across all ${jobsList.length} active requisitions`
               : `Reviewing candidates for ${getSelectedRequisitionTitle()} (${requisitionApplicants.length} applicants)`}
@@ -1170,15 +1170,15 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
         </div>
 
         {/* Right Side Header Controls: Requisition Selector, Export, Refresh */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {/* Requisition Selector Popover */}
           <div className="relative" ref={jobPickerRef}>
             <button
               type="button"
               onClick={() => setIsJobPickerOpen(!isJobPickerOpen)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold shadow-2xs transition-all cursor-pointer max-w-[260px] sm:max-w-[320px]"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all cursor-pointer max-w-[260px] sm:max-w-[320px]"
             >
-              <Briefcase className="w-3.5 h-3.5 text-[#00a884] shrink-0" />
+              <Briefcase className="w-3.5 h-3.5 text-[#5C59E8] shrink-0" />
               <span className="truncate">
                 {selectedJobFilter === 'ALL'
                   ? 'All Requisitions'
@@ -1189,7 +1189,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
             {/* Requisitions Search Dropdown */}
             {isJobPickerOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 p-2 text-xs animate-in fade-in">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 p-2 text-xs animate-in fade-in">
                 <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50 rounded-xl mb-1">
                   <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <input 
@@ -1197,7 +1197,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     placeholder={`Search ${jobsList.length} roles...`}
                     value={jobSearchQuery}
                     onChange={(e) => setJobSearchQuery(e.target.value)}
-                    className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder-slate-400"
+                    className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder-slate-400 font-medium"
                     autoFocus
                   />
                   {jobSearchQuery && (
@@ -1213,18 +1213,18 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     onClick={() => { handleFilterChange('ALL'); setIsJobPickerOpen(false); }}
                     className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-colors border-none cursor-pointer ${
                       selectedJobFilter === 'ALL' 
-                        ? 'bg-teal-50 text-[#00a884] font-black' 
-                        : 'hover:bg-slate-50 text-slate-700 bg-transparent'
+                        ? 'bg-[#5C59E8]/10 text-[#4845D2] font-semibold' 
+                        : 'hover:bg-slate-50 text-slate-700 bg-transparent font-medium'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-[#00a884]" />
+                      <Building2 className="w-4 h-4 text-[#5C59E8]" />
                       <div>
-                        <div className="font-extrabold text-xs">All Requisitions</div>
-                        <div className="text-[0.65rem] text-slate-400">All {jobsList.length} roles overview</div>
+                        <div className="font-semibold text-xs">All Requisitions</div>
+                        <div className="text-[10px] text-slate-400">All {jobsList.length} roles overview</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-teal-100 text-[#00a884] font-black text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-[#5C59E8]/15 text-[#4845D2] font-semibold text-[11px]">
                       {allApplications.length}
                     </span>
                   </button>
@@ -1239,16 +1239,16 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                         onClick={() => { handleFilterChange(String(job.id)); setIsJobPickerOpen(false); }}
                         className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-colors border-none cursor-pointer ${
                           isSelected 
-                            ? 'bg-teal-50 text-[#00a884] font-black' 
-                            : 'hover:bg-slate-50 text-slate-700 bg-transparent'
+                            ? 'bg-[#5C59E8]/10 text-[#4845D2] font-semibold' 
+                            : 'hover:bg-slate-50 text-slate-700 bg-transparent font-medium'
                         }`}
                       >
                         <div className="min-w-0 pr-2">
-                          <div className="font-extrabold text-xs truncate text-slate-900">{job.title}</div>
-                          <div className="text-[0.68rem] text-slate-400 mt-0.5 truncate">{job.work_mode || 'Full-time'} • {job.location || 'India'}</div>
+                          <div className="font-semibold text-xs truncate text-slate-900">{job.title}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 truncate">{job.work_mode || 'Full-time'} • {job.location || 'India'}</div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[0.68rem] font-black shrink-0 ${
-                          count > 0 ? 'bg-teal-100 text-[#00a884]' : 'bg-slate-100 text-slate-400'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
+                          count > 0 ? 'bg-[#5C59E8]/15 text-[#4845D2]' : 'bg-slate-100 text-slate-400'
                         }`}>
                           {count}
                         </span>
@@ -1276,7 +1276,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
             <button
               type="button"
               onClick={() => handleOpenPdfPreviewModal('all', null, sortedApplicants)}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer border-none"
+              className="px-4 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.08)] flex items-center gap-1.5 cursor-pointer border-none"
               title={`Export ${sortedApplicants.length} applicants in PDF format`}
             >
               <Download className="w-3.5 h-3.5" />
@@ -1289,32 +1289,115 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
             type="button"
             onClick={loadData}
             title="Refresh pipeline"
-            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-2xs"
+            className="p-2.5 rounded-xl border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#00a884]' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#5C59E8]' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-xl animate-in fade-in">
+        <div className="p-3.5 px-4 rounded-xl bg-slate-900 text-white text-xs font-medium flex items-center justify-between shadow-xl animate-in fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#00a884]" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{toastMessage}</span>
           </div>
-          <button onClick={() => setToastMessage('')} className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer">
+          <button onClick={() => setToastMessage('')} className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer p-0.5">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
       {/* ── 2. Unified Pipeline & Search Command Card ── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3.5">
         
-        {/* Top Row: Pipeline Stages & AI Top-Match Controls */}
+        {/* Top Row: Search, Sort & View Modes */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Search Input */}
+          <div className="flex items-center gap-2 flex-1 max-w-md bg-white border border-slate-200/90 rounded-xl px-3.5 py-2 focus-within:border-[#5C59E8] focus-within:ring-2 focus-within:ring-[#5C59E8]/10 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <input 
+              type="text"
+              placeholder="Search by candidate name, skills, title, email..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder-slate-400 font-medium"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="p-0.5 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="font-semibold text-[10px] uppercase text-slate-400">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white cursor-pointer outline-none focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+              >
+                <option value="best_match">🏆 Best Match (AI)</option>
+                <option value="newest">Newest Applied</option>
+                <option value="oldest">Oldest Applied</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle: Data Grid | Split Review */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/70">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-none cursor-pointer ${
+                  viewMode === 'table' 
+                    ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.06)]' 
+                    : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                }`}
+                title="Data Grid (Table)"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('split')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border-none cursor-pointer ${
+                  viewMode === 'split' 
+                    ? 'bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.06)]' 
+                    : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                }`}
+                title="Split Review (Dossier)"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Split</span>
+              </button>
+            </div>
+
+            {/* Page Size */}
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              className="px-2.5 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-600 bg-white cursor-pointer outline-none focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Subtle Divider */}
+        <div className="border-t border-slate-100" />
+
+        {/* Bottom Row: Pipeline Stages & AI Top-Match Controls */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Stage Tabs (Clean, without numbering) */}
+          {/* Stage Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
             {[
               { key: 'ALL', label: 'All', count: stageCounts.ALL },
@@ -1329,14 +1412,14 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                   key={st.key}
                   type="button"
                   onClick={() => { setSelectedStageFilter(st.key); setCurrentPage(1); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
                     isActive 
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.1)]' 
                       : 'bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-slate-100'
                   }`}
                 >
                   <span>{st.label}</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[0.62rem] font-black ${
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                     isActive 
                       ? 'bg-white/20 text-white' 
                       : 'bg-slate-200/80 text-slate-700'
@@ -1352,37 +1435,37 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
           {selectedJobFilter !== 'ALL' && (
             <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
               {aiTopMode ? (
-                <div className="flex items-center gap-1.5 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-xl">
-                  <Trophy className="w-3.5 h-3.5 text-violet-600" />
-                  <span className="text-xs font-black text-violet-800">
+                <div className="flex items-center gap-1.5 bg-[#5C59E8]/10 border border-[#5C59E8]/20 px-2.5 py-1 rounded-xl">
+                  <Trophy className="w-3.5 h-3.5 text-[#5C59E8]" />
+                  <span className="text-xs font-semibold text-[#4845D2]">
                     Top {aiTopCandidates?.length || 0} Best Fit
                   </span>
                   <button
                     type="button"
                     onClick={handleExitTopMode}
-                    className="ml-1 p-0.5 text-violet-400 hover:text-violet-700 border-none bg-transparent cursor-pointer"
+                    className="ml-1 p-0.5 text-slate-400 hover:text-slate-700 border-none bg-transparent cursor-pointer"
                     title="Exit AI Mode"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 bg-violet-50/80 border border-violet-200/80 rounded-xl px-2.5 py-1">
-                  <Crown className="w-3.5 h-3.5 text-violet-600" />
-                  <span className="text-xs font-bold text-violet-700">Top</span>
+                <div className="flex items-center gap-1.5 bg-[#5C59E8]/8 border border-[#5C59E8]/15 rounded-xl px-2.5 py-1">
+                  <Crown className="w-3.5 h-3.5 text-[#5C59E8]" />
+                  <span className="text-xs font-semibold text-[#4845D2]">Top</span>
                   <input
                     type="number"
                     min={1}
                     max={500}
                     value={aiTopN}
                     onChange={(e) => setAiTopN(Math.max(1, Math.min(500, parseInt(e.target.value) || 10)))}
-                    className="w-12 text-center bg-white border border-violet-200 rounded-lg text-xs font-black text-violet-900 py-0.5 outline-none focus:border-violet-400"
+                    className="w-12 text-center bg-white border border-[#5C59E8]/20 rounded-lg text-xs font-semibold text-slate-800 py-0.5 outline-none focus:border-[#5C59E8]"
                   />
                   <button
                     type="button"
                     onClick={handleShowTopN}
                     disabled={aiLoading}
-                    className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border-none disabled:opacity-50"
+                    className="px-2.5 py-1 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer border-none disabled:opacity-50"
                   >
                     <Sparkles className={`w-3 h-3 ${aiLoading ? 'animate-spin' : ''}`} />
                     <span>{aiLoading ? 'Ranking...' : 'Rank'}</span>
@@ -1396,96 +1479,13 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                 onClick={handleRescore}
                 disabled={rescoring}
                 title="Re-calculate AI scores for this requisition"
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer bg-white disabled:opacity-50"
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200/80 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer bg-white disabled:opacity-50 shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
               >
-                <RefreshCw className={`w-3 h-3 ${rescoring ? 'animate-spin text-violet-600' : ''}`} />
+                <RefreshCw className={`w-3 h-3 ${rescoring ? 'animate-spin text-[#5C59E8]' : ''}`} />
                 <span className="hidden sm:inline">{rescoring ? 'Scoring...' : 'Re-Score'}</span>
               </button>
             </div>
           )}
-        </div>
-
-        {/* Subtle Divider */}
-        <div className="border-t border-slate-100" />
-
-        {/* Bottom Row: Search, Sort & View Modes */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          {/* Search Input */}
-          <div className="flex items-center gap-2 flex-1 max-w-md bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:border-slate-400 transition-all">
-            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <input 
-              type="text"
-              placeholder="Search by candidate name, skills, title, email..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder-slate-400"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-0.5 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer">
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end">
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <span className="font-bold text-[0.65rem] uppercase text-slate-400">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-white cursor-pointer outline-none shadow-2xs"
-              >
-                <option value="best_match">🏆 Best Match (AI)</option>
-                <option value="newest">Newest Applied</option>
-                <option value="oldest">Oldest Applied</option>
-                <option value="name_asc">Name (A-Z)</option>
-                <option value="name_desc">Name (Z-A)</option>
-              </select>
-            </div>
-
-            {/* View Mode Toggle: Data Grid | Split Review */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border-none cursor-pointer ${
-                  viewMode === 'table' 
-                    ? 'bg-white text-slate-900 shadow-2xs' 
-                    : 'text-slate-500 hover:text-slate-800 bg-transparent'
-                }`}
-                title="Data Grid (Table)"
-              >
-                <List className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Grid</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('split')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border-none cursor-pointer ${
-                  viewMode === 'split' 
-                    ? 'bg-white text-slate-900 shadow-2xs' 
-                    : 'text-slate-500 hover:text-slate-800 bg-transparent'
-                }`}
-                title="Split Review (Dossier)"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Split</span>
-              </button>
-            </div>
-
-            {/* Page Size */}
-            <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-              className="px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 bg-white cursor-pointer outline-none shadow-2xs"
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -1551,16 +1551,16 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
       {/* ── 7. Main Pipeline Workspace Content Area ── */}
       {loading ? (
-        <div className="py-20 text-center bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
-          <div className="w-8 h-8 border-3 border-slate-200 border-t-[#00a884] rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-bold text-slate-600">Loading candidate applications...</p>
+        <div className="py-20 text-center bg-white border border-slate-200/80 rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-[#5C59E8] rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-semibold text-slate-500">Loading candidate applications...</p>
         </div>
       ) : sortedApplicants.length === 0 ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center shadow-2xs">
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center mx-auto mb-3">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="w-12 h-12 rounded-2xl bg-[#5C59E8]/10 text-[#4845D2] flex items-center justify-center mx-auto mb-3">
             <Users className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-extrabold text-slate-800">
+          <h3 className="text-sm font-semibold text-slate-800 m-0">
             {searchQuery 
               ? `No applicants match "${searchQuery}"`
               : (selectedStageFilter !== 'ALL' 
@@ -1613,7 +1613,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
               
               {/* Left Column: Paginated Candidate Roster (4.5 cols) */}
-              <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs flex flex-col">
+              <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex flex-col">
                 <div className="px-4 py-3 border-b border-slate-200/80 bg-slate-50/70 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <button
@@ -1764,7 +1764,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
               {/* Right Column: Full Candidate Dossier & Evaluation (7.5 cols) */}
               {selectedApp ? (
-                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-6">
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6">
                   
                   {/* Candidate Identity Header */}
                   <div className="flex justify-between items-start flex-wrap gap-4 pb-4 border-b border-slate-100">
@@ -2305,7 +2305,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
                 </div>
               ) : (
-                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-400 text-xs">
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-400 text-xs shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   Select a candidate from the left list to review their complete dossier and qualifications.
                 </div>
               )}
@@ -2317,11 +2317,11 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
           {/* MODE 2: HIGH-DENSITY DATA GRID TABLE VIEW                          */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {viewMode === 'table' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
+            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-extrabold uppercase text-[0.65rem] tracking-wider">
+                    <tr className="bg-slate-50/70 border-b border-slate-200/70 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
                       <th className="p-3.5 w-10 text-center">
                         <button
                           type="button"

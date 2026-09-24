@@ -247,32 +247,45 @@ export default function CompanyProfile() {
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 1. RECRUITER & HIRING MANAGER VIEW: "show only there profile like name
-  //    email phone number place role like that only"
+  // 1. RECRUITER & HIRING MANAGER VIEW: Executive White-Card Profile Dossier
   // ═══════════════════════════════════════════════════════════════════════════
   if (isStaff) {
     return (
-      <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6 select-text text-slate-800">
-        
-        {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div
+        className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800 select-text"
+        style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+      >
+        {/* ── Top Header Bar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
-                <User className="w-4 h-4" />
-              </span>
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1">
+              <span>Workspace</span>
+              <span>/</span>
+              <span>Team & Members</span>
+              <span>/</span>
+              <span className="text-slate-600 font-semibold">Staff Profile</span>
+            </div>
+            <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight">
               My Profile
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Personal staff credentials, direct contact details, and platform role.
+            <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
+              Personal staff credentials, contact details, and hiring workspace access.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="px-3.5 py-2 rounded-lg border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 cursor-pointer"
+            >
+              <Share2 className="w-3.5 h-3.5 text-slate-500" />
+              Share Profile
+            </button>
             <button
               type="button"
               onClick={() => setIsEditingStaff(true)}
-              className="px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold transition-all cursor-pointer border-none shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-1.5"
             >
               <Edit3 className="w-3.5 h-3.5" />
               Edit Profile
@@ -294,198 +307,364 @@ export default function CompanyProfile() {
           </div>
         )}
 
-        {/* ── Focused Staff Profile Card (Only Name, Email, Phone, Place, Role) ── */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
-          
-          {/* Card Banner / Header Strip */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 sm:p-8 text-white relative">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+        {/* ── 1. Hero Profile Card (All-White Card with Soft Pastel Header Accent) ── */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+          {/* Subtle Banner Accent (Clean soft aesthetic, NO harsh black) */}
+          <div className="h-28 sm:h-32 bg-gradient-to-r from-slate-100 via-[#EEF2FF] to-[#FFF1F2] border-b border-slate-200/60 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]" />
+            <div className="absolute top-3 right-4 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-xs text-slate-700 border border-slate-200/80 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Active Seat
+              </span>
+            </div>
+          </div>
+
+          {/* Profile Identity Row overlapping the banner */}
+          <div className="px-6 sm:px-8 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 -mt-12 sm:-mt-14">
               
-              {/* Avatar with Camera upload */}
-              <div className="relative inline-block shrink-0 group">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/20 shadow-md bg-white text-slate-900 font-black text-2xl sm:text-3xl flex items-center justify-center overflow-hidden">
-                  {staffData.avatar_url ? (
-                    <img
-                      src={staffData.avatar_url}
-                      alt={staffData.name}
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+              {/* Avatar + Main Details */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5">
+                {/* Avatar with Camera Upload */}
+                <div className="relative shrink-0 group">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-white shadow-md bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-white font-bold text-3xl sm:text-4xl flex items-center justify-center overflow-hidden">
+                    {staffData.avatar_url ? (
+                      <img
+                        src={staffData.avatar_url}
+                        alt={staffData.name}
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-full h-full flex items-center justify-center text-white font-bold"
+                      style={{
+                        display: staffData.avatar_url ? 'none' : 'flex'
                       }}
-                    />
-                  ) : null}
-                  <div
-                    className="w-full h-full flex items-center justify-center text-white font-black"
-                    style={{
-                      background: user?.role === 'RECRUITER' ? '#2C4470' : '#7C5CBF',
-                      display: staffData.avatar_url ? 'none' : 'flex'
-                    }}
+                    >
+                      {staffData.name ? staffData.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => staffPhotoInputRef.current?.click()}
+                    disabled={uploadingStaffPhoto}
+                    title="Change profile picture"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#FF7043] hover:bg-[#E65B30] text-white flex items-center justify-center shadow-md border-2 border-white transition-all cursor-pointer"
                   >
-                    {staffData.name ? staffData.name.charAt(0).toUpperCase() : 'U'}
+                    {uploadingStaffPhoto ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Camera className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  <input
+                    type="file"
+                    ref={staffPhotoInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleStaffPhotoUpload}
+                  />
+                </div>
+
+                {/* Name, Roles & Designation */}
+                <div className="space-y-1.5 pb-0.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                      {staffData.name}
+                    </h2>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                        user?.role === 'RECRUITER'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200/80'
+                          : 'bg-purple-50 text-purple-700 border-purple-200/80'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          user?.role === 'RECRUITER' ? 'bg-blue-600' : 'bg-purple-600'
+                        }`}
+                      />
+                      {staffData.role}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Verified Staff
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-semibold text-slate-700">
+                    {staffData.title}
+                  </p>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
+                    <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                      {comp.company_name || 'Uptrix Corporation'}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      {staffData.place}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      {staffData.email}
+                    </span>
                   </div>
                 </div>
+              </div>
 
+              {/* Quick Profile Actions on Desktop */}
+              <div className="flex items-center gap-2 self-start sm:self-end">
                 <button
                   type="button"
-                  onClick={() => staffPhotoInputRef.current?.click()}
-                  disabled={uploadingStaffPhoto}
-                  title="Upload profile photo"
-                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white text-slate-900 hover:bg-slate-100 flex items-center justify-center shadow-md border-2 border-slate-900 transition-all cursor-pointer"
+                  onClick={() => setIsEditingStaff(true)}
+                  className="px-4 py-2 rounded-lg border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 cursor-pointer"
                 >
-                  {uploadingStaffPhoto ? (
-                    <Loader2 className="w-3 h-3 animate-spin text-slate-900" />
-                  ) : (
-                    <Camera className="w-3 h-3 text-slate-900" />
-                  )}
+                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                  Edit Profile
                 </button>
-                <input
-                  type="file"
-                  ref={staffPhotoInputRef}
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleStaffPhotoUpload}
-                />
               </div>
 
-              {/* Name & Role Title */}
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    {staffData.name}
-                  </h2>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.68rem] font-extrabold border ${
-                      user?.role === 'RECRUITER'
-                        ? 'bg-blue-500/20 text-blue-200 border-blue-400/40'
-                        : 'bg-purple-500/20 text-purple-200 border-purple-400/40'
-                    }`}
-                  >
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. Structured Dual-Column Dossier ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Left 2 Cols: Personal & Contact Information Tiles */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 sm:p-7 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Personal & Contact Dossier</h3>
+                  <p className="text-xs text-slate-400">Direct contact channels and corporate profile identifiers</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingStaff(true)}
+                className="text-xs font-semibold text-[#FF7043] hover:text-[#E65B30] flex items-center gap-1 border-none bg-transparent cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+            </div>
+
+            {/* Grid of Clean Info Tiles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Full Name */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 shadow-2xs">
+                  <User className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Full Name</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">{staffData.name}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Primary profile name</p>
+                </div>
+              </div>
+
+              {/* Official Email */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-emerald-600 shadow-2xs">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Official Email</p>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded-md">Verified</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 font-mono mt-0.5 truncate">{staffData.email}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Workspace domain locked</p>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 shadow-2xs">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Phone Number</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">{staffData.phone}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Direct hiring line</p>
+                </div>
+              </div>
+
+              {/* Place / Location */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 shadow-2xs">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Work Location</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">{staffData.place}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Timezone / Regional Base</p>
+                </div>
+              </div>
+
+              {/* Designation Title */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-600 shadow-2xs">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Designation Title</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">{staffData.title}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Internal corporate title</p>
+                </div>
+              </div>
+
+              {/* Platform Role */}
+              <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/60 flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 text-indigo-600 shadow-2xs">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Assigned Platform Role</p>
+                  <div className="mt-1">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        user?.role === 'RECRUITER' ? 'bg-blue-400' : 'bg-purple-400'
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold border ${
+                        user?.role === 'RECRUITER'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200/80'
+                          : 'bg-purple-50 text-purple-700 border-purple-200/80'
                       }`}
-                    />
-                    {staffData.role}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[0.68rem] font-extrabold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
-                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                    Verified Staff
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          user?.role === 'RECRUITER' ? 'bg-blue-600' : 'bg-purple-600'
+                        }`}
+                      />
+                      {staffData.role}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">Full candidate pipeline authority</p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Footer Action strip */}
+            <div className="p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/60 flex items-center justify-between text-xs">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                All staff credentials verified against workspace registry.
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEditingStaff(true)}
+                className="text-xs font-semibold text-[#FF7043] hover:text-[#E65B30] flex items-center gap-1 border-none bg-transparent cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit Information
+              </button>
+            </div>
+          </div>
+
+          {/* Right Col: Workspace & Enterprise Privileges */}
+          <div className="space-y-6">
+            
+            {/* Workspace Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Workspace Access</h3>
+                  <p className="text-xs text-slate-400">Enterprise seat status</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Active Provisioned Seat
+                </div>
+                <p className="text-[11px] text-emerald-700/90 leading-relaxed">
+                  Your account has licensed recruiter privileges on the {comp.company_name || 'Uptrix Corporation'} workspace.
+                </p>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Organization</span>
+                  <span className="font-bold text-slate-900">{comp.company_name || 'Uptrix Corporation'}</span>
+                </div>
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Department</span>
+                  <span className="font-bold text-slate-900">Talent Acquisition</span>
+                </div>
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-400 font-medium">Member ID</span>
+                  <span className="font-mono font-bold text-slate-800">UPTX-STAFF-9021</span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-slate-400 font-medium">Security</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    2FA Verified
                   </span>
                 </div>
-
-                <p className="text-xs sm:text-sm font-semibold text-slate-300">
-                  {staffData.title}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {comp.company_name || 'Visys Cloud Technologies'} • Active Provisioned Seat
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Profile Details List (Name, Email, Phone, Place, Role) */}
-          <div className="p-6 sm:p-8 divide-y divide-slate-100">
-            
-            <div className="py-3.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <User className="w-3.5 h-3.5 text-slate-500" />
-                Full Name
-              </span>
-              <span className="text-sm font-black text-slate-900">
-                {staffData.name}
-              </span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-slate-500" />
-                Official Email Address
-              </span>
-              <span className="text-sm font-bold text-slate-900 font-mono flex items-center gap-1.5">
-                {staffData.email}
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              </span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-slate-500" />
-                Phone Number
-              </span>
-              <span className="text-sm font-bold text-slate-900">
-                {staffData.phone}
-              </span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                Place / Location
-              </span>
-              <span className="text-sm font-bold text-slate-900">
-                {staffData.place}
-              </span>
-            </div>
-
-            <div className="py-3.5 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Briefcase className="w-3.5 h-3.5 text-slate-500" />
-                Assigned Platform Role
-              </span>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border ${
-                    user?.role === 'RECRUITER'
-                      ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : 'bg-purple-50 text-purple-700 border-purple-200'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      user?.role === 'RECRUITER' ? 'bg-blue-600' : 'bg-purple-600'
-                    }`}
-                  />
-                  {staffData.role}
-                </span>
               </div>
             </div>
 
-          </div>
+            {/* Recruiter Capabilities Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 space-y-3.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#FF7043]" />
+                Authorized Capabilities
+              </h4>
 
-          {/* Quick Footer Action */}
-          <div className="px-6 sm:px-8 py-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[0.7rem] text-slate-400">
-              Need to update your contact details or phone number? Click Edit Profile.
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsEditingStaff(true)}
-              className="text-xs font-bold text-[#00a884] hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer"
-            >
-              <Edit3 className="w-3 h-3" /> Edit Profile Details
-            </button>
+              <div className="space-y-2 text-xs">
+                {[
+                  'Create & publish job requisitions',
+                  'Source & filter candidate profiles',
+                  'Schedule & conduct interview rounds',
+                  'Advance candidate pipeline stages',
+                  'Direct messaging & offer rollouts'
+                ].map((cap, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-slate-700">
+                    <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5" />
+                    </div>
+                    <span className="font-medium text-[11.5px]">{cap}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
 
         </div>
 
         {/* ── Edit Staff Profile Modal ── */}
         {isEditingStaff && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-            <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 text-slate-800 relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in select-text">
+            <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative">
               
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5C59E8] flex items-center justify-center font-bold">
                     <User className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900">
-                      Edit Profile
+                    <h3 className="text-base font-bold text-slate-900">
+                      Edit Staff Profile
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Update your personal staff details
+                      Update your personal staff details and contact channels
                     </p>
                   </div>
                 </div>
@@ -493,89 +672,94 @@ export default function CompanyProfile() {
                 <button
                   type="button"
                   onClick={() => setIsEditingStaff(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveStaffProfile} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={staffData.name}
-                    onChange={handleStaffChange}
-                    required
-                    placeholder="e.g. Rahul Sharma"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={staffData.name}
+                      onChange={handleStaffChange}
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Designation Title
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={staffData.title}
+                      onChange={handleStaffChange}
+                      placeholder="e.g. Senior Tech Recruiter"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Official Email (Fixed by Workspace)
                   </label>
                   <input
                     type="email"
                     value={staffData.email}
                     disabled
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono bg-slate-100 text-slate-500 cursor-not-allowed"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono bg-slate-50 text-slate-400 cursor-not-allowed"
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">Managed and provisioned by your corporate admin</p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={staffData.phone}
-                    onChange={handleStaffChange}
-                    required
-                    placeholder="e.g. +91 98765 43210"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="text"
+                      name="phone"
+                      value={staffData.phone}
+                      onChange={handleStaffChange}
+                      required
+                      placeholder="e.g. +91 98765 43210"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Place / Location *
-                  </label>
-                  <input
-                    type="text"
-                    name="place"
-                    value={staffData.place}
-                    onChange={handleStaffChange}
-                    required
-                    placeholder="e.g. Hyderabad, Telangana, India"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Designation Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={staffData.title}
-                    onChange={handleStaffChange}
-                    placeholder="e.g. Senior Tech Recruiter"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Place / Location *
+                    </label>
+                    <input
+                      type="text"
+                      name="place"
+                      value={staffData.place}
+                      onChange={handleStaffChange}
+                      required
+                      placeholder="e.g. Hyderabad, Telangana, India"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setIsEditingStaff(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer bg-white"
+                    className="px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer bg-white"
                   >
                     Cancel
                   </button>
@@ -583,7 +767,7 @@ export default function CompanyProfile() {
                   <button
                     type="submit"
                     disabled={savingStaff}
-                    className="px-5 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border-none disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all cursor-pointer border-none disabled:opacity-50"
                   >
                     {savingStaff ? (
                       <>
@@ -612,18 +796,20 @@ export default function CompanyProfile() {
   // 2. ADMINISTRATOR VIEW: Organization Profile & About Story
   // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 select-text text-slate-800">
-
+    <div
+      className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800 select-text"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
       {/* ── Top Header Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
+          <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-indigo-50 text-[#5C59E8] flex items-center justify-center font-bold">
               <Building2 className="w-4 h-4" />
             </span>
             Company Profile & Branding
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
             Manage corporate branding, AWS S3 logo assets, employer verification, and business intelligence overview.
           </p>
         </div>
@@ -632,7 +818,7 @@ export default function CompanyProfile() {
           <button
             type="button"
             onClick={handleShare}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all bg-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-lg border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-slate-500" />
             Share Profile
@@ -643,9 +829,9 @@ export default function CompanyProfile() {
               href={formData.website}
               target="_blank"
               rel="noreferrer"
-              className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all bg-white shadow-2xs flex items-center gap-1.5 no-underline cursor-pointer"
+              className="px-3.5 py-2 rounded-lg border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 no-underline cursor-pointer"
             >
-              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              <Globe className="w-3.5 h-3.5 text-[#5C59E8]" />
               Website
               <ArrowUpRight className="w-3 h-3 text-slate-400" />
             </a>
@@ -654,7 +840,7 @@ export default function CompanyProfile() {
           <button
             type="button"
             onClick={() => setIsEditingOrg(true)}
-            className="px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer border-none shadow-xs flex items-center gap-1.5"
+            className="px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold transition-all cursor-pointer border-none shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-1.5"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Edit Profile
@@ -676,14 +862,13 @@ export default function CompanyProfile() {
         </div>
       )}
 
-
-      {/* ── Organization Profile Card (Clean, No Cover Banner) ── */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 sm:p-7">
+      {/* ── Organization Profile Card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* Logo Avatar with S3 Upload Button */}
             <div className="relative inline-block shrink-0 group">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border border-slate-200 shadow-2xs bg-white text-slate-900 font-black text-2xl sm:text-3xl flex items-center justify-center overflow-hidden">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border border-slate-200/80 shadow-2xs bg-white text-slate-900 font-bold text-2xl sm:text-3xl flex items-center justify-center overflow-hidden">
                 {formData.logo_url ? (
                   <img
                     src={formData.logo_url}
@@ -696,7 +881,7 @@ export default function CompanyProfile() {
                   />
                 ) : null}
                 <div
-                  className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-black"
+                  className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-bold"
                   style={{ display: formData.logo_url ? 'none' : 'flex' }}
                 >
                   {formData.company_name ? formData.company_name.charAt(0).toUpperCase() : 'C'}
@@ -708,12 +893,12 @@ export default function CompanyProfile() {
                 onClick={() => logoInputRef.current?.click()}
                 disabled={uploadingLogo}
                 title="Upload S3 Company Logo"
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-black text-white hover:bg-slate-800 flex items-center justify-center shadow-md border-2 border-white transition-all cursor-pointer"
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center shadow-md border-2 border-white transition-all cursor-pointer"
               >
                 {uploadingLogo ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
-                  <Camera className="w-3 h-3" />
+                  <Camera className="w-3.5 h-3.5" />
                 )}
               </button>
 
@@ -729,20 +914,20 @@ export default function CompanyProfile() {
             {/* Name, Industry & Metadata */}
             <div className="space-y-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                   {formData.company_name}
                 </h2>
-                <span className="inline-flex items-center gap-1 text-[0.68rem] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   Verified Employer
                 </span>
-                <span className="inline-flex items-center gap-1 text-[0.68rem] font-extrabold text-blue-700 bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
-                  <Building2 className="w-3 h-3 text-blue-600" />
+                <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-md">
+                  <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                   Administrator
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm font-semibold text-slate-600 leading-relaxed">
                 {formData.industry}
               </p>
 
@@ -769,7 +954,7 @@ export default function CompanyProfile() {
 
       {/* ── In-Page Segmented Tab Switcher ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shadow-2xs flex-wrap">
+        <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/60 shadow-2xs flex-wrap">
           {[
             { id: 'about', label: 'About & Overview', icon: Building2 },
             { id: 'culture', label: 'Culture & Benefits', icon: Sparkles }
@@ -781,13 +966,13 @@ export default function CompanyProfile() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
                   isActive
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                    ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 bg-transparent font-medium'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#00a884]' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#FF7043]' : 'text-slate-400'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -797,7 +982,7 @@ export default function CompanyProfile() {
         <button
           type="button"
           onClick={() => setIsEditingOrg(true)}
-          className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all bg-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
+          className="px-3.5 py-1.5 rounded-lg border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all bg-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
         >
           <Edit3 className="w-3.5 h-3.5 text-slate-500" />
           Edit Organization
@@ -812,20 +997,20 @@ export default function CompanyProfile() {
           <div className="space-y-6 animate-in fade-in duration-200">
             
             {/* Story Card */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
-              <div className="px-5 py-4 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
+            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#00a884]" />
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                  <Sparkles className="w-4 h-4 text-[#FF7043]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     About {formData.company_name}
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsEditingOrg(true)}
-                  className="text-xs font-bold text-[#00a884] hover:underline border-none bg-transparent cursor-pointer flex items-center gap-1"
+                  className="text-xs font-semibold text-[#FF7043] hover:text-[#E65B30] hover:underline border-none bg-transparent cursor-pointer flex items-center gap-1"
                 >
-                  <Edit3 className="w-3 h-3" /> Edit Story
+                  <Edit3 className="w-3.5 h-3.5" /> Edit Story
                 </button>
               </div>
               <div className="p-6">
@@ -836,7 +1021,7 @@ export default function CompanyProfile() {
             </div>
 
             {/* ── Business Context (Inline Editable Directly on Page) ── */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
@@ -851,7 +1036,7 @@ export default function CompanyProfile() {
                   type="button"
                   onClick={handleSaveBusinessContext}
                   disabled={savingBusinessContext}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer border-none disabled:opacity-50 self-start sm:self-auto"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(255,112,67,0.3)] cursor-pointer border-none disabled:opacity-50 self-start sm:self-auto"
                 >
                   {savingBusinessContext ? (
                     <>
@@ -871,7 +1056,7 @@ export default function CompanyProfile() {
                 {/* Row 1: Product / service & Business model */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Product / service
                     </label>
                     <input
@@ -880,12 +1065,12 @@ export default function CompanyProfile() {
                       value={formData.product_service}
                       onChange={handleChange}
                       placeholder="CloudNest workflow software"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-[#00a884] focus:ring-1 focus:ring-[#00a884] transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Business model
                     </label>
                     <div className="relative">
@@ -893,7 +1078,7 @@ export default function CompanyProfile() {
                         name="business_model"
                         value={formData.business_model}
                         onChange={handleChange}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white focus:outline-none focus:border-[#00a884] focus:ring-1 focus:ring-[#00a884] transition-all appearance-none cursor-pointer pr-10"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] appearance-none cursor-pointer pr-10"
                       >
                         <option value="Local services">Local services</option>
                         <option value="B2B SaaS">B2B SaaS</option>
@@ -913,7 +1098,7 @@ export default function CompanyProfile() {
                 {/* Row 2: Growth stage & Target audience */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Growth stage
                     </label>
                     <div className="relative">
@@ -921,7 +1106,7 @@ export default function CompanyProfile() {
                         name="growth_stage"
                         value={formData.growth_stage}
                         onChange={handleChange}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white focus:outline-none focus:border-[#00a884] focus:ring-1 focus:ring-[#00a884] transition-all appearance-none cursor-pointer pr-10"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] appearance-none cursor-pointer pr-10"
                       >
                         <option value="Scaling">Scaling</option>
                         <option value="Early stage">Early stage</option>
@@ -940,7 +1125,7 @@ export default function CompanyProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Target audience
                     </label>
                     <input
@@ -949,14 +1134,14 @@ export default function CompanyProfile() {
                       value={formData.target_audience}
                       onChange={handleChange}
                       placeholder="Operations leaders at mid-market companies"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-[#00a884] focus:ring-1 focus:ring-[#00a884] transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                 </div>
 
                 {/* Row 3: Ideal customer profile */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Ideal customer profile
                   </label>
                   <textarea
@@ -965,7 +1150,7 @@ export default function CompanyProfile() {
                     value={formData.ideal_customer_profile}
                     onChange={handleChange}
                     placeholder="Companies with 100–500 employees managing complex internal approvals."
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:border-[#00a884] focus:ring-1 focus:ring-[#00a884] transition-all resize-y min-h-[85px] leading-relaxed"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] resize-y min-h-[85px] leading-relaxed"
                   />
                 </div>
               </div>
@@ -976,36 +1161,36 @@ export default function CompanyProfile() {
 
         {/* ── CULTURE & BENEFITS TAB ── */}
         {activeTab === 'culture' && (
-          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs p-6 space-y-4 animate-in fade-in duration-200">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#00a884]" />
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 space-y-4 animate-in fade-in duration-200">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#FF7043]" />
               Life, Culture & Benefits at {formData.company_name}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                <h4 className="font-extrabold text-slate-900">🏠 Flexible Hybrid Work Model</h4>
+                <h4 className="font-bold text-slate-900">🏠 Flexible Hybrid Work Model</h4>
                 <p className="text-slate-600 mt-1 leading-relaxed">
                   2 days remote, 3 days collaborative studio work with high autonomy and flexible hours.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                <h4 className="font-extrabold text-slate-900">🚀 Fast-Track Career Growth</h4>
+                <h4 className="font-bold text-slate-900">🚀 Fast-Track Career Growth</h4>
                 <p className="text-slate-600 mt-1 leading-relaxed">
                   Bi-annual compensation reviews and clear engineering & marketing advancement ladders.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                <h4 className="font-extrabold text-slate-900">💡 Learning & Upskilling Budget</h4>
+                <h4 className="font-bold text-slate-900">💡 Learning & Upskilling Budget</h4>
                 <p className="text-slate-600 mt-1 leading-relaxed">
                   ₹50,000 annual allowance for certifications, cloud workshops, and technical conferences.
                 </p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70">
-                <h4 className="font-extrabold text-slate-900">🩺 Comprehensive Health Coverage</h4>
+                <h4 className="font-bold text-slate-900">🩺 Comprehensive Health Coverage</h4>
                 <p className="text-slate-600 mt-1 leading-relaxed">
                   Full medical insurance coverage for employees and direct family dependents.
                 </p>
@@ -1020,17 +1205,17 @@ export default function CompanyProfile() {
       {/* EDIT ORGANIZATION PROFILE MODAL (ADMINISTRATOR)                         */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {isEditingOrg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in select-text">
-          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-slate-800 relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in select-text">
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-200/80 text-slate-800 relative max-h-[90vh] overflow-y-auto">
 
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#5C59E8] flex items-center justify-center font-bold">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-900">
                     Edit Organization Profile & Overview
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -1042,7 +1227,7 @@ export default function CompanyProfile() {
               <button
                 type="button"
                 onClick={() => setIsEditingOrg(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1052,11 +1237,11 @@ export default function CompanyProfile() {
 
               {/* Logo S3 Upload Field */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Company Brand Logo (Stored on AWS S3)
                 </label>
-                <div className="flex items-center gap-3 p-3 bg-slate-50/60 rounded-2xl border border-slate-200/80">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                <div className="flex items-center gap-3 p-3 bg-slate-50/60 rounded-xl border border-slate-200/80">
+                  <div className="w-14 h-14 rounded-xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
                     {formData.logo_url ? (
                       <img
                         src={formData.logo_url}
@@ -1064,7 +1249,7 @@ export default function CompanyProfile() {
                         className="w-full h-full object-contain p-1"
                       />
                     ) : (
-                      <span className="text-base font-black text-slate-400">
+                      <span className="text-base font-bold text-slate-400">
                         {formData.company_name ? formData.company_name.charAt(0).toUpperCase() : 'C'}
                       </span>
                     )}
@@ -1072,7 +1257,7 @@ export default function CompanyProfile() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <label className="px-3 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+                      <label className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
                         {uploadingLogo ? (
                           <>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1097,7 +1282,7 @@ export default function CompanyProfile() {
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, logo_url: '' }))}
-                          className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-bold transition-colors cursor-pointer bg-white"
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition-colors cursor-pointer bg-white"
                         >
                           Remove
                         </button>
@@ -1116,25 +1301,25 @@ export default function CompanyProfile() {
               {/* Company Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Company Name *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Company Name *</label>
                   <input
                     type="text"
                     name="company_name"
                     value={formData.company_name}
                     onChange={handleChange}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Official Phone *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Official Phone *</label>
                   <input
                     type="text"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                   />
                 </div>
               </div>
@@ -1142,32 +1327,32 @@ export default function CompanyProfile() {
               {/* Website & Location */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Official Website</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Official Website</label>
                   <input
                     type="url"
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
                     placeholder="https://yourcompany.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Headquarters Location</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Headquarters Location</label>
                   <input
                     type="text"
                     name="location"
                     value={formData.location}
                     onChange={handleChange}
                     placeholder="City, State, Country"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                   />
                 </div>
               </div>
 
               {/* Industry & Specialization */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Industry & Specialization *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Industry & Specialization *</label>
                 <input
                   type="text"
                   name="industry"
@@ -1175,47 +1360,47 @@ export default function CompanyProfile() {
                   onChange={handleChange}
                   required
                   placeholder="e.g. Digital Marketing, MarTech, Cloud Media"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                 />
               </div>
 
               {/* About & Mission */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">About Company Story & Mission</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">About Company Story & Mission</label>
                 <textarea
                   name="about"
                   rows="3"
                   value={formData.about}
                   onChange={handleChange}
                   placeholder="Describe your company, culture, and core competency..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] leading-relaxed"
                 />
               </div>
 
               {/* Business Context Fields in Modal */}
               <div className="pt-3 border-t border-slate-100 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Business Context
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Product / service</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Product / service</label>
                     <input
                       type="text"
                       name="product_service"
                       value={formData.product_service}
                       onChange={handleChange}
                       placeholder="CloudNest workflow software"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Business model</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Business model</label>
                     <select
                       name="business_model"
                       value={formData.business_model}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer"
                     >
                       <option value="Local services">Local services</option>
                       <option value="B2B SaaS">B2B SaaS</option>
@@ -1228,12 +1413,12 @@ export default function CompanyProfile() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Growth stage</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Growth stage</label>
                     <select
                       name="growth_stage"
                       value={formData.growth_stage}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer"
                     >
                       <option value="Scaling">Scaling</option>
                       <option value="Early stage">Early stage</option>
@@ -1245,106 +1430,106 @@ export default function CompanyProfile() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Target audience</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target audience</label>
                     <input
                       type="text"
                       name="target_audience"
                       value={formData.target_audience}
                       onChange={handleChange}
                       placeholder="Operations leaders at mid-market companies"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Ideal customer profile</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Ideal customer profile</label>
                   <textarea
                     name="ideal_customer_profile"
                     rows="2"
                     value={formData.ideal_customer_profile}
                     onChange={handleChange}
                     placeholder="Companies with 100–500 employees managing complex internal approvals."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] leading-relaxed"
                   />
                 </div>
               </div>
 
               {/* Hiring Need Fields in Modal */}
               <div className="pt-3 border-t border-slate-100 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                   Hiring Need
                 </h4>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Business problem</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Business problem</label>
                   <textarea
                     name="business_problem"
                     rows="2"
                     value={formData.business_problem}
                     onChange={handleChange}
                     placeholder="Lead volume is rising, but qualified pipeline is inconsistent."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] leading-relaxed"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Expected outcome</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Expected outcome</label>
                   <textarea
                     name="expected_outcome"
                     rows="2"
                     value={formData.expected_outcome}
                     onChange={handleChange}
                     placeholder="Build a repeatable demand programme and improve lead-to-opportunity quality."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] leading-relaxed"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Team support</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Team support</label>
                     <input
                       type="text"
                       name="team_support"
                       value={formData.team_support}
                       onChange={handleChange}
                       placeholder="Marketing head, content specialist, shared design support"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Monthly budget range</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Monthly budget range</label>
                     <input
                       type="text"
                       name="monthly_budget_range"
                       value={formData.monthly_budget_range}
                       onChange={handleChange}
                       placeholder="₹8–12 lakh"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Decision authority</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Decision authority</label>
                     <input
                       type="text"
                       name="decision_authority"
                       value={formData.decision_authority}
                       onChange={handleChange}
                       placeholder="Own campaigns and recommend budget allocation"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Success horizon</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Success horizon</label>
                     <input
                       type="text"
                       name="success_horizon"
                       value={formData.success_horizon}
                       onChange={handleChange}
                       placeholder="First 90 days"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
                     />
                   </div>
                 </div>
@@ -1355,7 +1540,7 @@ export default function CompanyProfile() {
                 <button
                   type="button"
                   onClick={() => setIsEditingOrg(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer bg-white"
+                  className="px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer bg-white"
                 >
                   Cancel
                 </button>
@@ -1363,7 +1548,7 @@ export default function CompanyProfile() {
                 <button
                   type="submit"
                   disabled={loading || uploadingLogo}
-                  className="px-5 py-2.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border-none disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all cursor-pointer border-none disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -1388,3 +1573,4 @@ export default function CompanyProfile() {
     </div>
   );
 }
+

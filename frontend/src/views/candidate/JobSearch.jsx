@@ -586,9 +586,9 @@ export default function JobSearch({ setActiveTab }) {
   });
 
   return (
-    <div className="bg-[#F6F7FB] min-h-screen py-5 text-slate-800 font-sans">
-      <div className="max-w-10xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <div className="min-h-full bg-[#F7F8FB] p-4 sm:p-6 lg:p-8 space-y-6 text-slate-800 font-sans select-text">
+      <div className="max-w-10xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
           {/* ========================================================================= */}
           {/* LEFT COLUMN: Candidate Summary & Interactive Filter Sidebar (Fixed/Sticky) */}
@@ -597,56 +597,56 @@ export default function JobSearch({ setActiveTab }) {
             <div className="lg:sticky lg:top-5 space-y-4 lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto no-scrollbar overscroll-contain pb-6">
 
             {/* 1. Candidate Mini Profile Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-              <div className="h-16 bg-gradient-to-r from-slate-800 via-slate-900 to-indigo-950 relative">
-                <div className="absolute inset-0 bg-[radial-gradient(#ffffff15_1px,transparent_1px)] [background-size:12px_12px]" />
-              </div>
-              <div className="px-4 pb-4 pt-0 text-center relative -mt-9">
-                <div className="inline-block relative">
-                  <div className="w-16 h-16 rounded-full border-2 border-white shadow-md bg-slate-900 text-white font-bold text-xl flex items-center justify-center mx-auto ring-2 ring-[#0a66c2]/40">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-5">
+              <div className="flex flex-col items-center text-center">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-2 border-slate-100 shadow-2xs bg-slate-900 text-white font-extrabold text-xl flex items-center justify-center mx-auto">
                     {userName.charAt(0).toUpperCase()}
                   </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white" title="Verified candidate">
+                    <ShieldCheck className="w-3 h-3" />
+                  </div>
                 </div>
+
                 <div
-                  className="mt-2.5 cursor-pointer group"
+                  className="mt-3 cursor-pointer group"
                   onClick={() => setActiveTab('candidate_profile')}
                 >
-                  <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:underline group-hover:text-[#0a66c2] flex items-center justify-center gap-1">
+                  <h3 className="font-bold text-slate-900 text-sm leading-snug group-hover:text-[#FF7043] transition-colors flex items-center justify-center gap-1">
                     {userName}
-                    <ShieldCheck className="w-4 h-4 text-[#0a66c2] shrink-0" />
                   </h3>
                   <p className="text-xs text-slate-500 leading-snug mt-0.5 line-clamp-1">
                     {userTitle}
                   </p>
-                  <p className="text-[0.7rem] text-slate-400 mt-1 flex items-center justify-center gap-1">
+                  <p className="text-[11px] text-slate-400 mt-1 flex items-center justify-center gap-1">
                     <MapPin className="w-3 h-3 text-slate-400" /> {userLocation}
                   </p>
                 </div>
 
-                <div className="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-center text-xs w-full">
                   <div
                     onClick={() => setActiveTab('my_applications')}
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/80 border border-slate-100 cursor-pointer transition-colors"
                   >
-                    <span className="block font-bold text-slate-900 text-sm">{Object.keys(appliedJobs).length}</span>
-                    <span className="text-[0.68rem] text-slate-500 font-medium">Applied</span>
+                    <span className="block font-black text-slate-900 text-sm">{Object.keys(appliedJobs).length}</span>
+                    <span className="text-[11px] text-slate-500 font-semibold">Applied</span>
                   </div>
                   <div
                     onClick={() => setActiveTab('saved_jobs')}
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/80 border border-slate-100 cursor-pointer transition-colors"
                   >
-                    <span className="block font-bold text-slate-900 text-sm">{Object.keys(savedJobIds).length}</span>
-                    <span className="text-[0.68rem] text-slate-500 font-medium">Saved</span>
+                    <span className="block font-black text-slate-900 text-sm">{Object.keys(savedJobIds).length}</span>
+                    <span className="text-[11px] text-slate-500 font-semibold">Saved</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 2. Refine Filter Studio */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#0a66c2]" />
+                  <SlidersHorizontal className="w-4 h-4 text-slate-700" />
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                     Filter Roles
                   </span>
@@ -655,7 +655,7 @@ export default function JobSearch({ setActiveTab }) {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="text-[0.7rem] font-bold text-[#0a66c2] hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
+                    className="text-[11px] font-semibold text-[#FF7043] hover:underline flex items-center gap-1 bg-transparent border-none cursor-pointer"
                   >
                     <RefreshCw className="w-3 h-3" /> Reset
                   </button>
@@ -664,7 +664,7 @@ export default function JobSearch({ setActiveTab }) {
 
               {/* Work Mode Pill Selector */}
               <div>
-                <label className="block text-[0.72rem] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Work Setup
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -680,8 +680,8 @@ export default function JobSearch({ setActiveTab }) {
                           fetchJobs({ work_mode: mode });
                         }}
                         className={`py-1.5 px-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${isActive
-                            ? 'bg-[#0a66c2] text-white border-[#0a66c2] shadow-xs'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                            : 'bg-slate-50/80 text-slate-600 border-slate-200/80 hover:bg-slate-100'
                           }`}
                       >
                         {label}
@@ -693,7 +693,7 @@ export default function JobSearch({ setActiveTab }) {
 
               {/* Experience Level Selector */}
               <div>
-                <label className="block text-[0.72rem] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Experience Level
                 </label>
                 <div className="space-y-1.5">
@@ -712,7 +712,7 @@ export default function JobSearch({ setActiveTab }) {
                         name="exp_filter"
                         checked={experienceFilter === lvl.id}
                         onChange={() => setExperienceFilter(lvl.id)}
-                        className="text-[#0a66c2] focus:ring-[#0a66c2]"
+                        className="accent-[#FF7043]"
                       />
                       <span>{lvl.label}</span>
                     </label>
@@ -722,7 +722,7 @@ export default function JobSearch({ setActiveTab }) {
 
               {/* Popular Skill Chips */}
               <div className="pt-2 border-t border-slate-100">
-                <label className="block text-[0.72rem] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Popular Skill Tags
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -731,9 +731,9 @@ export default function JobSearch({ setActiveTab }) {
                       key={tag}
                       type="button"
                       onClick={() => handleTagClick(tag)}
-                      className={`text-[0.68rem] font-medium px-2.5 py-1 rounded-lg transition-colors cursor-pointer border ${selectedSkillTag === tag
-                          ? 'bg-[#0a66c2] text-white border-[#0a66c2]'
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors cursor-pointer border ${selectedSkillTag === tag
+                          ? 'bg-[#FF7043] text-white border-[#FF7043] shadow-2xs'
+                          : 'bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-slate-100'
                         }`}
                     >
                       {tag}
@@ -745,36 +745,36 @@ export default function JobSearch({ setActiveTab }) {
             </div>
 
             {/* 3. Job Alert Notification Box */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 rounded-2xl border border-emerald-200/70 p-4 text-xs space-y-2">
+            <div className="bg-emerald-50/60 rounded-2xl border border-emerald-200/80 p-4 text-xs space-y-2 shadow-2xs">
               <div className="flex items-center gap-2 text-emerald-800 font-bold">
                 <Zap className="w-4 h-4 text-emerald-600" />
                 <span>Instant Job Match Alert</span>
               </div>
-              <p className="text-emerald-900/80 text-[0.72rem] leading-relaxed">
+              <p className="text-emerald-900/80 text-[11px] leading-relaxed">
                 Receive instant notifications as soon as verified recruiters publish roles matching your preferred skills.
               </p>
               <button
                 type="button"
                 onClick={() => alert('Job alerts activated for your profile!')}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors border-none cursor-pointer"
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-2xs transition-colors border-none cursor-pointer"
               >
                 Turn On Job Alerts
               </button>
             </div>
 
             {/* 4. Fast-Track Candidate Advice */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 text-xs space-y-2.5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-4 text-xs space-y-2.5">
               <div className="flex items-center gap-1.5 text-slate-900 font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Recruiter Tips</span>
               </div>
-              <p className="text-slate-600 leading-relaxed text-[0.72rem]">
-                Candidates who include past campaign ROAS or portfolio links receive responses from digital marketing hiring managers 3x faster.
+              <p className="text-slate-600 leading-relaxed text-[11px]">
+                Candidates who include past campaign achievements or portfolio links receive responses from hiring managers 3x faster.
               </p>
               <button
                 type="button"
                 onClick={() => setActiveTab('candidate_profile')}
-                className="text-[#0a66c2] hover:underline font-bold text-[0.72rem] inline-flex items-center gap-1 border-none bg-transparent p-0 cursor-pointer"
+                className="text-[#FF7043] hover:underline font-semibold text-[11px] inline-flex items-center gap-1 border-none bg-transparent p-0 cursor-pointer"
               >
                 Refine Your Candidate Profile <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
@@ -788,18 +788,18 @@ export default function JobSearch({ setActiveTab }) {
           {/* ========================================================================= */}
           <main className="lg:col-span-9 space-y-4 self-start">
 
-            {/* 1. LinkedIn-style Hero Search Card */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4">
+            {/* 1. Hero Search Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    Explore <span className="text-[#0a66c2]">Opportunities</span>
+                    Explore <span className="text-[#FF7043]">Opportunities</span>
                   </h1>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Connect with top digital marketing agencies, growth teams, and verified tech partners.
+                    Connect with top agency partners, growth teams, and verified hiring managers.
                   </p>
                 </div>
-                <span className="text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
                   <Sparkles className="w-3 h-3 text-emerald-600" /> Verified Openings
                 </span>
               </div>
@@ -813,7 +813,7 @@ export default function JobSearch({ setActiveTab }) {
                     <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#0a66c2] transition-all placeholder:text-slate-400"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50/60 hover:bg-slate-100/60 focus:bg-white border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all placeholder:text-slate-400"
                       placeholder="Title, skill, or keyword (e.g. SEO, Meta Ads)..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
@@ -825,7 +825,7 @@ export default function JobSearch({ setActiveTab }) {
                     <MapPin className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#0a66c2] transition-all placeholder:text-slate-400"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50/60 hover:bg-slate-100/60 focus:bg-white border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all placeholder:text-slate-400"
                       placeholder="City, location, or remote..."
                       value={locationInput}
                       onChange={e => setLocationInput(e.target.value)}
@@ -836,13 +836,13 @@ export default function JobSearch({ setActiveTab }) {
 
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 overflow-x-auto no-scrollbar py-1">
-                    <span className="text-[0.7rem] font-bold text-slate-400 uppercase shrink-0">Try:</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0">Try:</span>
                     {['Meta Ads', 'React', 'SEO Strategy', 'ROAS'].map(t => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => handleTagClick(t)}
-                        className="text-[0.7rem] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md shrink-0 border-none cursor-pointer transition-colors"
+                        className="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md shrink-0 border-none cursor-pointer transition-colors"
                       >
                         {t}
                       </button>
@@ -851,7 +851,7 @@ export default function JobSearch({ setActiveTab }) {
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#0a66c2] hover:bg-[#084e96] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0 border-none cursor-pointer"
+                    className="px-5 py-2.5 bg-[#FF7043] hover:bg-[#E65B30] text-white font-semibold text-xs rounded-xl shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all flex items-center gap-1.5 shrink-0 border-none cursor-pointer"
                   >
                     <Search className="w-3.5 h-3.5" />
                     <span>Search Roles</span>
@@ -867,7 +867,7 @@ export default function JobSearch({ setActiveTab }) {
                   {loading ? 'Searching...' : `${filteredJobs.length} Open Positions`}
                 </span>
                 {workModeFilter && (
-                  <span className="bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-md text-[0.7rem]">
+                  <span className="bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-md text-[11px]">
                     {workModeFilter}
                   </span>
                 )}
@@ -891,12 +891,12 @@ export default function JobSearch({ setActiveTab }) {
 
             {/* 3. Job Results Feed */}
             {loading ? (
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-sm space-y-3">
-                <div className="w-8 h-8 border-3 border-[#0a66c2] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs font-semibold text-slate-600">Loading digital marketing opportunities...</p>
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
+                <div className="w-8 h-8 border-2 border-slate-200 border-t-[#FF7043] rounded-full animate-spin mx-auto" />
+                <p className="text-xs font-semibold text-slate-600">Loading opportunities...</p>
               </div>
             ) : filteredJobs.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-sm space-y-3">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                   <Briefcase className="w-6 h-6" />
                 </div>
@@ -923,18 +923,18 @@ export default function JobSearch({ setActiveTab }) {
                   return (
                     <div
                       key={job.id}
-                      className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 hover:border-[#0a66c2]/60 hover:shadow-md transition-all duration-200 shadow-sm group relative"
+                      className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 hover:border-slate-300 hover:shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all duration-200 shadow-[0_1px_2px_rgba(15,23,42,0.04)] group relative"
                     >
                       {/* Top Header: Company Avatar + Title + Bookmark */}
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-start gap-3.5 min-w-0">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-xs border border-slate-200 group-hover:scale-105 transition-transform">
+                          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-2xs border border-slate-200 group-hover:scale-105 transition-transform">
                             {compInitial}
                           </div>
                           <div className="min-w-0">
                             <h3
                               onClick={() => setViewDetailsJob(job)}
-                              className="text-base font-bold text-slate-900 group-hover:text-[#0a66c2] transition-colors leading-snug cursor-pointer line-clamp-1"
+                              className="text-base font-bold text-slate-900 group-hover:text-[#FF7043] transition-colors leading-snug cursor-pointer line-clamp-1"
                             >
                               {job.title}
                             </h3>
@@ -958,7 +958,7 @@ export default function JobSearch({ setActiveTab }) {
                           onClick={() => handleToggleSave(job)}
                           className={`p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${isSaved
                               ? 'bg-amber-50 border-amber-200 text-amber-600'
-                              : 'bg-transparent border-slate-200 hover:bg-slate-50 text-slate-400 hover:text-slate-700'
+                              : 'bg-transparent border-slate-200/80 hover:bg-slate-50 text-slate-400 hover:text-slate-700'
                             }`}
                           title={isSaved ? 'Remove from saved' : 'Save job'}
                         >
@@ -1009,14 +1009,14 @@ export default function JobSearch({ setActiveTab }) {
 
                       {/* Required Skills Badges */}
                       <div className="flex items-center gap-1.5 flex-wrap mb-3.5">
-                        <span className="text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider shrink-0">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                           Required Skills:
                         </span>
                         {(job.skills || []).map((skill, i) => (
                           <span
                             key={i}
                             onClick={() => handleTagClick(skill)}
-                            className="text-[0.68rem] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                            className="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                           >
                             {skill}
                           </span>
@@ -1025,7 +1025,7 @@ export default function JobSearch({ setActiveTab }) {
 
                       {/* Action Footer Bar */}
                       <div className="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 text-[0.7rem] text-slate-400">
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
                           <Clock className="w-3.5 h-3.5 text-slate-400" />
                           <span>Actively Reviewing Applicants</span>
                         </div>
@@ -1034,29 +1034,29 @@ export default function JobSearch({ setActiveTab }) {
                           <button
                             type="button"
                             onClick={() => setAiModalJob(job)}
-                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 hover:text-indigo-900 border border-indigo-200/80 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs group"
+                            className="px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100/80 text-purple-700 border border-purple-200/80 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs group"
                           >
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-600 group-hover:rotate-12 transition-transform" />
+                            <Sparkles className="w-3.5 h-3.5 text-purple-600 group-hover:rotate-12 transition-transform" />
                             <span>AI Analyse</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setViewDetailsJob(job)}
-                            className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                            className="px-3.5 py-2 rounded-xl border border-slate-200/80 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer bg-white"
                           >
                             View Details
                           </button>
 
                           {isApplied ? (
-                            <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center gap-1">
+                            <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-xs flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Applied
                             </span>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleOpenApply(job)}
-                              className="px-4 py-2 rounded-xl bg-[#0a66c2] hover:bg-[#084e96] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 border-none cursor-pointer"
+                              className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white font-semibold text-xs shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all flex items-center gap-1.5 border-none cursor-pointer"
                             >
                               <Send className="w-3 h-3" /> Easy Apply
                             </button>
@@ -1511,7 +1511,7 @@ export default function JobSearch({ setActiveTab }) {
                 </button>
                 {appliedJobs[viewDetailsJob.id] ? (
                   <span className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#00a884]" /> Already Applied
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Already Applied
                   </span>
                 ) : (
                   <button
@@ -1520,7 +1520,7 @@ export default function JobSearch({ setActiveTab }) {
                       handleOpenApply(viewDetailsJob);
                       setViewDetailsJob(null);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#00a884] hover:bg-[#008f6f] text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all border-none cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white font-semibold text-xs flex items-center gap-1.5 shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all border-none cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" /> Apply Now
                   </button>
@@ -1542,7 +1542,7 @@ export default function JobSearch({ setActiveTab }) {
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <span className="text-[0.68rem] font-bold text-[#0a66c2] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[#FF7043] uppercase tracking-wider">
                   Easy Application
                 </span>
                 <h3 className="text-lg font-bold text-slate-900 mt-0.5">{selectedJob.title}</h3>
@@ -1841,9 +1841,9 @@ export default function JobSearch({ setActiveTab }) {
                   Note to Hiring Manager (Optional)
                 </label>
                 <textarea
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#0a66c2] focus:border-transparent transition-all placeholder:text-slate-400 bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400 bg-white"
                   rows={4}
-                  placeholder="Share a brief note about your experience, campaign ROAS achievements, or availability..."
+                  placeholder="Share a brief note about your experience, campaign achievements, or availability..."
                   value={coverLetter}
                   onChange={e => setCoverLetter(e.target.value)}
                 />
@@ -1861,7 +1861,7 @@ export default function JobSearch({ setActiveTab }) {
                 <button
                   type="submit"
                   disabled={applying}
-                  className="px-5 py-2.5 bg-[#0a66c2] hover:bg-[#084e96] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 border-none cursor-pointer"
+                  className="px-5 py-2.5 bg-[#FF7043] hover:bg-[#E65B30] text-white font-semibold text-xs rounded-xl shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all flex items-center gap-1.5 disabled:opacity-50 border-none cursor-pointer"
                 >
                   {applying ? (
                     'Submitting...'
@@ -2241,7 +2241,7 @@ export default function JobSearch({ setActiveTab }) {
                       handleOpenApply(aiModalJob);
                       setAiModalJob(null);
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-[#0a66c2] hover:bg-[#084e96] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 border-none cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white font-semibold text-xs shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all flex items-center gap-1.5 border-none cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Easy Apply</span>

@@ -16,7 +16,7 @@ function MiniSparkline({ color = '#5C59E8', height = 36, width = 76, isSolidWhit
     <svg className="overflow-visible" width={width} height={height} viewBox="0 0 80 40">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={isSolidWhite ? '#FFFFFF' : color} stopOpacity={isSolidWhite ? 0.45 : 0.28} />
+          <stop offset="0%" stopColor={isSolidWhite ? '#FFFFFF' : color} stopOpacity={isSolidWhite ? 0.45 : 0.24} />
           <stop offset="100%" stopColor={isSolidWhite ? '#FFFFFF' : color} stopOpacity={0.0} />
         </linearGradient>
       </defs>
@@ -28,10 +28,49 @@ function MiniSparkline({ color = '#5C59E8', height = 36, width = 76, isSolidWhit
         d="M 0,28 C 15,12 25,32 40,16 C 55,2 65,30 80,14"
         fill="none"
         stroke={strokeColor}
-        strokeWidth="2.5"
+        strokeWidth="2.25"
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+// Shared soft-tint badge — replaces the white/bordered pill look with a
+// filled, low-opacity tint that reads as calmer and more "product" than a stroke.
+const TINTS = {
+  indigo: 'bg-[#5C59E8]/8 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/15',
+  orange: 'bg-[#FF7043]/8 text-[#E15A2C] ring-1 ring-inset ring-[#FF7043]/15',
+  emerald: 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15',
+  slate: 'bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200/70',
+};
+
+function Badge({ tone = 'orange', children, className = '' }) {
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold tabular-nums whitespace-nowrap ${TINTS[tone]} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+// Shared icon-only action button — soft tinted circle instead of a bare white/bordered chip.
+function IconButton({ icon: Icon, tone = 'slate', onClick, title }) {
+  const toneMap = {
+    orange: 'text-[#E15A2C] bg-[#FF7043]/8 hover:bg-[#FF7043]/14',
+    indigo: 'text-[#4845D2] bg-[#5C59E8]/8 hover:bg-[#5C59E8]/14',
+    emerald: 'text-[#00846A] bg-[#00A884]/8 hover:bg-[#00A884]/14',
+    slate: 'text-slate-500 bg-slate-100 hover:bg-slate-200/70',
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors duration-150 border-none ${toneMap[tone]}`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
   );
 }
 
@@ -163,7 +202,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
       const appCount = liveData.applications.length;
       const savedCount = liveData.savedJobs.length;
       const ivCount = liveData.interviews.filter(i => i.status !== 'CANCELLED').length;
-      
+
       // Calculate profile completion %
       const p = liveData.profile || user?.profile || {};
       const fields = [p.full_name, p.title, p.skills, p.city, p.resume_url, p.avatar_url, p.summary];
@@ -226,18 +265,18 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
   const responseGraphTitle = isCandidate
     ? 'Application & Profile Views Trend'
     : isRecruiter
-    ? 'Applicant Inflow & Pipeline Velocity'
-    : isAdmin
-    ? 'Platform Throughput & API Response'
-    : 'Requisition Velocity & Review Activity';
+      ? 'Applicant Inflow & Pipeline Velocity'
+      : isAdmin
+        ? 'Platform Throughput & API Response'
+        : 'Requisition Velocity & Review Activity';
 
   const responseGraphLegend = isCandidate
     ? 'Recruiter Views'
     : isRecruiter
-    ? 'Daily Applicants'
-    : isAdmin
-    ? 'Active API Sessions'
-    : 'Candidate Reviews';
+      ? 'Daily Applicants'
+      : isAdmin
+        ? 'Active API Sessions'
+        : 'Candidate Reviews';
 
   const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
 
@@ -407,10 +446,10 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
   const projectTestsTitle = isCandidate
     ? 'Upcoming Assessments & Interviews'
     : isRecruiter
-    ? 'Active Requisition Pipelines'
-    : isAdmin
-    ? 'Staff Verification & Compliance Audits'
-    : 'Scheduled Candidate Evaluations';
+      ? 'Active Requisition Pipelines'
+      : isAdmin
+        ? 'Staff Verification & Compliance Audits'
+        : 'Scheduled Candidate Evaluations';
 
   const testRows = useMemo(() => {
     if (isCandidate) {
@@ -420,7 +459,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: `Lead: ${iv.interviewer_name || 'Uptrix Evaluator'}`,
           date: iv.scheduled_at ? new Date(iv.scheduled_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Scheduled Session',
           status: iv.mode === 'AI' ? 'AI Proctor Active' : 'Human Panel',
-          statusColor: iv.mode === 'AI' ? 'text-[#00A884]' : 'text-[#5C59E8]',
+          statusColor: iv.mode === 'AI' ? 'text-[#00846A]' : 'text-[#4845D2]',
           actionTab: 'my_interviews'
         }));
       }
@@ -431,7 +470,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Lead: Sarah Connor',
           date: '2026/09/25 @ 10:00 AM',
           status: 'Test Scheduled',
-          statusColor: 'text-[#FF7043]',
+          statusColor: 'text-[#E15A2C]',
           actionTab: 'my_interviews'
         },
         {
@@ -439,7 +478,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Alex Vance',
           date: '2026/09/27 @ 02:30 PM',
           status: '0/3 Active Runs',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'my_interviews'
         },
         {
@@ -447,7 +486,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Jason Miller',
           date: '2026/09/29 @ 11:00 AM',
           status: '2/3 Active Runs',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'my_interviews'
         }
       ];
@@ -460,7 +499,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: `Author: ${job.company || 'Hiring Lead'}`,
           date: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Active Requisition',
           status: `${liveData.applications.filter(a => a.job_id === job.id).length || 0} Applicants`,
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'applicants'
         }));
       }
@@ -471,7 +510,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Kyadari Tarun',
           date: '2026/09/24 @ 07:25 AM',
           status: '24 Applicants',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'applicants'
         },
         {
@@ -479,7 +518,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Recruiter Desk',
           date: '2026/09/23 @ 04:15 PM',
           status: '12 Shortlisted',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'applicants'
         },
         {
@@ -487,7 +526,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Sarah Jenkins',
           date: '2026/09/22 @ 09:30 AM',
           status: 'Screening Complete',
-          statusColor: 'text-[#FF7043]',
+          statusColor: 'text-[#E15A2C]',
           actionTab: 'manage_jobs'
         }
       ];
@@ -500,7 +539,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: `Staff ID: ${doc.staff_id || 'Verification Team'}`,
           date: doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Pending Review',
           status: doc.status || 'Pending Verification',
-          statusColor: doc.status === 'VERIFIED' ? 'text-[#00A884]' : 'text-[#FF7043]',
+          statusColor: doc.status === 'VERIFIED' ? 'text-[#00846A]' : 'text-[#E15A2C]',
           actionTab: 'staff_documents'
         }));
       }
@@ -511,7 +550,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Admin: Alex Vance',
           date: '2026/09/24 @ 07:25 AM',
           status: 'Compliance Incomplete',
-          statusColor: 'text-[#FF7043]',
+          statusColor: 'text-[#E15A2C]',
           actionTab: 'staff_documents'
         },
         {
@@ -519,7 +558,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: DevOps Cluster',
           date: '2026/09/24 @ 07:20 AM',
           status: '0/3 Active Runs',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'support'
         },
         {
@@ -527,7 +566,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           author: 'Author: Security Audit',
           date: '2026/09/24 @ 06:45 AM',
           status: '2/3 Active Runs',
-          statusColor: 'text-[#00A884]',
+          statusColor: 'text-[#00846A]',
           actionTab: 'support'
         }
       ];
@@ -540,7 +579,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         author: 'Candidate: Vikram Seth',
         date: '2026/09/24 @ 03:00 PM',
         status: 'Ready for Review',
-        statusColor: 'text-[#00A884]',
+        statusColor: 'text-[#00846A]',
         actionTab: 'applicants'
       },
       {
@@ -548,7 +587,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         author: 'Candidate: Neha Kapoor',
         date: '2026/09/25 @ 01:00 PM',
         status: 'Scorecard Pending',
-        statusColor: 'text-[#FF7043]',
+        statusColor: 'text-[#E15A2C]',
         actionTab: 'interviews'
       },
       {
@@ -556,7 +595,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         author: 'Candidate: Arjun Patel',
         date: '2026/09/26 @ 10:00 AM',
         status: 'Scheduled',
-        statusColor: 'text-[#00A884]',
+        statusColor: 'text-[#00846A]',
         actionTab: 'interviews'
       }
     ];
@@ -568,26 +607,26 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
   const tableTitle = isCandidate
     ? 'Active Job Applications & Proctor Tracker'
     : isRecruiter
-    ? 'Live Job Requisitions & Performance Monitor'
-    : isAdmin
-    ? 'Platform Services & Staff Activity Monitors'
-    : 'Department Job Openings & Candidate Pipeline';
+      ? 'Live Job Requisitions & Performance Monitor'
+      : isAdmin
+        ? 'Platform Services & Staff Activity Monitors'
+        : 'Department Job Openings & Candidate Pipeline';
 
   const tableAddButtonLabel = isCandidate
     ? '+ Browse Jobs'
     : isRecruiter
-    ? '+ Post New Job'
-    : isAdmin
-    ? '+ Add Staff Member'
-    : '+ Review Openings';
+      ? '+ Post New Job'
+      : isAdmin
+        ? '+ Add Staff Member'
+        : '+ Review Openings';
 
   const tableAddButtonTab = isCandidate
     ? 'find_jobs'
     : isRecruiter
-    ? 'post_job'
-    : isAdmin
-    ? 'add_staff'
-    : 'manage_jobs';
+      ? 'post_job'
+      : isAdmin
+        ? 'add_staff'
+        : 'manage_jobs';
 
   const tableRows = useMemo(() => {
     if (isCandidate) {
@@ -663,33 +702,39 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     ];
   }, [isCandidate, isRecruiter, isAdmin, liveData]);
 
+  // Consistent card shell used everywhere — white background always, a soft
+  // 1px border rather than a heavy shadow, and a slightly deeper shadow on hover
+  // so the panel reads as "lifted" without the generic drop-shadow-under-every-card look.
+  const cardClass =
+    'bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_rgba(15,23,42,0.06)]';
+
   return (
     <div
-      className="p-4 sm:p-7 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-200"
+      className="p-4 sm:p-7 max-w-[1600px] mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased"
       style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
     >
 
       {/* ── TOP HEADER / GREETING ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight m-0">
+          <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
             Dashboard
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium m-0">
-            <span className="text-[#FF7043] font-bold">Hi {firstName},</span>{' '}
-            <span className="text-slate-400">Great to see you again</span>
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
+            <span className="text-slate-800 font-medium">Hi {firstName},</span>{' '}
+            <span className="text-slate-400">great to see you again.</span>
           </p>
         </div>
 
         {/* Live Sync Status indicator */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {loading ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white text-amber-600 border border-slate-200 shadow-xs">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing live data...
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-amber-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing live data
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white text-emerald-600 border border-slate-200 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Dynamic Feed
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-emerald-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
             </span>
           )}
         </div>
@@ -700,13 +745,13 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         {statCards.map((card, idx) => (
           <div
             key={idx}
-            className="bg-white rounded-2xl p-5 shadow-xs border border-slate-100 flex items-center justify-between transition-transform hover:-translate-y-0.5 select-none"
+            className={`${cardClass} p-5 flex items-center justify-between`}
           >
             <div>
-              <div className="text-2xl sm:text-3xl font-bold text-slate-900 leading-none">
+              <div className="text-[28px] font-semibold text-slate-900 leading-none tabular-nums tracking-tight">
                 {card.value}
               </div>
-              <div className="text-xs font-semibold text-slate-400 mt-2">
+              <div className="text-xs font-medium text-slate-400 mt-2.5">
                 {card.label}
               </div>
             </div>
@@ -720,15 +765,15 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
       {/* ── ROW 2: RESPONSE GRAPH & TRAFFIC / PIPELINE STAT CARD ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left: Response Graph (8 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-100 flex flex-col justify-between">
+        <div className={`lg:col-span-8 ${cardClass} p-5 sm:p-6 flex flex-col justify-between`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <h2 className="text-base font-bold text-slate-900 m-0">
+            <h2 className="text-[15px] font-semibold text-slate-900 m-0">
               {responseGraphTitle}
             </h2>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                <span className="w-2 h-2 rounded-full bg-[#FF7043]" />
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                <span className="w-2 h-2 rounded-full bg-[#5C59E8]" />
                 <span>{responseGraphLegend}</span>
               </div>
 
@@ -737,14 +782,14 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                 <button
                   type="button"
                   onClick={() => setShowResponseFilterDropdown(!showResponseFilterDropdown)}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-200 shadow-xs cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1.5 transition-colors border border-slate-200/70 cursor-pointer"
                 >
                   <span>{responseFilter}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
 
                 {showResponseFilterDropdown && (
-                  <div className="absolute right-0 top-full mt-1.5 w-28 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-30 animate-in fade-in">
+                  <div className="absolute right-0 top-full mt-1.5 w-28 bg-white rounded-xl shadow-lg shadow-slate-900/10 border border-slate-100 py-1 z-30 animate-in fade-in">
                     {['7 Days', '30 Days', '1 Year'].map((opt) => (
                       <button
                         key={opt}
@@ -753,7 +798,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                           setResponseFilter(opt);
                           setShowResponseFilterDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-1.5 text-xs font-semibold border-none cursor-pointer hover:bg-slate-50 transition-colors ${responseFilter === opt ? 'text-[#5C59E8] font-bold' : 'text-slate-600'}`}
+                        className={`w-full text-left px-3 py-1.5 text-xs font-medium border-none cursor-pointer hover:bg-slate-50 transition-colors ${responseFilter === opt ? 'text-[#4845D2] font-semibold' : 'text-slate-600'}`}
                       >
                         {opt}
                       </button>
@@ -770,7 +815,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
               {[120, 90, 60, 30, 0].map((val) => (
                 <div key={val} className="w-full flex items-center gap-3">
-                  <span className="w-6 text-[10px] font-semibold text-slate-300 text-right shrink-0">
+                  <span className="w-6 text-[10px] font-medium text-slate-300 text-right shrink-0 tabular-nums">
                     {val}
                   </span>
                   <div className="w-full h-[1px] bg-slate-100" />
@@ -787,14 +832,14 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                     <div className="relative w-full flex justify-center">
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-2.5 sm:w-3.5 bg-[#5C59E8] group-hover:bg-[#4845D2] rounded-t-sm transition-all duration-300"
+                        className="w-2.5 sm:w-3.5 bg-[#5C59E8] group-hover:bg-[#4845D2] rounded-t-md transition-all duration-300"
                       />
                       {/* Tooltip on Hover */}
-                      <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow pointer-events-none whitespace-nowrap">
+                      <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow pointer-events-none whitespace-nowrap tabular-nums">
                         {barHeights[idx]}
                       </div>
                     </div>
-                    <span className="text-[10px] font-semibold text-slate-400 mt-2 block">
+                    <span className="text-[10px] font-medium text-slate-400 mt-2 block">
                       {m}
                     </span>
                   </div>
@@ -805,50 +850,41 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         </div>
 
         {/* Right: Total Traffic / Pipeline Status (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-100 flex flex-col justify-between">
+        <div className={`lg:col-span-4 ${cardClass} p-5 sm:p-6 flex flex-col justify-between`}>
           <div>
-            <div className="flex items-start justify-between">
-              <div className="w-11 h-11 rounded-full bg-white text-[#FF7043] border border-slate-200 shadow-xs flex items-center justify-center font-bold text-sm">
-                <AlertTriangle className="w-5 h-5 text-[#FF7043]" />
+            <div>
+              <div className="text-[11px] font-medium text-slate-400">
+                {rightMetricData.title}
               </div>
-              <div className="text-right">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  {rightMetricData.title}
-                </div>
-                <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
-                  {rightMetricData.metric}
-                </div>
+              <div className="text-xl sm:text-2xl font-semibold text-slate-900 mt-0.5 tabular-nums tracking-tight">
+                {rightMetricData.metric}
               </div>
             </div>
 
             {/* 2 Sub Items */}
-            <div className="mt-8 space-y-3.5">
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-xs hover:border-slate-200 transition-colors">
+            <div className="mt-8 space-y-2.5">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/70 hover:bg-slate-50 transition-colors">
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-slate-800 truncate">
+                  <div className="text-xs font-semibold text-slate-800 truncate">
                     {rightMetricData.sub1.name}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  <div className="text-[11px] text-slate-400 truncate mt-0.5">
                     {rightMetricData.sub1.sub}
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white text-[#FF7043] border border-orange-200 shrink-0">
-                  {rightMetricData.sub1.badge}
-                </span>
+                <Badge tone="orange">{rightMetricData.sub1.badge}</Badge>
               </div>
 
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-xs hover:border-slate-200 transition-colors">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/70 hover:bg-slate-50 transition-colors">
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-slate-800 truncate">
+                  <div className="text-xs font-semibold text-slate-800 truncate">
                     {rightMetricData.sub2.name}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                  <div className="text-[11px] text-slate-400 truncate mt-0.5">
                     {rightMetricData.sub2.sub}
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white text-[#FF7043] border border-orange-200 shrink-0">
-                  {rightMetricData.sub2.badge}
-                </span>
+                <Badge tone="orange">{rightMetricData.sub2.badge}</Badge>
               </div>
             </div>
           </div>
@@ -856,7 +892,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           <button
             type="button"
             onClick={() => onNavigateTab(rightMetricData.viewTab)}
-            className="w-full text-center text-xs font-semibold text-slate-400 hover:text-[#5C59E8] transition-colors mt-6 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
+            className="w-full text-center text-xs font-medium text-slate-400 hover:text-[#4845D2] transition-colors mt-6 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
           >
             <span>View all</span>
             <ChevronDown className="w-3.5 h-3.5" />
@@ -866,38 +902,59 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
       {/* ── ROW 3: METRIC CARD & PROJECT TESTS TABLE (WHITE BOX) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: Metric Card (4 cols) - White Box */}
-        <div className="lg:col-span-4 bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-100 flex flex-col justify-between">
+        {/* Left: Metric Card (4 cols) - Vibrant Coral Card */}
+        <div
+          className="lg:col-span-4 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-sm transition-shadow duration-200"
+          style={{ background: '#FF6B44' }}
+        >
           <div>
             <div className="flex items-start justify-between">
-              <div className="w-11 h-11 rounded-full bg-white text-[#FF7043] border border-slate-200 shadow-xs flex items-center justify-center font-bold text-sm">
-                <AlertTriangle className="w-5 h-5 text-[#FF7043]" />
+              {/* White circle with warning icon and translucent outer halo */}
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-xs">
+                  <AlertTriangle className="w-4.5 h-4.5 text-[#FF6B44]" />
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                <div className="text-xs sm:text-[13px] font-medium text-white/90">
                   {coralCardData.label}
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-0.5">
+                <div className="text-2xl sm:text-[28px] font-bold text-white mt-1 leading-none tracking-tight tabular-nums">
                   {coralCardData.metric}
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 space-y-3.5">
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-xs hover:border-slate-200 transition-colors">
-                <span className="text-xs font-bold text-slate-800 truncate">
-                  {coralCardData.sub1.name}
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white text-[#FF7043] border border-orange-200 shrink-0">
+            {/* 2 Sub Items */}
+            <div className="mt-8 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs sm:text-sm font-semibold text-white truncate leading-snug">
+                    {coralCardData.sub1.name}
+                  </div>
+                  {coralCardData.sub1.sub && (
+                    <div className="text-[11px] sm:text-xs text-white/75 truncate mt-0.5 leading-snug">
+                      {coralCardData.sub1.sub}
+                    </div>
+                  )}
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-800 shadow-xs tabular-nums shrink-0">
                   {coralCardData.sub1.badge}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-100 shadow-xs hover:border-slate-200 transition-colors">
-                <span className="text-xs font-bold text-slate-800 truncate">
-                  {coralCardData.sub2.name}
-                </span>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white text-[#FF7043] border border-orange-200 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs sm:text-sm font-semibold text-white truncate leading-snug">
+                    {coralCardData.sub2.name}
+                  </div>
+                  {coralCardData.sub2.sub && (
+                    <div className="text-[11px] sm:text-xs text-white/75 truncate mt-0.5 leading-snug">
+                      {coralCardData.sub2.sub}
+                    </div>
+                  )}
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-800 shadow-xs tabular-nums shrink-0">
                   {coralCardData.sub2.badge}
                 </span>
               </div>
@@ -907,32 +964,32 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           <button
             type="button"
             onClick={() => onNavigateTab(coralCardData.viewTab)}
-            className="w-full text-center text-xs font-semibold text-slate-400 hover:text-[#5C59E8] transition-colors mt-6 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
+            className="w-full text-center text-xs font-semibold text-white/95 hover:text-white transition-colors mt-6 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
           >
             <span>View all</span>
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3.5 h-3.5 text-white/95" />
           </button>
         </div>
 
         {/* Right: Project Tests / Active Actions Table (8 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-100 flex flex-col justify-between">
+        <div className={`lg:col-span-8 ${cardClass} p-5 sm:p-6 flex flex-col justify-between`}>
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900 m-0">
+              <h2 className="text-[15px] font-semibold text-slate-900 m-0">
                 {projectTestsTitle}
               </h2>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 shadow-xs cursor-pointer transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 border border-slate-200/70 cursor-pointer transition-colors"
                 >
                   <span>Order by Creation</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
                 <button
                   type="button"
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 shadow-xs cursor-pointer transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 border border-slate-200/70 cursor-pointer transition-colors"
                 >
                   <span>Sort by Name</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -941,14 +998,14 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
             </div>
 
             {/* Test rows */}
-            <div className="divide-y divide-slate-100 mt-2">
+            <div className="divide-y divide-slate-100 mt-1">
               {testRows.map((row, i) => (
-                <div key={i} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 p-2 rounded-xl transition-colors">
+                <div key={i} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 p-2 rounded-xl transition-colors">
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold text-slate-900 truncate">
+                    <div className="text-xs font-semibold text-slate-900 truncate">
                       {row.name}
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-slate-400 mt-0.5">
                       {row.author}
                     </div>
                   </div>
@@ -958,37 +1015,16 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                     <div className="text-slate-400">@{row.date.split('@')[1] || '07:25'} Last Modified</div>
                   </div>
 
-                  <div className={`text-xs font-bold ${row.statusColor} flex items-center gap-1 shrink-0`}>
+                  <div className={`text-xs font-semibold ${row.statusColor} flex items-center gap-1 shrink-0`}>
                     {row.status.includes('Incomplete') && <AlertTriangle className="w-3.5 h-3.5" />}
                     <span>{row.status}</span>
                   </div>
 
-                  {/* 3 Circular Actions: Edit (White border), Calendar (White border), Play (White border) */}
+                  {/* 3 Circular Actions: Edit, Calendar, Play — soft tinted */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onNavigateTab(row.actionTab)}
-                      className="w-8 h-8 rounded-full bg-white hover:border-orange-300 border border-slate-200 shadow-xs text-[#FF7043] flex items-center justify-center cursor-pointer transition-all"
-                      title="Edit / View Details"
-                    >
-                      <PenLine className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onNavigateTab('interviews')}
-                      className="w-8 h-8 rounded-full bg-white hover:border-indigo-300 border border-slate-200 shadow-xs text-[#5C59E8] flex items-center justify-center cursor-pointer transition-all"
-                      title="Calendar Schedule"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onNavigateTab(row.actionTab)}
-                      className="w-8 h-8 rounded-full bg-white hover:border-emerald-300 border border-slate-200 shadow-xs text-[#00A884] flex items-center justify-center cursor-pointer transition-all"
-                      title="Execute / Run Session"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                    </button>
+                    <IconButton icon={PenLine} tone="orange" onClick={() => onNavigateTab(row.actionTab)} title="Edit / View Details" />
+                    <IconButton icon={Calendar} tone="indigo" onClick={() => onNavigateTab('interviews')} title="Calendar Schedule" />
+                    <IconButton icon={Play} tone="emerald" onClick={() => onNavigateTab(row.actionTab)} title="Execute / Run Session" />
                   </div>
                 </div>
               ))}
@@ -998,7 +1034,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           <button
             type="button"
             onClick={() => onNavigateTab(testRows[0]?.actionTab || 'home')}
-            className="w-full text-center text-xs font-semibold text-slate-400 hover:text-[#5C59E8] transition-colors mt-4 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
+            className="w-full text-center text-xs font-medium text-slate-400 hover:text-[#4845D2] transition-colors mt-4 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
           >
             <span>View all</span>
             <ChevronDown className="w-3.5 h-3.5" />
@@ -1009,16 +1045,16 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
 
       {/* ── ROW 5: FULL-WIDTH MONITORS & STATUS TABLE CARD ── */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-100 overflow-hidden">
+      <div className={`${cardClass} p-5 sm:p-6 overflow-hidden`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 m-0">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900 m-0">
             {tableTitle}
           </h2>
 
           <button
             type="button"
             onClick={() => onNavigateTab(tableAddButtonTab)}
-            className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-bold transition-all shadow-sm shadow-orange-500/20 border-none cursor-pointer flex items-center justify-center gap-1.5 self-start sm:self-auto"
+            className="px-4 py-2 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold transition-colors shadow-[0_1px_2px_rgba(255,112,67,0.3)] border-none cursor-pointer flex items-center justify-center gap-1.5 self-start sm:self-auto"
           >
             {tableAddButtonLabel}
           </button>
@@ -1028,13 +1064,13 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-3">Name</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-3 text-center">Performance</th>
-                <th className="py-3 px-3 text-center">Uptime 24 Hours</th>
-                <th className="py-3 px-3">Last Run</th>
-                <th className="py-3 px-3 text-right">Actions</th>
+              <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400">
+                <th className="py-3 px-3 font-semibold">Name</th>
+                <th className="py-3 px-3 text-center font-semibold">Status</th>
+                <th className="py-3 px-3 text-center font-semibold">Performance</th>
+                <th className="py-3 px-3 text-center font-semibold">Uptime 24 Hours</th>
+                <th className="py-3 px-3 font-semibold">Last Run</th>
+                <th className="py-3 px-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs font-medium">
@@ -1042,21 +1078,19 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                 <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
                   {/* Name + Tag */}
                   <td className="py-4 px-3">
-                    <div className="font-bold text-slate-900 text-xs">
+                    <div className="font-semibold text-slate-900 text-xs">
                       {row.name}
                     </div>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-white text-[#FF7043] border border-orange-200">
-                      {row.tag}
-                    </span>
+                    <Badge tone="orange" className="mt-1.5">{row.tag}</Badge>
                   </td>
 
                   {/* Status Arrow */}
                   <td className="py-4 px-3 text-center">
                     <div className="flex justify-center items-center">
                       {row.isUp ? (
-                        <ArrowUp className="w-4 h-4 text-[#00A884]" />
+                        <ArrowUp className="w-4 h-4 text-[#00846A]" />
                       ) : (
-                        <ArrowDown className="w-4 h-4 text-[#FF7043]" />
+                        <ArrowDown className="w-4 h-4 text-[#E15A2C]" />
                       )}
                     </div>
                   </td>
@@ -1065,7 +1099,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                   <td className="py-4 px-3 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <MiniSparkline color="#FF7043" height={22} width={50} />
-                      <span className="text-[10px] font-bold text-[#FF7043] mt-0.5">{row.perf}</span>
+                      <span className="text-[10px] font-semibold text-[#E15A2C] mt-0.5 tabular-nums">{row.perf}</span>
                     </div>
                   </td>
 
@@ -1073,53 +1107,22 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                   <td className="py-4 px-3 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <MiniSparkline color="#5C59E8" height={22} width={50} />
-                      <span className="text-[10px] font-bold text-[#5C59E8] mt-0.5">{row.uptime}</span>
+                      <span className="text-[10px] font-semibold text-[#4845D2] mt-0.5 tabular-nums">{row.uptime}</span>
                     </div>
                   </td>
 
                   {/* Last Run Date/Time */}
-                  <td className="py-4 px-3 text-[11px] text-slate-500 font-medium whitespace-nowrap">
+                  <td className="py-4 px-3 text-[11px] text-slate-500 font-medium whitespace-nowrap tabular-nums">
                     {row.time}
                   </td>
 
-                  {/* Action Icons: (Chart, Trash, Pencil, Refresh, Pause) */}
+                  {/* Action Icons: (Chart, Pencil, Refresh, Pause) — soft tinted */}
                   <td className="py-4 px-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => onNavigateTab(tableAddButtonTab)}
-                        className="w-7 h-7 rounded-full bg-white hover:border-orange-300 border border-slate-200 shadow-xs text-[#FF7043] flex items-center justify-center cursor-pointer transition-all"
-                        title="View Metrics"
-                      >
-                        <BarChart2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onNavigateTab(tableAddButtonTab)}
-                        className="w-7 h-7 rounded-full bg-white hover:border-indigo-300 border border-slate-200 shadow-xs text-[#5C59E8] flex items-center justify-center cursor-pointer transition-all"
-                        title="Edit Requisition"
-                      >
-                        <PenLine className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onNavigateTab(tableAddButtonTab)}
-                        className="w-7 h-7 rounded-full bg-white hover:border-slate-300 border border-slate-200 shadow-xs text-slate-500 flex items-center justify-center cursor-pointer transition-all"
-                        title="Refresh Status"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onNavigateTab(tableAddButtonTab)}
-                        className="w-7 h-7 rounded-full bg-white hover:border-emerald-300 border border-slate-200 shadow-xs text-[#00A884] flex items-center justify-center cursor-pointer transition-all"
-                        title="Active / Pause"
-                      >
-                        <Pause className="w-3.5 h-3.5" />
-                      </button>
+                      <IconButton icon={BarChart2} tone="orange" onClick={() => onNavigateTab(tableAddButtonTab)} title="View Metrics" />
+                      <IconButton icon={PenLine} tone="indigo" onClick={() => onNavigateTab(tableAddButtonTab)} title="Edit Requisition" />
+                      <IconButton icon={RefreshCw} tone="slate" onClick={() => onNavigateTab(tableAddButtonTab)} title="Refresh Status" />
+                      <IconButton icon={Pause} tone="emerald" onClick={() => onNavigateTab(tableAddButtonTab)} title="Active / Pause" />
                     </div>
                   </td>
                 </tr>
@@ -1131,7 +1134,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         <button
           type="button"
           onClick={() => onNavigateTab(tableAddButtonTab)}
-          className="w-full text-center text-xs font-semibold text-slate-400 hover:text-[#5C59E8] transition-colors mt-4 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
+          className="w-full text-center text-xs font-medium text-slate-400 hover:text-[#4845D2] transition-colors mt-4 flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
         >
           <span>View all</span>
           <ChevronDown className="w-3.5 h-3.5" />

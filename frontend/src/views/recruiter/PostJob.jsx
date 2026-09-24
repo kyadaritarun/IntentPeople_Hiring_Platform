@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Briefcase, Plus, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Compass, 
-  HelpCircle, Trash2, ListPlus, Sparkles, CheckSquare, X, ChevronDown 
+import {
+  Briefcase, Plus, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Compass,
+  HelpCircle, Trash2, ListPlus, Sparkles, CheckSquare, X, ChevronDown,
+  DollarSign, MapPin, Layers, Award, Target, FileText
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -36,6 +37,24 @@ const QUESTION_TEMPLATES = [
     required: false
   }
 ];
+
+// Consistent soft-tint badge matching the unified dashboard
+const TINTS = {
+  indigo: 'bg-[#5C59E8]/8 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/15',
+  orange: 'bg-[#FF7043]/8 text-[#E15A2C] ring-1 ring-inset ring-[#FF7043]/15',
+  emerald: 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15',
+  slate: 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200/70',
+};
+
+function Badge({ tone = 'orange', children, className = '' }) {
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold tabular-nums whitespace-nowrap ${TINTS[tone]} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
 
 export default function PostJob({ setActiveTab }) {
   const { user } = useAuth();
@@ -78,7 +97,7 @@ export default function PostJob({ setActiveTab }) {
     const newQ = {
       id: `sq_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       question: customQuestion || '',
-      type: type, // 'text', 'choice', 'yes_no', 'number'
+      type: type,
       options: type === 'choice' ? ['Option 1', 'Option 2'] : [],
       required: true
     };
@@ -142,14 +161,13 @@ export default function PostJob({ setActiveTab }) {
     try {
       const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(Boolean);
 
-      // Clean and validate questions
       const cleanedQuestions = screeningQuestions
         .filter(q => q.question && q.question.trim().length > 0)
         .map(q => ({
           id: q.id,
           question: q.question.trim(),
           type: q.type || 'text',
-          options: q.type === 'choice' 
+          options: q.type === 'choice'
             ? (q.options || []).map(o => String(o).trim()).filter(Boolean)
             : (q.type === 'yes_no' ? ['Yes', 'No'] : []),
           required: Boolean(q.required)
@@ -173,20 +191,33 @@ export default function PostJob({ setActiveTab }) {
     }
   };
 
-  return (
-    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6 select-text text-slate-800">
+  // Card shell matching UnifiedRoleDashboard — white background, subtle 1px border, soft shadow
+  const cardClass =
+    'bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow duration-200 hover:shadow-[0_6px_20px_rgba(15,23,42,0.06)]';
 
-      {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+  const inputClass =
+    'w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
+
+  const selectClass =
+    'w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer';
+
+  const textareaClass =
+    'w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] leading-relaxed';
+
+  return (
+    <div
+      className="p-4 sm:p-7 max-w-6xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
+
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold">
-              <Briefcase className="w-4 h-4" />
-            </span>
+          <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
             Post New Job Requisition
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Create and publish a new job opening to source top marketers and engineers across your recruitment funnel.
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
+            Publish a structured job requisition to source pre-vetted marketing &amp; engineering specialists.
           </p>
         </div>
 
@@ -194,42 +225,61 @@ export default function PostJob({ setActiveTab }) {
           <button
             type="button"
             onClick={() => setActiveTab('manage_jobs')}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all bg-white shadow-2xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Jobs
+            <span>Back to Jobs</span>
           </button>
         )}
       </div>
 
-      {/* Success Banner */}
+      {/* Success Notification */}
       {success && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Job requisition posted successfully! Redirecting to Manage Jobs...</span>
+        <div className="p-4 rounded-2xl bg-white border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center gap-2.5 shadow-[0_1px_3px_rgba(16,185,129,0.1)] animate-in fade-in">
+          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#00A884] flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <span>Job requisition published successfully! Redirecting to your active listings...</span>
         </div>
       )}
 
-      {/* Error Banner */}
+      {/* Error Notification */}
       {error && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-white border border-rose-300 text-rose-800 text-xs font-semibold flex items-center gap-2.5 shadow-[0_1px_3px_rgba(244,63,94,0.1)] animate-in fade-in">
+          <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-4 h-4" />
+          </div>
           <span>{error}</span>
         </div>
       )}
 
-      {/* Form Container */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-2xs">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* ── BOX 1: Role Overview & Work Arrangement ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#5C59E8]/8 text-[#4845D2] flex items-center justify-center">
+                <Briefcase className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 m-0">Role Overview &amp; Specialization</h2>
+                <p className="text-[11px] text-slate-400 m-0">Core requisition details, employment model, and seniority</p>
+              </div>
+            </div>
+            <Badge tone="indigo">Core Requisition</Badge>
+          </div>
 
           {/* Job Title & Specialization */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Job Title *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Job Title <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 name="title"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. Senior Performance Marketing Manager"
                 value={formData.title}
                 onChange={handleChange}
@@ -238,11 +288,13 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Specialization *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Specialization <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 name="specialization"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. Paid Search, Meta Ads, MarTech Engineering"
                 value={formData.specialization}
                 onChange={handleChange}
@@ -252,12 +304,12 @@ export default function PostJob({ setActiveTab }) {
           </div>
 
           {/* Role Parameters: Work Mode, Job Type, Ownership Level, Availability */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Work Mode *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Work Mode</label>
               <select
                 name="work_mode"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
+                className={selectClass}
                 value={formData.work_mode}
                 onChange={handleChange}
               >
@@ -268,10 +320,10 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Job Type *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Job Type</label>
               <select
                 name="job_type"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
+                className={selectClass}
                 value={formData.job_type}
                 onChange={handleChange}
               >
@@ -283,10 +335,10 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Ownership level *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Ownership Level</label>
               <select
                 name="ownership_level"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
+                className={selectClass}
                 value={formData.ownership_level}
                 onChange={handleChange}
               >
@@ -299,10 +351,10 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Availability requirement *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Availability Requirement</label>
               <select
                 name="availability_requirement"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:border-black outline-none cursor-pointer shadow-2xs"
+                className={selectClass}
                 value={formData.availability_requirement}
                 onChange={handleChange}
               >
@@ -314,15 +366,30 @@ export default function PostJob({ setActiveTab }) {
               </select>
             </div>
           </div>
+        </div>
 
-          {/* Salary, Min Experience & Location */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* ── BOX 2: Compensation & Candidate Profile ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#00A884]/8 text-[#00846A] flex items-center justify-center">
+                <Target className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 m-0">Compensation &amp; Experience Requirements</h2>
+                <p className="text-[11px] text-slate-400 m-0">Budget expectations, minimum experience, and required location</p>
+              </div>
+            </div>
+            <Badge tone="emerald">Candidate Matching</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Min Salary (Annual)</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Min Salary (Annual USD)</label>
               <input
                 type="number"
                 name="salary_min"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. 75000"
                 value={formData.salary_min}
                 onChange={handleChange}
@@ -330,11 +397,11 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Max Salary (Annual)</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Max Salary (Annual USD)</label>
               <input
                 type="number"
                 name="salary_max"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. 110000"
                 value={formData.salary_max}
                 onChange={handleChange}
@@ -342,11 +409,13 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Min Experience *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Min Experience <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 name="min_experience"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. 3 years"
                 value={formData.min_experience}
                 onChange={handleChange}
@@ -355,11 +424,13 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Location *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Location <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 name="location"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
+                className={inputClass}
                 placeholder="e.g. San Francisco, CA or Remote"
                 value={formData.location}
                 onChange={handleChange}
@@ -368,15 +439,49 @@ export default function PostJob({ setActiveTab }) {
             </div>
           </div>
 
-          {/* Capabilities Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Skills Required */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-slate-700">
+                Required Skills (Comma-Separated) <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] text-slate-400">Used by matching algorithms &amp; ATS</span>
+            </div>
+            <input
+              type="text"
+              name="skills"
+              className={inputClass}
+              placeholder="e.g. Meta Ads, Google Ads, SEO, GA4, Copywriting"
+              value={formData.skills}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+
+        {/* ── BOX 3: Scope, Capabilities & Description ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#FF7043]/8 text-[#E15A2C] flex items-center justify-center">
+                <FileText className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 m-0">Role Scope &amp; Job Description</h2>
+                <p className="text-[11px] text-slate-400 m-0">Detailed responsibilities, expectations, and day-to-day workflow</p>
+              </div>
+            </div>
+            <Badge tone="orange">Job Details</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Must-have capabilities *
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Must-Have Capabilities <span className="text-rose-500">*</span>
               </label>
               <textarea
                 name="must_have_capabilities"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                className={textareaClass}
                 rows={3}
                 placeholder="e.g. Proven track record managing high ad spend, ROAS modeling, deep Google Ads & Meta Ads proficiency."
                 value={formData.must_have_capabilities}
@@ -386,12 +491,12 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Preferred capabilities
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                Preferred Capabilities
               </label>
               <textarea
                 name="preferred_capabilities"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
+                className={textareaClass}
                 rows={3}
                 placeholder="e.g. Segment CDP, BigQuery analytics, high-converting creative copy, and marketing automation."
                 value={formData.preferred_capabilities}
@@ -400,322 +505,309 @@ export default function PostJob({ setActiveTab }) {
             </div>
           </div>
 
-          {/* Skills Required */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Required Skills (Comma Separated) *
-            </label>
-            <input
-              type="text"
-              name="skills"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50"
-              placeholder="e.g. Meta Ads, Google Ads, SEO, GA4, Copywriting"
-              value={formData.skills}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          {/* ── Hiring Need ── */}
-          <div className="p-4 sm:p-5 bg-emerald-50/40 rounded-2xl border border-emerald-100 space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-emerald-200/50">
-              <Compass className="w-4 h-4 text-[#00a884]" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                Hiring Need
-              </h3>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Business problem</label>
-                <textarea
-                  name="business_problem"
-                  rows={2}
-                  value={formData.business_problem}
-                  onChange={handleChange}
-                  placeholder="Lead volume is rising, but qualified pipeline is inconsistent."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white leading-relaxed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Expected outcome</label>
-                <textarea
-                  name="expected_outcome"
-                  rows={2}
-                  value={formData.expected_outcome}
-                  onChange={handleChange}
-                  placeholder="Build a repeatable demand programme and improve lead-to-opportunity quality."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white leading-relaxed"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Team support</label>
-                  <input
-                    type="text"
-                    name="team_support"
-                    value={formData.team_support}
-                    onChange={handleChange}
-                    placeholder="Marketing head, content specialist, shared design support"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Monthly budget range</label>
-                  <input
-                    type="text"
-                    name="monthly_budget_range"
-                    value={formData.monthly_budget_range}
-                    onChange={handleChange}
-                    placeholder="₹8–12 lakh"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Decision authority</label>
-                  <input
-                    type="text"
-                    name="decision_authority"
-                    value={formData.decision_authority}
-                    onChange={handleChange}
-                    placeholder="Own campaigns and recommend budget allocation"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Success horizon</label>
-                  <input
-                    type="text"
-                    name="success_horizon"
-                    value={formData.success_horizon}
-                    onChange={handleChange}
-                    placeholder="First 90 days"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:border-black outline-none bg-white"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Job Description */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Job Description & Responsibilities *
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+              Detailed Job Description &amp; Responsibilities <span className="text-rose-500">*</span>
             </label>
             <textarea
               name="description"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-black focus:ring-1 focus:ring-black outline-none bg-slate-50/50 leading-relaxed"
-              rows={6}
-              placeholder="Outline role responsibilities, key performance indicators, required tools, and company perks..."
+              className={textareaClass}
+              rows={5}
+              placeholder="Outline day-to-day responsibilities, key performance metrics, tools stack, and company advantages..."
               value={formData.description}
               onChange={handleChange}
               required
             />
           </div>
+        </div>
 
-          {/* ── Candidate Screening Questions Builder ── */}
-          <div className="p-5 sm:p-6 bg-slate-50/80 rounded-2xl border border-slate-200/90 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                  <ListPlus className="w-4 h-4" />
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                      Candidate Screening Questions
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      {screeningQuestions.length} {screeningQuestions.length === 1 ? 'Question' : 'Questions'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Ask candidates specific questions when they apply to evaluate qualifications faster.
-                  </p>
-                </div>
+        {/* ── BOX 4: Strategic Hiring Context & Department Needs ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#5C59E8]/8 text-[#4845D2] flex items-center justify-center">
+                <Compass className="w-4.5 h-4.5" />
               </div>
-
-              {/* Add Question Button */}
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => addQuestion('text')}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs border-none cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Question</span>
-                </button>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 m-0">Strategic Hiring Context</h2>
+                <p className="text-[11px] text-slate-400 m-0">Business challenge, expected deliverables, and team dynamics</p>
               </div>
             </div>
-
-            {/* Quick Templates Bar */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-500" /> Quick Add:
-              </span>
-              {QUESTION_TEMPLATES.map((tpl, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => addTemplate(tpl)}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700 hover:text-indigo-900 text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                  title={`Add '${tpl.question}'`}
-                >
-                  <Plus className="w-3 h-3 text-indigo-500" />
-                  <span>{tpl.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Question Cards List */}
-            {screeningQuestions.length === 0 ? (
-              <div className="py-8 text-center bg-white rounded-xl border border-dashed border-slate-200 p-4">
-                <HelpCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-bold text-slate-600">No screening questions added yet</p>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto mt-1">
-                  Click "+ Add Question" or pick a template above to require candidates to provide custom answers (experience, portfolio, notice period, etc.).
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                {screeningQuestions.map((q, idx) => (
-                  <div 
-                    key={q.id}
-                    className="p-4 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-3 hover:border-slate-300 transition-colors"
-                  >
-                    {/* Header: Question Number, Type Selector, Required Toggle, Delete */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">
-                          Q{idx + 1}
-                        </span>
-                        <div className="relative">
-                          <select
-                            value={q.type}
-                            onChange={(e) => updateQuestion(q.id, 'type', e.target.value)}
-                            className="pl-2.5 pr-7 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 outline-none cursor-pointer appearance-none"
-                          >
-                            <option value="text">Short / Long Text</option>
-                            <option value="choice">Multiple Choice</option>
-                            <option value="yes_no">Yes / No</option>
-                            <option value="number">Numeric Answer</option>
-                          </select>
-                          <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {/* Required Toggle */}
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
-                          <input
-                            type="checkbox"
-                            checked={q.required}
-                            onChange={(e) => updateQuestion(q.id, 'required', e.target.checked)}
-                            className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-0 border-slate-300 cursor-pointer"
-                          />
-                          <span>Required</span>
-                        </label>
-
-                        {/* Delete Question */}
-                        <button
-                          type="button"
-                          onClick={() => removeQuestion(q.id)}
-                          className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors border-none cursor-pointer"
-                          title="Delete this question"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Question Text Input */}
-                    <div>
-                      <input
-                        type="text"
-                        value={q.question}
-                        onChange={(e) => updateQuestion(q.id, 'question', e.target.value)}
-                        placeholder="Type question here (e.g. How many years of experience do you have with Google Ads?)"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none bg-slate-50/50"
-                        required
-                      />
-                    </div>
-
-                    {/* Multiple Choice Options Builder */}
-                    {q.type === 'choice' && (
-                      <div className="pl-3 border-l-2 border-indigo-200 space-y-2 pt-1">
-                        <div className="text-[11px] font-bold text-slate-600">Candidate Choices:</div>
-                        <div className="space-y-1.5">
-                          {(q.options || []).map((opt, optIdx) => (
-                            <div key={optIdx} className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full border-2 border-indigo-400 shrink-0" />
-                              <input
-                                type="text"
-                                value={opt}
-                                onChange={(e) => updateOption(q.id, optIdx, e.target.value)}
-                                placeholder={`Option ${optIdx + 1}`}
-                                className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white outline-none focus:border-indigo-600"
-                              />
-                              {(q.options || []).length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeOption(q.id, optIdx)}
-                                  className="p-1 text-slate-400 hover:text-rose-600 border-none bg-transparent cursor-pointer"
-                                  title="Remove option"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => addOption(q.id)}
-                          className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 border-none bg-transparent cursor-pointer pt-1"
-                        >
-                          <Plus className="w-3 h-3" /> Add Choice Option
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Yes/No Preview */}
-                    {q.type === 'yes_no' && (
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
-                        <span>Format: Candidate selects between</span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-bold text-slate-700">Yes</span>
-                        <span>or</span>
-                        <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-bold text-slate-700">No</span>
-                      </div>
-                    )}
-
-                    {/* Numeric Preview */}
-                    {q.type === 'number' && (
-                      <div className="text-[11px] text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg">
-                        Format: Candidate enters a numeric value (e.g. years of experience, budget managed).
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <Badge tone="slate">Team Context</Badge>
           </div>
 
-          {/* Submit Action */}
-          <div className="pt-3">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Business Problem</label>
+              <textarea
+                name="business_problem"
+                rows={2}
+                value={formData.business_problem}
+                onChange={handleChange}
+                placeholder="Lead volume is rising, but qualified pipeline is inconsistent."
+                className={textareaClass}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Expected Outcome</label>
+              <textarea
+                name="expected_outcome"
+                rows={2}
+                value={formData.expected_outcome}
+                onChange={handleChange}
+                placeholder="Build a repeatable demand programme and improve lead-to-opportunity quality."
+                className={textareaClass}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Team Support</label>
+                <input
+                  type="text"
+                  name="team_support"
+                  value={formData.team_support}
+                  onChange={handleChange}
+                  placeholder="Marketing head, content specialist, shared design support"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Monthly Budget Range</label>
+                <input
+                  type="text"
+                  name="monthly_budget_range"
+                  value={formData.monthly_budget_range}
+                  onChange={handleChange}
+                  placeholder="₹8–12 lakh or $10k–$15k"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Decision Authority</label>
+                <input
+                  type="text"
+                  name="decision_authority"
+                  value={formData.decision_authority}
+                  onChange={handleChange}
+                  placeholder="Own campaigns and recommend budget allocation"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Success Horizon</label>
+                <input
+                  type="text"
+                  name="success_horizon"
+                  value={formData.success_horizon}
+                  onChange={handleChange}
+                  placeholder="First 90 days"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── BOX 5: Candidate Screening Questions Builder ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#5C59E8]/8 text-[#4845D2] flex items-center justify-center">
+                <ListPlus className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-900 m-0">Candidate Screening Questions</h2>
+                  <Badge tone="indigo">{screeningQuestions.length} Questions</Badge>
+                </div>
+                <p className="text-[11px] text-slate-400 m-0">Require structured responses during candidate submission</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => addQuestion('text')}
+              className="px-3.5 py-1.5 rounded-lg bg-[#5C59E8] hover:bg-[#4845D2] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-[0_1px_2px_rgba(92,89,232,0.3)] border-none cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Question</span>
+            </button>
+          </div>
+
+          {/* Quick Templates Chips */}
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-500" /> Quick Add:
+            </span>
+            {QUESTION_TEMPLATES.map((tpl, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => addTemplate(tpl)}
+                className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-medium transition-colors border border-slate-200/70 flex items-center gap-1 cursor-pointer"
+                title={`Add '${tpl.question}'`}
+              >
+                <Plus className="w-3 h-3 text-[#5C59E8]" />
+                <span>{tpl.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Questions List */}
+          {screeningQuestions.length === 0 ? (
+            <div className="py-9 text-center rounded-xl border border-dashed border-slate-200 p-6 bg-slate-50/50">
+              <HelpCircle className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-slate-700 m-0">No screening questions added yet</p>
+              <p className="text-[11px] text-slate-400 max-w-sm mx-auto mt-1 m-0">
+                Click "+ Add Question" or choose a template above to collect candidate experience, portfolio links, or notice periods.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {screeningQuestions.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className="p-4 bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-3 hover:border-slate-300 transition-colors"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-semibold tabular-nums">
+                        Q{idx + 1}
+                      </span>
+                      <div className="relative">
+                        <select
+                          value={q.type}
+                          onChange={(e) => updateQuestion(q.id, 'type', e.target.value)}
+                          className="pl-2.5 pr-7 py-1 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 outline-none cursor-pointer appearance-none"
+                        >
+                          <option value="text">Short / Long Text</option>
+                          <option value="choice">Multiple Choice</option>
+                          <option value="yes_no">Yes / No</option>
+                          <option value="number">Numeric Answer</option>
+                        </select>
+                        <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-600 select-none">
+                        <input
+                          type="checkbox"
+                          checked={q.required}
+                          onChange={(e) => updateQuestion(q.id, 'required', e.target.checked)}
+                          className="w-3.5 h-3.5 rounded text-[#5C59E8] focus:ring-0 border-slate-300 cursor-pointer"
+                        />
+                        <span>Required</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => removeQuestion(q.id)}
+                        className="p-1 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors border-none bg-transparent cursor-pointer"
+                        title="Delete question"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={q.question}
+                    onChange={(e) => updateQuestion(q.id, 'question', e.target.value)}
+                    placeholder="Type question here (e.g. How many years of experience do you have with Google Ads?)"
+                    className={inputClass}
+                    required
+                  />
+
+                  {q.type === 'choice' && (
+                    <div className="pl-3 border-l-2 border-[#5C59E8]/30 space-y-2 pt-1">
+                      <div className="text-[11px] font-semibold text-slate-600">Candidate Choice Options:</div>
+                      <div className="space-y-1.5">
+                        {(q.options || []).map((opt, optIdx) => (
+                          <div key={optIdx} className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full border-2 border-[#5C59E8] shrink-0" />
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => updateOption(q.id, optIdx, e.target.value)}
+                              placeholder={`Option ${optIdx + 1}`}
+                              className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white outline-none focus:border-[#5C59E8]"
+                            />
+                            {(q.options || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeOption(q.id, optIdx)}
+                                className="p-1 text-slate-400 hover:text-rose-600 border-none bg-transparent cursor-pointer"
+                                title="Remove option"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addOption(q.id)}
+                        className="text-[11px] font-semibold text-[#5C59E8] hover:text-[#4845D2] flex items-center gap-1 border-none bg-transparent cursor-pointer pt-1"
+                      >
+                        <Plus className="w-3 h-3" /> Add Choice Option
+                      </button>
+                    </div>
+                  )}
+
+                  {q.type === 'yes_no' && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50/70 px-3 py-1.5 rounded-lg">
+                      <span>Format: Candidate selects between</span>
+                      <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-slate-700">Yes</span>
+                      <span>or</span>
+                      <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-slate-700">No</span>
+                    </div>
+                  )}
+
+                  {q.type === 'number' && (
+                    <div className="text-[11px] text-slate-500 bg-slate-50/70 px-3 py-1.5 rounded-lg">
+                      Format: Candidate enters a numeric value (e.g. years of experience, budget managed).
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Action Footer ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+          <p className="text-xs text-slate-400 m-0">
+            Publishing makes this requisition active and matches qualified candidates immediately.
+          </p>
+
+          <div className="flex items-center gap-3">
+            {setActiveTab && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('manage_jobs')}
+                className="px-4 py-2.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            )}
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-black hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer border-none"
+              className="px-6 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer border-none"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Publishing Job Requisition...</span>
+                  <span>Publishing Requisition...</span>
                 </>
               ) : (
                 <>
@@ -725,10 +817,9 @@ export default function PostJob({ setActiveTab }) {
               )}
             </button>
           </div>
+        </div>
 
-        </form>
-      </div>
-
+      </form>
     </div>
   );
 }
