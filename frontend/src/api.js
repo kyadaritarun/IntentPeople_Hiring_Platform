@@ -659,6 +659,22 @@ export const api = {
     return handleResponse(res);
   },
 
+  async recordCandidateView(candidateId) {
+    const res = await fetch(`${API_BASE}/candidates/${candidateId}/view`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async recordCandidateTopSearch(candidateId) {
+    const res = await fetch(`${API_BASE}/candidates/${candidateId}/top-search`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
   // ── Official Google Meet API Integration ──────────────────────────
   async getGoogleOAuthStatus() {
     const res = await fetch(`${API_BASE}/auth/google/status`, {

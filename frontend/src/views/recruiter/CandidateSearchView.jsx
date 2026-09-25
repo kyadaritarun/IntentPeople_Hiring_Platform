@@ -610,7 +610,12 @@ export default function CandidateSearchView({ setActiveTab }) {
                     {/* View Profile in PDF Format (Modal) */}
                     <button
                       type="button"
-                      onClick={() => setSelectedCandidateForPdf(candidate)}
+                      onClick={() => {
+                        setSelectedCandidateForPdf(candidate);
+                        if (candidate.id) {
+                          api.recordCandidateView(candidate.id).catch(() => {});
+                        }
+                      }}
                       className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.1)] flex items-center gap-1.5 cursor-pointer border-none"
                       title="View complete profile dossier in PDF form"
                     >
@@ -621,7 +626,12 @@ export default function CandidateSearchView({ setActiveTab }) {
                     {/* Quick Print / Download Shortcut */}
                     <button
                       type="button"
-                      onClick={() => handlePrintCandidatePdf(candidate)}
+                      onClick={() => {
+                        handlePrintCandidatePdf(candidate);
+                        if (candidate.id) {
+                          api.recordCandidateView(candidate.id).catch(() => {});
+                        }
+                      }}
                       className="p-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                       title="Direct Download / Print PDF"
                     >

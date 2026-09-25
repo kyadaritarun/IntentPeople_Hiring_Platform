@@ -75,7 +75,7 @@ function IconButton({ icon: Icon, tone = 'slate', onClick, title }) {
 }
 
 export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavigateTab }) {
-  const [responseFilter, setResponseFilter] = useState('7 Days');
+  const [responseFilter, setResponseFilter] = useState('Yearly');
   const [showResponseFilterDropdown, setShowResponseFilterDropdown] = useState(false);
 
 
@@ -156,12 +156,13 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
             });
           }
         } else if (role === 'ADMIN') {
-          const [jobsRes, teamRes, docsRes, ticketsRes, ivRes] = await Promise.allSettled([
+          const [jobsRes, teamRes, docsRes, ticketsRes, ivRes, appsRes] = await Promise.allSettled([
             api.getJobs ? api.getJobs() : Promise.resolve([]),
             api.getTeamMembers ? api.getTeamMembers(true) : Promise.resolve([]),
             api.getStaffDocuments ? api.getStaffDocuments() : Promise.resolve([]),
             api.getSupportTickets ? api.getSupportTickets() : Promise.resolve([]),
             api.getInterviews ? api.getInterviews() : Promise.resolve([]),
+            api.getCompanyApplications ? api.getCompanyApplications() : Promise.resolve([]),
           ]);
 
           if (isMounted) {
@@ -171,7 +172,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
               staffDocs: docsRes.status === 'fulfilled' ? normalizeArray(docsRes.value, ['documents']) : [],
               supportTickets: ticketsRes.status === 'fulfilled' ? normalizeArray(ticketsRes.value, ['tickets']) : [],
               interviews: ivRes.status === 'fulfilled' ? normalizeArray(ivRes.value, ['interviews']) : [],
-              applications: [],
+              applications: appsRes.status === 'fulfilled' ? normalizeArray(appsRes.value, ['applications']) : [],
               savedJobs: [],
               profile: null,
             });
@@ -196,24 +197,27 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
   const isAdmin = role === 'ADMIN';
   const isManager = role === 'HIRING_MANAGER';
 
+  const candidateViewsCount = useMemo(() => {
+    return Number(
+      liveData.profile?.views_count !== undefined && liveData.profile?.views_count !== null
+        ? liveData.profile.views_count
+        : (user?.profile?.views_count || 0)
+    );
+  }, [liveData.profile, user?.profile]);
+
   // 1. DYNAMIC STAT CARDS (ROW 1)
   const statCards = useMemo(() => {
     if (isCandidate) {
       const appCount = liveData.applications.length;
       const savedCount = liveData.savedJobs.length;
       const ivCount = liveData.interviews.filter(i => i.status !== 'CANCELLED').length;
-
-      // Calculate profile completion %
-      const p = liveData.profile || user?.profile || {};
-      const fields = [p.full_name, p.title, p.skills, p.city, p.resume_url, p.avatar_url, p.summary];
-      const filled = fields.filter(Boolean).length;
-      const matchScore = filled > 0 ? `${Math.round((filled / fields.length) * 100)}%` : '85%';
+      const viewsCount = candidateViewsCount;
 
       return [
         { value: appCount.toString(), label: 'Applications Sent', sparkColor: '#5C59E8' },
-        { value: matchScore, label: 'Profile Match Score', sparkColor: '#FF7043' },
-        { value: ivCount.toString(), label: 'Interviews Scheduled', isFeatured: true },
-        { value: savedCount.toString(), label: 'Saved Opportunities', sparkColor: '#00A884' }
+        { value: viewsCount.toString(), label: 'Recruiter Views', sparkColor: '#00A884', isFeatured: true },
+        { value: ivCount.toString(), label: 'Interviews Scheduled', sparkColor: '#FF7043' },
+        { value: savedCount.toString(), label: 'Saved Opportunities', sparkColor: '#5C59E8' }
       ];
     }
 
@@ -259,7 +263,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
       { value: pendingScorecards.toString(), label: 'Pending Scorecards', isFeatured: true },
       { value: '4.9/5', label: 'Team Evaluation Score', sparkColor: '#00A884' }
     ];
-  }, [isCandidate, isRecruiter, isAdmin, liveData, user]);
+  }, [isCandidate, isRecruiter, isAdmin, liveData, candidateViewsCount]);
 
   // 2. DYNAMIC RESPONSE GRAPH DATA (ROW 2 LEFT)
   const responseGraphTitle = isCandidate
@@ -278,19 +282,193 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         ? 'Active API Sessions'
         : 'Candidate Reviews';
 
-  const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonthIdx = now.getMonth();
 
-  // Dynamically calculate bar heights based on live data length + filter
-  const barHeights = useMemo(() => {
-    const baseCount = (isCandidate ? liveData.applications.length : liveData.jobs.length) || 4;
-    const multiplier = responseFilter === '7 Days' ? 1.0 : responseFilter === '30 Days' ? 1.25 : 0.8;
+    // 1. Build intervals based on responseFilter
+    let intervals = [];
 
-    const baseSeed = [45, 58, 85, 62, 98, 48, 72, 38, 82, 60, 74, 98];
-    return baseSeed.map((val, idx) => {
-      const dynamicVal = Math.min(120, Math.max(20, Math.round((val + (baseCount * (idx % 3 + 1))) * multiplier)));
-      return dynamicVal;
+    if (responseFilter === 'Yearly' || responseFilter === '1 Year') {
+      const calMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      intervals = calMonths.map((mName, mIdx) => ({
+        label: mName,
+        fullLabel: `${mName} ${curYear}`,
+        isCurrentPeriod: mIdx === curMonthIdx,
+        matchFn: (dateVal) => {
+          if (!dateVal) return false;
+          const d = new Date(dateVal);
+          return !isNaN(d.getTime()) && d.getMonth() === mIdx && d.getFullYear() === curYear;
+        }
+      }));
+    } else if (responseFilter === '30 Days') {
+      for (let i = 3; i >= 0; i--) {
+        const start = new Date(now);
+        start.setDate(start.getDate() - (i + 1) * 7);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setDate(end.getDate() - i * 7);
+        end.setHours(23, 59, 59, 999);
+        intervals.push({
+          label: i === 0 ? 'This Wk' : `Wk -${i}`,
+          fullLabel: `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          isCurrentPeriod: i === 0,
+          matchFn: (dateVal) => {
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
+            return !isNaN(d.getTime()) && d >= start && d <= end;
+          }
+        });
+      }
+    } else {
+      // 7 Days
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const mName = d.toLocaleDateString('en-US', { month: 'short' });
+        const dayNum = d.getDate();
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        intervals.push({
+          label: i === 0 ? 'Today' : (i === 1 ? 'Yday' : dayName),
+          fullLabel: `${dayName}, ${mName} ${dayNum}`,
+          dateStr,
+          isCurrentPeriod: i === 0,
+          matchFn: (dateVal) => {
+            if (!dateVal) return false;
+            const dObj = new Date(dateVal);
+            if (isNaN(dObj.getTime())) return false;
+            const itemDateStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+            return itemDateStr === dateStr;
+          }
+        });
+      }
+    }
+
+    // 2. Role-specific live datasets
+    let primaryLegend = 'Applications';
+    let secondaryLegend = 'Activity';
+    let primaryItems = [];
+    let secondaryItems = [];
+    let getPrimaryDate = (item) => item?.applied_at || item?.created_at;
+    let getSecondaryDate = (item) => item?.created_at || item?.interview_date;
+    let isCandidateDirectViews = false;
+
+    if (isCandidate) {
+      primaryLegend = 'Applications';
+      secondaryLegend = 'Recruiter Views';
+      primaryItems = liveData.applications || [];
+      isCandidateDirectViews = true;
+    } else if (isRecruiter) {
+      primaryLegend = 'Applications';
+      secondaryLegend = 'Interviews';
+      primaryItems = liveData.applications || [];
+      secondaryItems = liveData.interviews || [];
+    } else if (isManager) {
+      primaryLegend = 'Applications';
+      secondaryLegend = 'Evaluations';
+      primaryItems = liveData.applications || [];
+      secondaryItems = liveData.interviews || [];
+    } else {
+      // Admin
+      primaryLegend = 'Applications';
+      secondaryLegend = 'Open Requisitions';
+      primaryItems = liveData.applications || [];
+      secondaryItems = liveData.jobs || [];
+    }
+
+    // 3. Aggregate real items into intervals
+    let totalPrimaryMatched = 0;
+    let totalSecondaryMatched = 0;
+
+    const bars = intervals.map((inv) => {
+      const pMatches = primaryItems.filter((item) => inv.matchFn(getPrimaryDate(item))).length;
+      totalPrimaryMatched += pMatches;
+
+      let sMatches = 0;
+      if (isCandidateDirectViews) {
+        if (inv.isCurrentPeriod && candidateViewsCount > 0) {
+          sMatches = candidateViewsCount;
+        }
+      } else {
+        sMatches = secondaryItems.filter((item) => inv.matchFn(getSecondaryDate(item))).length;
+        totalSecondaryMatched += sMatches;
+      }
+
+      return {
+        label: inv.label,
+        fullLabel: inv.fullLabel,
+        appVal: pMatches,
+        viewVal: sMatches
+      };
     });
-  }, [isCandidate, liveData, responseFilter]);
+
+    // 4. Fallback attribution if items exist but were logged slightly outside the current filter range
+    if (primaryItems.length > 0 && totalPrimaryMatched === 0 && bars.length > 0) {
+      const curIdx = intervals.findIndex((i) => i.isCurrentPeriod);
+      const targetIdx = curIdx >= 0 ? curIdx : bars.length - 1;
+      bars[targetIdx].appVal = primaryItems.length;
+    }
+
+    if (!isCandidateDirectViews && secondaryItems.length > 0 && totalSecondaryMatched === 0 && bars.length > 0) {
+      const curIdx = intervals.findIndex((i) => i.isCurrentPeriod);
+      const targetIdx = curIdx >= 0 ? curIdx : bars.length - 1;
+      bars[targetIdx].viewVal = secondaryItems.length;
+    } else if (isCandidateDirectViews && candidateViewsCount > 0 && !bars.some((b) => b.viewVal > 0) && bars.length > 0) {
+      bars[bars.length - 1].viewVal = candidateViewsCount;
+    }
+
+    // 5. Compute maxVal and clean integer grid levels
+    const maxValFromData = Math.max(
+      ...bars.map((b) => Math.max(b.appVal, b.viewVal)),
+      3
+    );
+    let maxVal = 4;
+    if (maxValFromData <= 4) maxVal = 4;
+    else if (maxValFromData <= 8) maxVal = 8;
+    else if (maxValFromData <= 12) maxVal = 12;
+    else if (maxValFromData <= 20) maxVal = 20;
+    else if (maxValFromData <= 50) maxVal = Math.ceil(maxValFromData / 10) * 10;
+    else maxVal = Math.ceil(maxValFromData / 20) * 20;
+
+    const step = maxVal / 4;
+    const gridLevels = [
+      maxVal,
+      Math.round(step * 3),
+      Math.round(step * 2),
+      Math.round(step * 1),
+      0
+    ];
+
+    const totalPrimary = primaryItems.length;
+    const totalSecondary = isCandidateDirectViews ? candidateViewsCount : secondaryItems.length;
+
+    return {
+      isDual: true,
+      primaryLegend,
+      secondaryLegend,
+      totalPrimary,
+      totalSecondary,
+      maxVal,
+      gridLevels,
+      bars: bars.map((b) => ({
+        ...b,
+        appHeightPx: Math.max(b.appVal > 0 ? 8 : 2, Math.round((b.appVal / maxVal) * 118)),
+        viewHeightPx: Math.max(b.viewVal > 0 ? 8 : 2, Math.round((b.viewVal / maxVal) * 118))
+      }))
+    };
+  }, [
+    isCandidate,
+    isRecruiter,
+    isManager,
+    isAdmin,
+    liveData.applications,
+    liveData.jobs,
+    liveData.interviews,
+    candidateViewsCount,
+    responseFilter
+  ]);
 
   // 3. DYNAMIC RIGHT METRIC CARD (ROW 2 RIGHT)
   const rightMetricData = useMemo(() => {
@@ -767,14 +945,42 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         {/* Left: Response Graph (8 cols) */}
         <div className={`lg:col-span-8 ${cardClass} p-5 sm:p-6 flex flex-col justify-between`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <h2 className="text-[15px] font-semibold text-slate-900 m-0">
-              {responseGraphTitle}
-            </h2>
+            <div>
+              <h2 className="text-[15px] font-semibold text-slate-900 m-0">
+                {responseGraphTitle}
+              </h2>
+              {isCandidate && (
+                <p className="text-xs text-slate-400 mt-1 m-0">
+                  {candidateViewsCount > 0
+                    ? `${candidateViewsCount} recruiter view${candidateViewsCount > 1 ? 's' : ''} recorded • ${liveData.applications.length} applications submitted`
+                    : `0 recruiter views yet • ${liveData.applications.length} applications submitted`}
+                </p>
+              )}
+              {isRecruiter && (
+                <p className="text-xs text-slate-400 mt-1 m-0">
+                  {liveData.applications.length} application{liveData.applications.length === 1 ? '' : 's'} received • {liveData.interviews.length} interview{liveData.interviews.length === 1 ? '' : 's'} scheduled
+                </p>
+              )}
+              {isManager && (
+                <p className="text-xs text-slate-400 mt-1 m-0">
+                  {liveData.applications.length} applicant{liveData.applications.length === 1 ? '' : 's'} in pipeline • {liveData.interviews.length} evaluation{liveData.interviews.length === 1 ? '' : 's'} scheduled
+                </p>
+              )}
+              {isAdmin && (
+                <p className="text-xs text-slate-400 mt-1 m-0">
+                  {liveData.applications.length} total applicant{liveData.applications.length === 1 ? '' : 's'} • {liveData.jobs.length} published requisition{liveData.jobs.length === 1 ? '' : 's'}
+                </p>
+              )}
+            </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                <span className="w-2 h-2 rounded-full bg-[#5C59E8]" />
-                <span>{responseGraphLegend}</span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                <span className="w-2.5 h-2.5 rounded-xs bg-[#5C59E8]" />
+                <span>{chartData.primaryLegend} ({chartData.totalPrimary})</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                <span className="w-2.5 h-2.5 rounded-xs bg-[#00A884]" />
+                <span>{chartData.secondaryLegend} ({chartData.totalSecondary})</span>
               </div>
 
               {/* Filter Dropdown Button */}
@@ -790,7 +996,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
                 {showResponseFilterDropdown && (
                   <div className="absolute right-0 top-full mt-1.5 w-28 bg-white rounded-xl shadow-lg shadow-slate-900/10 border border-slate-100 py-1 z-30 animate-in fade-in">
-                    {['7 Days', '30 Days', '1 Year'].map((opt) => (
+                    {['Yearly', '30 Days', '7 Days'].map((opt) => (
                       <button
                         key={opt}
                         type="button"
@@ -813,7 +1019,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           <div className="relative pt-4">
             {/* Horizontal Grid lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
-              {[120, 90, 60, 30, 0].map((val) => (
+              {chartData.gridLevels.map((val) => (
                 <div key={val} className="w-full flex items-center gap-3">
                   <span className="w-6 text-[10px] font-medium text-slate-300 text-right shrink-0 tabular-nums">
                     {val}
@@ -823,24 +1029,63 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
               ))}
             </div>
 
-            {/* Vertical Purple Bars */}
+            {/* Vertical Bars */}
             <div className="relative pl-9 pr-2 h-44 flex items-end justify-between gap-2 z-10 pb-6">
-              {months.map((m, idx) => {
-                const heightPct = Math.round((barHeights[idx] / 120) * 100);
+              {chartData.bars.map((item, idx) => {
+                if (chartData.isDual) {
+                  return (
+                    <div key={item.label || idx} className="flex-1 flex flex-col items-center h-full justify-end group">
+                      <div className="relative w-full h-[125px] flex items-end justify-center gap-1 sm:gap-1.5">
+                        {/* Primary Bar */}
+                        <div
+                          style={{ height: `${item.appHeightPx}px` }}
+                          className={`w-2 sm:w-3 rounded-t-xs transition-all duration-300 ${
+                            item.appVal > 0 ? 'bg-[#5C59E8] group-hover:bg-[#4845D2]' : 'bg-slate-100/70'
+                          }`}
+                        />
+                        {/* Secondary Bar */}
+                        <div
+                          style={{ height: `${item.viewHeightPx}px` }}
+                          className={`w-2 sm:w-3 rounded-t-xs transition-all duration-300 ${
+                            item.viewVal > 0 ? 'bg-[#00A884] group-hover:bg-[#00846A]' : 'bg-slate-100/70'
+                          }`}
+                        />
+                        {/* Tooltip on Hover */}
+                        <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-semibold px-2.5 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap z-30 flex flex-col gap-0.5">
+                          <span className="text-slate-400 text-[9px] pb-0.5 border-b border-slate-700/60 font-medium">
+                            {item.fullLabel || item.label}
+                          </span>
+                          <span className="text-indigo-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#5C59E8]" />
+                            {chartData.primaryLegend}: {item.appVal}
+                          </span>
+                          <span className="text-emerald-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00A884]" />
+                            {chartData.secondaryLegend}: {item.viewVal}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-medium text-slate-400 mt-2 block whitespace-nowrap">
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div key={m} className="flex-1 flex flex-col items-center h-full justify-end group">
-                    <div className="relative w-full flex justify-center">
+                  <div key={item.label || idx} className="flex-1 flex flex-col items-center h-full justify-end group">
+                    <div className="relative w-full h-[125px] flex items-end justify-center">
                       <div
-                        style={{ height: `${heightPct}%` }}
+                        style={{ height: `${item.heightPx}px` }}
                         className="w-2.5 sm:w-3.5 bg-[#5C59E8] group-hover:bg-[#4845D2] rounded-t-md transition-all duration-300"
                       />
                       {/* Tooltip on Hover */}
-                      <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow pointer-events-none whitespace-nowrap tabular-nums">
-                        {barHeights[idx]}
+                      <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow pointer-events-none whitespace-nowrap tabular-nums z-30">
+                        {item.val}
                       </div>
                     </div>
                     <span className="text-[10px] font-medium text-slate-400 mt-2 block">
-                      {m}
+                      {item.label}
                     </span>
                   </div>
                 );

@@ -31,7 +31,9 @@ def format_candidate_profile(c: models.Candidate) -> dict:
         "resume_filename": c.resume_filename,
         "avatar_url": c.avatar_url,
         "cover_url": c.cover_url,
-        "portfolio_url": c.portfolio_url
+        "portfolio_url": c.portfolio_url,
+        "views_count": getattr(c, "views_count", 0) or 0,
+        "top_search_count": getattr(c, "top_search_count", 0) or 0
     }
 
 @router.post("/register/candidate", status_code=201)

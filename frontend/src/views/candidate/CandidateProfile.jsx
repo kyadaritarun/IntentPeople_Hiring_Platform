@@ -677,6 +677,105 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
   const profileStrength = calculateProfileStrength();
 
+  // ── Dynamic Live Candidate Analytics ──
+  const [liveAnalytics, setLiveAnalytics] = useState({
+    recruiterViews: Number(candidate.views_count || 0),
+    viewsTrend: Number(candidate.views_count || 0) > 0 ? `${candidate.views_count} views` : '0 views',
+    searchAppearances: Number(candidate.top_search_count || 0),
+    topSkillsMatched: [],
+    recruiterInquiries: 0,
+    interviewsScheduled: 0,
+    shortlistedCount: 0,
+    inReviewCount: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveCandidateAnalytics = async () => {
+      try {
+        const [appsRes, jobsRes, profileRes] = await Promise.all([
+          api.getMyApplications().catch(() => []),
+          api.getJobs().catch(() => []),
+          api.getCandidateProfile().catch(() => null)
+        ]);
+
+        const apps = Array.isArray(appsRes) ? appsRes : [];
+        const jobs = Array.isArray(jobsRes) ? jobsRes : [];
+        const currentCand = profileRes || candidate || {};
+
+        // 1. Recruiter Inquiries & Stage Breakdown
+        const interviews = apps.filter(a => (a.status || '').toUpperCase().includes('INTERVIEW')).length;
+        const shortlisted = apps.filter(a => (a.status || '').toUpperCase() === 'SHORTLISTED' || (a.status || '').toUpperCase() === 'SELECTED').length;
+        const inReview = apps.filter(a => a.status === 'UNDER_REVIEW' || a.status === 'APPLIED').length;
+        const activeInquiries = apps.filter(a => (a.status || '').toUpperCase() !== 'REJECTED').length;
+
+        // 2. Search Appearances: Count when this candidate came top in recruiter searches
+        const topSearchCount = Number(currentCand.top_search_count !== undefined ? currentCand.top_search_count : (candidate.top_search_count || 0));
+
+        // 3. Recruiter Profile Views: Count strictly when recruiter has seen this candidate's profile
+        const realViewsCount = Number(currentCand.views_count !== undefined ? currentCand.views_count : (candidate.views_count || 0));
+        const viewsTrend = realViewsCount > 0 ? `${realViewsCount} view${realViewsCount > 1 ? 's' : ''}` : '0 views';
+
+        // 4. Keyword Match Analysis for Top Skills
+        const rawSkills = currentCand.skills || candidate.skills || formData.skills || [];
+        const candidateSkillList = Array.isArray(rawSkills)
+          ? rawSkills.map(s => String(s).trim()).filter(Boolean)
+          : typeof rawSkills === 'string'
+            ? rawSkills.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+
+        const candidateSkillsLower = new Set(candidateSkillList.map(s => s.toLowerCase()));
+
+        let matchedJobsCount = 0;
+        const skillMatchFreq = {};
+
+        jobs.forEach(job => {
+          const reqSkills = Array.isArray(job.skills) ? job.skills : [];
+          let jobMatched = false;
+          reqSkills.forEach(rs => {
+            const lower = String(rs).toLowerCase().trim();
+            if (candidateSkillsLower.has(lower)) {
+              jobMatched = true;
+              skillMatchFreq[rs] = (skillMatchFreq[rs] || 0) + 1;
+            }
+          });
+          if (jobMatched) matchedJobsCount++;
+        });
+
+        const sortedSkills = Object.entries(skillMatchFreq)
+          .sort((a, b) => b[1] - a[1])
+          .map(([sk]) => sk);
+
+        const topSkills = sortedSkills.length > 0
+          ? sortedSkills.slice(0, 3)
+          : candidateSkillList.slice(0, 3);
+
+        if (isMounted) {
+          setLiveAnalytics({
+            recruiterViews: realViewsCount,
+            viewsTrend,
+            searchAppearances: topSearchCount,
+            topSkillsMatched: topSkills,
+            recruiterInquiries: activeInquiries || apps.length,
+            interviewsScheduled: interviews,
+            shortlistedCount: shortlisted,
+            inReviewCount: inReview,
+            loading: false
+          });
+        }
+      } catch (err) {
+        console.warn('Could not load live analytics:', err);
+        if (isMounted) {
+          setLiveAnalytics(prev => ({ ...prev, loading: false }));
+        }
+      }
+    };
+
+    fetchLiveCandidateAnalytics();
+    return () => { isMounted = false; };
+  }, [user, candidate.skills, formData.skills, profileStrength.score, experiences.length]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1013,7 +1112,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
             <p className="text-[0.68rem] text-slate-400 mt-1.5">Calculated across profile sections</p>
           </div>
 
-          {/* Metric 2: Recruiter Views */}
+          {/* Metric 2: Recruiter Views (Counted strictly when recruiter sees profile) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Recruiter Views</span>
@@ -1022,15 +1121,25 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">324</span>
-              <span className="text-[0.7rem] font-semibold text-emerald-600 flex items-center">
-                <TrendingUp className="w-3 h-3 mr-0.5" /> +28%
+              <span className="text-2xl font-black text-slate-900">{liveAnalytics.recruiterViews}</span>
+              <span className={`text-[0.7rem] font-semibold flex items-center ${liveAnalytics.recruiterViews > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {liveAnalytics.recruiterViews > 0 ? (
+                  <>
+                    <TrendingUp className="w-3 h-3 mr-0.5" /> {liveAnalytics.viewsTrend}
+                  </>
+                ) : (
+                  <span>0 views</span>
+                )}
               </span>
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">Last 30 days discovery</p>
+            <p className="text-[0.68rem] text-slate-400 mt-1.5">
+              {liveAnalytics.recruiterViews === 0
+                ? '0 recruiter views • counted when a recruiter views your profile'
+                : `${liveAnalytics.recruiterViews} recruiter${liveAnalytics.recruiterViews > 1 ? 's have' : ' has'} viewed your profile dossier`}
+            </p>
           </div>
 
-          {/* Metric 3: Search Matches */}
+          {/* Metric 3: Search Appearances (Counted when this candidate came top) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Search Appearances</span>
@@ -1039,13 +1148,19 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">68</span>
-              <span className="text-[0.7rem] font-semibold text-indigo-600">Queries</span>
+              <span className="text-2xl font-black text-slate-900">{liveAnalytics.searchAppearances}</span>
+              <span className={`text-[0.7rem] font-semibold ${liveAnalytics.searchAppearances > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>
+                {liveAnalytics.searchAppearances > 0 ? 'Top Result' : 'Top Result: 0'}
+              </span>
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">Keywords: React, Node, MarTech</p>
+            <p className="text-[0.68rem] text-slate-400 mt-1.5 truncate">
+              {liveAnalytics.searchAppearances === 0
+                ? '0 times ranked top in searches'
+                : `Ranked top match in ${liveAnalytics.searchAppearances} recruiter search${liveAnalytics.searchAppearances > 1 ? 'es' : ''}`}
+            </p>
           </div>
 
-          {/* Metric 4: Direct Inquiries */}
+          {/* Metric 4: Direct Inquiries (Live Applications & Scheduled Interviews) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-teal-300 transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Recruiter Inquiries</span>
@@ -1054,10 +1169,28 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">12</span>
-              <span className="text-[0.7rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">Active</span>
+              <span className="text-2xl font-black text-slate-900">{liveAnalytics.recruiterInquiries}</span>
+              {liveAnalytics.interviewsScheduled > 0 ? (
+                <span className="text-[0.7rem] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.2 rounded">
+                  {liveAnalytics.interviewsScheduled} Interview{liveAnalytics.interviewsScheduled > 1 ? 's' : ''}
+                </span>
+              ) : liveAnalytics.shortlistedCount > 0 ? (
+                <span className="text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded">
+                  Shortlisted
+                </span>
+              ) : (
+                <span className="text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded">
+                  Active
+                </span>
+              )}
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">4 interviews scheduled</p>
+            <p className="text-[0.68rem] text-slate-400 mt-1.5">
+              {liveAnalytics.interviewsScheduled > 0
+                ? `${liveAnalytics.interviewsScheduled} live interview${liveAnalytics.interviewsScheduled > 1 ? 's' : ''} scheduled`
+                : liveAnalytics.recruiterInquiries > 0
+                  ? `${liveAnalytics.recruiterInquiries} active recruiter submission${liveAnalytics.recruiterInquiries > 1 ? 's' : ''}`
+                  : 'Apply to jobs to receive recruiter inquiries'}
+            </p>
           </div>
 
         </div>

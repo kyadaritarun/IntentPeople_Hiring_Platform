@@ -41,6 +41,8 @@ def ensure_columns_exist():
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS fit_breakdown JSON;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS screening_questions JSON DEFAULT \'[]\'::json;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS screening_answers JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS top_search_count INTEGER DEFAULT 0;'))
             conn.commit()
     except Exception as e:
         pass

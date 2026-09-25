@@ -232,6 +232,18 @@ def search_candidates(
     else:
         results.sort(key=lambda x: x.get("total_experience_years", 0), reverse=True)
 
+    # When a search query or filter is executed, candidate(s) who came top get their top_search_count incremented
+    is_active_search = bool(query_text or required_skills or city_filter or min_experience is not None or max_experience is not None or (work_mode_filter and work_mode_filter != "all"))
+    if results and is_active_search:
+        top_cand_id = results[0].get("id")
+        if top_cand_id:
+            top_cand = db.query(models.Candidate).filter(models.Candidate.id == top_cand_id).first()
+            if top_cand:
+                top_cand.top_search_count = (top_cand.top_search_count or 0) + 1
+                db.commit()
+                db.refresh(top_cand)
+                results[0]["top_search_count"] = top_cand.top_search_count
+
     return results[:limit]
 
 
@@ -243,6 +255,7 @@ def get_candidate_by_id(
 ):
     """
     Get full profile dossier of a specific candidate (for recruiter evaluation / PDF preview).
+    Increments recruiter view count when viewed by recruiter, hiring manager, or admin.
     """
     if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
         raise HTTPException(status_code=403, detail="Only authorized staff can view candidate profiles")
@@ -251,9 +264,62 @@ def get_candidate_by_id(
     if not cand:
         raise HTTPException(status_code=404, detail="Candidate not found")
 
+    # Increment recruiter view count strictly when recruiter sees profile
+    cand.views_count = (cand.views_count or 0) + 1
+    db.commit()
+    db.refresh(cand)
+
     cand_user = db.query(models.User).filter(models.User.id == cand.user_id).first() if cand.user_id else None
     formatted = format_candidate_profile(cand)
     formatted["email"] = cand_user.email if cand_user else ""
     formatted["total_experience_years"] = round(_calculate_experience_years(cand.experience or []), 1)
     return formatted
+
+
+@router.post("/{candidate_id}/view")
+def record_candidate_view(
+    candidate_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Record that a recruiter has viewed this candidate's profile / dossier.
+    Increments views_count by 1.
+    """
+    cand = db.query(models.Candidate).filter(models.Candidate.id == candidate_id).first()
+    if not cand:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    cand.views_count = (cand.views_count or 0) + 1
+    db.commit()
+    db.refresh(cand)
+    return {
+        "status": "success",
+        "candidate_id": cand.id,
+        "views_count": cand.views_count
+    }
+
+
+@router.post("/{candidate_id}/top-search")
+def record_candidate_top_search(
+    candidate_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Record that this candidate appeared at the top of recruiter search results.
+    Increments top_search_count by 1.
+    """
+    cand = db.query(models.Candidate).filter(models.Candidate.id == candidate_id).first()
+    if not cand:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    cand.top_search_count = (cand.top_search_count or 0) + 1
+    db.commit()
+    db.refresh(cand)
+    return {
+        "status": "success",
+        "candidate_id": cand.id,
+        "top_search_count": cand.top_search_count
+    }
 

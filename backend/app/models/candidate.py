@@ -26,6 +26,8 @@ class Candidate(Base):
     portfolio_url = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     cover_url = Column(String, nullable=True)
+    views_count = Column(Integer, default=0)
+    top_search_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="candidate_profile")

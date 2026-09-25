@@ -1038,8 +1038,18 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
     `;
   };
 
+  const handleSelectApp = (app) => {
+    setSelectedApp(app);
+    if (app?.candidate?.id) {
+      api.recordCandidateView(app.candidate.id).catch(() => {});
+    }
+  };
+
   const handleExportCandidatePdf = (app) => {
     if (!app) return;
+    if (app.candidate?.id) {
+      api.recordCandidateView(app.candidate.id).catch(() => {});
+    }
     const title = `Candidate Dossier - ${app.candidate?.full_name || 'Applicant'} - Uptrix`;
     const html = generateSingleCandidateHtml(app);
     openPrintableWindow(title, html);
@@ -1057,9 +1067,13 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
   const handleOpenPdfPreviewModal = (type, app = null, customApps = null) => {
     const list = customApps || sortedApplicants;
+    const targetApp = app || selectedApp || list[0];
+    if (type === 'single' && targetApp?.candidate?.id) {
+      api.recordCandidateView(targetApp.candidate.id).catch(() => {});
+    }
     setPdfModalData({
       type,
-      app: app || selectedApp || list[0],
+      app: targetApp,
       apps: list,
       jobTitle: getSelectedRequisitionTitle() + (selectedStageFilter !== 'ALL' ? ` • ${selectedStageFilter.replace(/_/g, ' ')}` : '')
     });
@@ -1648,7 +1662,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     return (
                       <div
                         key={app.id}
-                        onClick={() => setSelectedApp(app)}
+                        onClick={() => handleSelectApp(app)}
                         className={`p-3.5 cursor-pointer transition-all ${
                           isSelected 
                             ? 'bg-teal-50/70 border-l-4 border-[#00a884]' 
@@ -2277,6 +2291,11 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                         href={selectedApp.candidate.resume_url}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => {
+                          if (selectedApp.candidate?.id) {
+                            api.recordCandidateView(selectedApp.candidate.id).catch(() => {});
+                          }
+                        }}
                         className="px-4 py-2 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 no-underline"
                       >
                         <FileText className="w-4 h-4" /> View Resume Document
@@ -2443,7 +2462,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => { setSelectedApp(app); setViewMode('split'); }}
+                                onClick={() => { handleSelectApp(app); setViewMode('split'); }}
                                 className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors bg-white cursor-pointer"
                                 title="View candidate dossier"
                               >
@@ -2462,6 +2481,11 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                                   href={c.resume_url}
                                   target="_blank"
                                   rel="noreferrer"
+                                  onClick={() => {
+                                    if (c.id) {
+                                      api.recordCandidateView(c.id).catch(() => {});
+                                    }
+                                  }}
                                   className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors bg-white inline-flex items-center"
                                   title="Download uploaded resume file"
                                 >

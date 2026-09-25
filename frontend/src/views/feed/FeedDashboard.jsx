@@ -251,11 +251,19 @@ export default function FeedDashboard({
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   };
 
+  const candidateViews = Number(user?.profile?.views_count || 0);
   const homeStats = [
-    { icon: Eye, label: 'Profile views', value: 27, delta: '+9 this week', color: NAVY, tab: 'candidate_profile' },
-    { icon: Send, label: 'Applied', value: 5, delta: '2 pending', color: '#0E9F6E', tab: 'my_applications' },
+    {
+      icon: Eye,
+      label: 'Profile views',
+      value: candidateViews,
+      delta: candidateViews > 0 ? `${candidateViews} recruiter view${candidateViews > 1 ? 's' : ''}` : '0 views yet',
+      color: NAVY,
+      tab: 'candidate_profile'
+    },
+    { icon: Send, label: 'Applied', value: 5, delta: 'Active submissions', color: '#0E9F6E', tab: 'my_applications' },
     { icon: Calendar, label: 'Interviews', value: 2, delta: '1 upcoming', color: GOLD_DEEP, tab: 'interviews' },
-    { icon: Bookmark, label: 'Saved jobs', value: 8, delta: '1 closing soon', color: '#D14343', tab: 'saved_jobs' },
+    { icon: Bookmark, label: 'Saved jobs', value: 8, delta: 'Saved opportunities', color: '#D14343', tab: 'saved_jobs' },
   ];
 
   const quickNav = [
@@ -379,7 +387,6 @@ export default function FeedDashboard({
     { id: 'my_interviews', label: 'Calendar / Interviews', icon: Calendar, tab: 'interviews' },
     { id: 'skill_advisory', label: 'Monthly Analysis', icon: TrendingUp, tab: 'skill_advisory' },
     { id: 'profile', label: 'Candidate Profile', icon: User, tab: 'profile' },
-    { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
     { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 

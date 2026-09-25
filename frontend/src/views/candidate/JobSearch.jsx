@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search, MapPin, Briefcase, Filter, Sparkles, Building2,
   Send, CheckCircle2, X, DollarSign, Clock, Bookmark,
   ArrowUpRight, TrendingUp, ShieldCheck, ChevronRight,
   SlidersHorizontal, Check, RefreshCw, Eye, Zap, Layers,
   Target, FileText, Users, AlertCircle, Compass, Copy, Bot, Plus,
-  AlertTriangle, ShieldAlert, HelpCircle
+  AlertTriangle, ShieldAlert, HelpCircle, Camera
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +54,11 @@ export default function JobSearch({ setActiveTab }) {
   const userName = profile.full_name || user?.full_name || user?.email?.split('@')[0] || 'Candidate';
   const userTitle = (!profile.title || profile.title.toLowerCase().includes('digital marketing')) ? 'Candidate' : profile.title;
   const userLocation = profile.city ? `${profile.city}, ${profile.state || 'India'}` : 'Hyderabad, India';
+  const [userAvatar, setUserAvatar] = useState(
+    candidateProfile?.avatar_url || profile?.avatar_url || user?.avatar_url || ''
+  );
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
 
   const POPULAR_TAGS = [
     'Meta Ads', 'Google PPC', 'GA4', 'ROAS Optimization',
@@ -64,7 +69,10 @@ export default function JobSearch({ setActiveTab }) {
     if (user?.role === 'CANDIDATE') {
       api.getCandidateProfile()
         .then(res => {
-          if (res && res.id) setCandidateProfile(res);
+          if (res && res.id) {
+            setCandidateProfile(res);
+            if (res.avatar_url) setUserAvatar(res.avatar_url);
+          }
         })
         .catch(() => {});
     }
@@ -73,8 +81,37 @@ export default function JobSearch({ setActiveTab }) {
   useEffect(() => {
     if (user?.profile) {
       setCandidateProfile(prev => ({ ...prev, ...user.profile }));
+      if (user.profile.avatar_url) {
+        setUserAvatar(user.profile.avatar_url);
+      }
+    } else if (user?.avatar_url) {
+      setUserAvatar(user.avatar_url);
     }
-  }, [user?.profile]);
+  }, [user?.profile, user?.avatar_url]);
+
+  const handleUploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Photo file size must be less than 8MB');
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const res = await api.uploadCandidatePhoto(file);
+      if (res?.avatar_url) {
+        setUserAvatar(res.avatar_url);
+        setCandidateProfile(prev => ({ ...prev, avatar_url: res.avatar_url }));
+      }
+      await refreshUser();
+    } catch (err) {
+      console.error('Failed to upload profile photo:', err);
+      alert(err.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -599,11 +636,63 @@ export default function JobSearch({ setActiveTab }) {
             {/* 1. Candidate Mini Profile Card */}
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-5">
               <div className="flex flex-col items-center text-center">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full border-2 border-slate-100 shadow-2xs bg-slate-900 text-white font-extrabold text-xl flex items-center justify-center mx-auto">
-                    {userName.charAt(0).toUpperCase()}
+                <div className="relative group">
+                  <div
+                    onClick={() => photoInputRef.current?.click()}
+                    className="w-16 h-16 rounded-full border-2 border-slate-200 shadow-xs bg-white text-slate-800 font-extrabold text-xl flex items-center justify-center mx-auto overflow-hidden relative cursor-pointer group-hover:ring-2 group-hover:ring-[#FF7043]/40 transition-all"
+                    title="Click to upload or change profile photo"
+                  >
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="w-full h-full object-cover"
+                        onError={() => setUserAvatar('')}
+                      />
+                    ) : (
+                      <span>{userName.charAt(0).toUpperCase()}</span>
+                    )}
+
+                    {/* Camera hover overlay */}
+                    <div className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Camera className="w-4 h-4" />
+                    </div>
+
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center text-white">
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#FF7043]" />
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white" title="Verified candidate">
+
+                  {/* Hidden photo file input */}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                    onChange={handleUploadPhoto}
+                  />
+
+                  {/* Camera icon button overlay at bottom left */}
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute -bottom-0.5 -left-0.5 w-6 h-6 rounded-full bg-white hover:bg-slate-50 text-slate-600 hover:text-[#FF7043] border border-slate-200 shadow-sm flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95 z-10"
+                    title="Upload profile photo"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingPhoto}
+                      onChange={handleUploadPhoto}
+                    />
+                  </label>
+
+                  {/* Verified badge at bottom right */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white shadow-xs z-10" title="Verified candidate">
                     <ShieldCheck className="w-3 h-3" />
                   </div>
                 </div>
@@ -1561,8 +1650,12 @@ export default function JobSearch({ setActiveTab }) {
 
             {/* Applicant Profile Verification */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-bold text-sm flex items-center justify-center shrink-0">
-                {userName.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-800 font-bold text-sm flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                {userAvatar ? (
+                  <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  userName.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-900">{userName}</p>

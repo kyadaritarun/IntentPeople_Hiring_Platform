@@ -154,37 +154,6 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   const readyToApplyCount = savedList.filter(j => !appliedJobsMap[j.id]).length;
   const appliedCount = savedList.filter(j => !!appliedJobsMap[j.id]).length;
 
-  const stats = [
-    { 
-      label: 'Total Saved', 
-      value: totalSaved, 
-      sub: 'Bookmarked for later', 
-      color: '#d97706', 
-      filterKey: 'ALL'
-    },
-    { 
-      label: 'Ready to Apply', 
-      value: readyToApplyCount, 
-      sub: 'Opportunities to act on', 
-      color: '#059669', 
-      filterKey: 'READY'
-    },
-    { 
-      label: 'Remote Roles', 
-      value: remoteCount, 
-      sub: 'Work from anywhere', 
-      color: '#00a884', 
-      filterKey: 'REMOTE'
-    },
-    { 
-      label: 'Already Applied', 
-      value: appliedCount, 
-      sub: 'Active in pipeline', 
-      color: '#0891b2', 
-      filterKey: 'APPLIED'
-    },
-  ];
-
   // Filter & Sort
   const filteredList = savedList.filter(job => {
     const q = searchTerm.toLowerCase();
@@ -218,55 +187,137 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   ];
 
   return (
-    <div className="p-4 sm:p-8 max-w-10xl mx-auto space-y-6 select-text text-slate-800">
-      
+    <div
+      className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800 select-text relative"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+    >
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-semibold border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
+          <Sparkles className="w-3.5 h-3.5 text-[#FF7043]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* ── Top Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5 m-0">
-              <span className="w-8 h-8 rounded-xl bg-teal-50 text-[#00a884] flex items-center justify-center font-bold border border-teal-100/80">
-                <Bookmark className="w-4 h-4" />
-              </span>
+            <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
               Saved Jobs
             </h1>
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-semibold flex items-center gap-1">
+              <Bookmark className="w-3 h-3 text-amber-600 fill-amber-500" /> Curated Collection
+            </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed m-0">
+          <p className="text-sm text-slate-500 mt-1.5 m-0">
             Review and apply for roles you bookmarked for later across top digital marketing and tech teams.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-            <Bookmark className="w-3 h-3 text-amber-600 fill-amber-500" /> Curated Collection
-          </span>
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => setActiveTab?.('job_search')}
-            className="px-4 py-2 rounded-xl bg-[#00a884] hover:bg-[#008f70] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 border-none cursor-pointer"
+            className="px-4 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none"
           >
-            <Search className="w-3.5 h-3.5" /> Explore Jobs
+            <Search className="w-4 h-4" /> Explore Jobs
           </button>
         </div>
       </div>
 
+      {/* ── 4 Compact Funnel KPI Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {/* Total Saved */}
+        <div
+          onClick={() => setWorkModeFilter('ALL')}
+          className={`bg-white rounded-xl border px-3.5 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer transition-all hover:border-slate-300 flex items-center justify-between gap-2 ${
+            workModeFilter === 'ALL' ? 'border-[#FF7043] ring-1 ring-[#FF7043]/30 bg-orange-50/15' : 'border-slate-200/80 hover:bg-slate-50/50'
+          }`}
+        >
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold text-[#FF7043] uppercase tracking-wider block truncate">
+              Total Saved
+            </span>
+            <div className="text-sm sm:text-base font-bold text-slate-900 leading-tight mt-0.5">
+              {totalSaved} <span className="text-xs font-semibold text-slate-500">Roles</span>
+            </div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-[#FF7043]/10 text-[#FF7043] flex items-center justify-center shrink-0">
+            <Bookmark className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Ready to Apply */}
+        <div
+          onClick={() => setWorkModeFilter('READY')}
+          className={`bg-white rounded-xl border px-3.5 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer transition-all hover:border-slate-300 flex items-center justify-between gap-2 ${
+            workModeFilter === 'READY' ? 'border-emerald-400 ring-1 ring-emerald-400/30 bg-emerald-50/15' : 'border-slate-200/80 hover:bg-slate-50/50'
+          }`}
+        >
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider block truncate">
+              Ready to Apply
+            </span>
+            <div className="text-sm sm:text-base font-bold text-slate-900 leading-tight mt-0.5">
+              {readyToApplyCount} <span className="text-xs font-semibold text-slate-500">Open</span>
+            </div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <Send className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Remote Roles */}
+        <div
+          onClick={() => setWorkModeFilter('REMOTE')}
+          className={`bg-white rounded-xl border px-3.5 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer transition-all hover:border-slate-300 flex items-center justify-between gap-2 ${
+            workModeFilter === 'REMOTE' ? 'border-sky-400 ring-1 ring-sky-400/30 bg-sky-50/15' : 'border-slate-200/80 hover:bg-slate-50/50'
+          }`}
+        >
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold text-sky-600 uppercase tracking-wider block truncate">
+              Remote Setup
+            </span>
+            <div className="text-sm sm:text-base font-bold text-slate-900 leading-tight mt-0.5">
+              {remoteCount} <span className="text-xs font-semibold text-slate-500">Remote</span>
+            </div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <MapPin className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Already Applied */}
+        <div
+          onClick={() => setWorkModeFilter('APPLIED')}
+          className={`bg-white rounded-xl border px-3.5 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer transition-all hover:border-slate-300 flex items-center justify-between gap-2 ${
+            workModeFilter === 'APPLIED' ? 'border-[#5C59E8] ring-1 ring-[#5C59E8]/30 bg-[#5C59E8]/5' : 'border-slate-200/80 hover:bg-slate-50/50'
+          }`}
+        >
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold text-[#5C59E8] uppercase tracking-wider block truncate">
+              Applied Status
+            </span>
+            <div className="text-sm sm:text-base font-bold text-slate-900 leading-tight mt-0.5">
+              {appliedCount} <span className="text-xs font-semibold text-slate-500">Submitted</span>
+            </div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-[#5C59E8]/10 text-[#5C59E8] flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </div>
+
       {/* ── Search Toolbar & Work Mode Pills ── */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs space-y-3">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
         <div className="flex flex-col sm:flex-row items-center gap-2.5">
           {/* Search Input */}
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              className="w-full pl-10 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-800 outline-none focus:ring-2 focus:ring-[#00a884] transition-all placeholder:text-slate-400"
+              className="w-full pl-10 pr-8 py-2 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200/90 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all placeholder:text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
               placeholder="Filter saved roles by title, company, or location..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -287,7 +338,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
+              className="px-3 py-2 bg-slate-50 border border-slate-200/90 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             >
               <option value="recent">Recently Saved</option>
               <option value="title">Job Title (A-Z)</option>
@@ -305,34 +356,39 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
-          {filterTabs.map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setWorkModeFilter(tab.id)}
-              className={`text-[0.7rem] px-3 py-1.5 rounded-xl font-semibold transition-colors border cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                workModeFilter === tab.id
-                  ? 'bg-[#00a884] text-white border-[#00a884] shadow-xs'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`px-1.5 py-0.2 rounded-md text-[0.62rem] font-bold ${
-                workModeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-600'
-              }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 border-t border-slate-100">
+          {filterTabs.map(tab => {
+            const isActive = workModeFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setWorkModeFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#FF7043] text-white shadow-[0_1px_2px_rgba(255,112,67,0.25)] font-semibold'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-md text-[10px] font-bold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ─── 2. Saved Jobs List ─── */}
       {savedList.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-xs space-y-3.5 max-w-xl mx-auto">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
-            <Bookmark className="w-6 h-6 fill-amber-400/30" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3.5 max-w-xl mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#FF7043] flex items-center justify-center mx-auto">
+            <Bookmark className="w-6 h-6 fill-orange-400/30" />
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900">
@@ -346,14 +402,14 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <button
               type="button"
               onClick={() => setActiveTab?.('job_search')}
-              className="px-5 py-2.5 rounded-xl bg-[#00a884] hover:bg-[#008f70] text-white text-xs font-bold transition-all border-none cursor-pointer shadow-xs"
+              className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold transition-all border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)]"
             >
               Browse Open Jobs
             </button>
           </div>
         </div>
       ) : filteredList.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center shadow-xs space-y-3 max-w-md mx-auto">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3 max-w-md mx-auto">
           <p className="text-sm font-bold text-slate-800">No saved jobs match this filter</p>
           <p className="text-xs text-slate-500">Try adjusting your keyword search or switching category pills.</p>
           <button
@@ -373,25 +429,25 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             return (
               <div
                 key={job.id}
-                className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between group relative"
+                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 transition-all flex flex-col justify-between group relative"
               >
                 <div>
                   {/* Top Row: Company & Title + Remove Button */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-bold text-base flex items-center justify-center shrink-0 shadow-xs">
+                      <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-slate-800 font-extrabold text-base flex items-center justify-center shrink-0 shadow-2xs">
                         {(job.company || 'U').charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <h3 
-                          className="text-base font-bold text-slate-900 hover:text-[#00a884] transition-colors cursor-pointer truncate"
+                          className="text-base font-bold text-slate-900 hover:text-[#FF7043] transition-colors cursor-pointer truncate m-0"
                           onClick={() => setViewDetailsJob(job)}
                         >
                           {job.title}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
                           <span className="font-semibold text-slate-800 flex items-center gap-1">
-                            <ShieldCheck size={13} className="text-[#00a884]" />
+                            <ShieldCheck size={13} className="text-emerald-600" />
                             {job.company}
                           </span>
                         </div>
@@ -411,34 +467,35 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
 
                   {/* Metadata Strip */}
                   <div className="flex items-center gap-2 mt-3.5 text-xs text-slate-500 flex-wrap">
-                    <span className="flex items-center gap-1 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md text-[0.7rem]">
+                    <span className="flex items-center gap-1 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md text-[11px] font-medium">
                       <MapPin size={11} className="text-slate-400" /> {job.location || 'Remote'}
                     </span>
                     {job.work_mode && (
-                      <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-semibold bg-teal-50 text-[#00a884] border border-teal-100">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-orange-50 text-[#FF7043] border border-orange-200/60">
                         {job.work_mode}
                       </span>
                     )}
                     {job.salary && (
-                      <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-0.5">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 flex items-center gap-0.5">
                         {job.salary}
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-md text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-100">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80 flex items-center gap-1">
+                      <Sparkles size={11} className="text-purple-600" />
                       {matchPct}% Match
                     </span>
                   </div>
 
                   {/* Saved Date */}
                   {job.dateSaved && (
-                    <div className="text-[0.68rem] text-slate-400 mt-2 flex items-center gap-1">
-                      <Clock size={11} /> {job.dateSaved}
+                    <div className="text-[11px] text-slate-400 mt-2 flex items-center gap-1 font-medium">
+                      <Clock size={11} /> Saved {job.dateSaved}
                     </div>
                   )}
                 </div>
 
                 {/* Card Action Footer */}
-                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-3.5 mt-3.5 border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setViewDetailsJob(job)}
@@ -448,14 +505,14 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                   </button>
 
                   {isApplied ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
                         <CheckCircle2 size={13} /> Applied
                       </span>
                       <button
                         type="button"
                         onClick={() => setActiveTab?.('my_applications')}
-                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#00a884] hover:bg-teal-50 border-none bg-transparent cursor-pointer transition-colors"
+                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#FF7043] hover:text-[#E65B30] hover:underline border-none bg-transparent cursor-pointer transition-colors"
                       >
                         Track Status
                       </button>
@@ -464,9 +521,9 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                     <button
                       type="button"
                       onClick={(e) => handleOpenApplyModal(job, e)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] transition-all border-none cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#FF7043] hover:bg-[#E65B30] transition-all border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)]"
                     >
-                      <Send size={12} /> Apply Now
+                      <Send size={12} /> Easy Apply
                     </button>
                   )}
                 </div>
@@ -483,11 +540,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <div className="p-6 bg-slate-900 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[0.7rem] font-bold text-emerald-400 uppercase tracking-wider block">One-Click Application</span>
-                  <h3 className="text-xl font-bold text-white leading-snug mt-0.5">
+                  <span className="text-[10px] font-bold text-[#FF7043] uppercase tracking-wider block">One-Click Application</span>
+                  <h3 className="text-xl font-bold text-white leading-snug mt-0.5 m-0">
                     {applyModalJob.title}
                   </h3>
-                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1.5">
+                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1.5 m-0">
                     <Building2 size={12} /> {applyModalJob.company} • {applyModalJob.location}
                   </p>
                 </div>
@@ -504,14 +561,14 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <form onSubmit={handleSubmitApplication} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {/* Screening Questions */}
               {Array.isArray(applyModalJob.screening_questions) && applyModalJob.screening_questions.length > 0 && (
-                <div className="p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100/90 space-y-3.5">
-                  <div className="flex items-center gap-2 pb-2 border-b border-indigo-100">
-                    <HelpCircle className="w-4 h-4 text-indigo-600" />
+                <div className="p-4 bg-orange-50/40 rounded-2xl border border-orange-100/90 space-y-3.5">
+                  <div className="flex items-center gap-2 pb-2 border-b border-orange-100">
+                    <HelpCircle className="w-4 h-4 text-[#FF7043]" />
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 m-0">
                         Employer Screening Questions ({applyModalJob.screening_questions.length})
                       </h4>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-slate-500 m-0">
                         Please answer the questions below to submit your application.
                       </p>
                     </div>
@@ -521,7 +578,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                     {applyModalJob.screening_questions.map((q, qIdx) => (
                       <div key={q.id || qIdx} className="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
                         <label className="block text-xs font-bold text-slate-800 leading-snug">
-                          <span className="text-indigo-600 mr-1.5 font-black">Q{qIdx + 1}.</span>
+                          <span className="text-[#FF7043] mr-1.5 font-black">Q{qIdx + 1}.</span>
                           {q.question} {q.required && <span className="text-rose-500">*</span>}
                         </label>
 
@@ -533,7 +590,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                                 key={optIdx} 
                                 className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
                                   screeningAnswers[q.id] === opt 
-                                    ? 'bg-indigo-50/70 border-indigo-500 text-indigo-950 font-bold shadow-2xs' 
+                                    ? 'bg-orange-50/70 border-[#FF7043] text-slate-900 font-bold shadow-2xs' 
                                     : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
                                 }`}
                               >
@@ -548,7 +605,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                                       setScreeningErrors(prev => { const n = { ...prev }; delete n[q.id]; return n; });
                                     }
                                   }}
-                                  className="w-3.5 h-3.5 text-indigo-600 focus:ring-0"
+                                  className="w-3.5 h-3.5 text-[#FF7043] focus:ring-0"
                                 />
                                 <span>{opt}</span>
                               </label>
@@ -571,7 +628,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                                 }}
                                 className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
                                   screeningAnswers[q.id] === opt
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
+                                    ? 'bg-[#FF7043] border-[#FF7043] text-white shadow-2xs'
                                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
@@ -594,7 +651,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                               }
                             }}
                             placeholder="e.g. 3"
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 bg-white"
                           />
                         )}
 
@@ -611,7 +668,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                               }
                             }}
                             placeholder="Your answer..."
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white leading-relaxed"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 bg-white leading-relaxed"
                           />
                         )}
 
@@ -631,11 +688,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                   Personalized Cover Letter / Note
                 </label>
                 <textarea
-                  rows={6}
+                  rows={5}
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Introduce yourself and explain why you're a great fit for this role..."
-                  className="w-full p-3.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-800 resize-none leading-relaxed"
+                  className="w-full p-3.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 resize-none leading-relaxed"
                   required
                 />
               </div>
@@ -656,7 +713,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                 <button
                   type="submit"
                   disabled={applying}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] border-none cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#FF7043] hover:bg-[#E65B30] border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)] disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {applying ? (
                     <>
@@ -682,11 +739,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <div className="p-6 bg-slate-900 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[0.7rem] font-bold text-emerald-400 uppercase tracking-wider block">Job Overview</span>
-                  <h3 className="text-xl font-bold text-white leading-snug mt-0.5">
+                  <span className="text-[10px] font-bold text-[#FF7043] uppercase tracking-wider block">Job Overview</span>
+                  <h3 className="text-xl font-bold text-white leading-snug mt-0.5 m-0">
                     {viewDetailsJob.title}
                   </h3>
-                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1.5">
+                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1.5 m-0">
                     <Building2 size={12} /> {viewDetailsJob.company} • {viewDetailsJob.location}
                   </p>
                 </div>
@@ -703,27 +760,27 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             <div className="p-6 space-y-4 text-xs text-slate-700 max-h-[75vh] overflow-y-auto no-scrollbar">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[0.65rem] text-slate-400 font-bold block uppercase">Work Mode</span>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Work Mode</span>
                   <span className="font-bold text-slate-800 mt-0.5 block">{viewDetailsJob.work_mode || 'Flexible'}</span>
                 </div>
                 <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-100/80">
-                  <span className="text-[0.65rem] text-emerald-700 font-bold block uppercase">Compensation</span>
+                  <span className="text-[10px] text-emerald-700 font-bold block uppercase">Compensation</span>
                   <span className="font-bold text-emerald-900 mt-0.5 block">{viewDetailsJob.salary || 'Competitive'}</span>
                 </div>
                 <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-100/80">
-                  <span className="text-[0.65rem] text-purple-700 font-bold block uppercase">Ownership</span>
+                  <span className="text-[10px] text-purple-700 font-bold block uppercase">Ownership</span>
                   <span className="font-bold text-purple-900 mt-0.5 block truncate">{viewDetailsJob.ownership_level || 'Pod / Project Contributor'}</span>
                 </div>
-                <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-100/80">
-                  <span className="text-[0.65rem] text-teal-700 font-bold block uppercase">Specialization</span>
-                  <span className="font-bold text-teal-900 mt-0.5 block truncate">{viewDetailsJob.specialization || 'Full Track'}</span>
+                <div className="p-3 bg-orange-50/70 rounded-xl border border-orange-100/80">
+                  <span className="text-[10px] text-[#FF7043] font-bold block uppercase">Specialization</span>
+                  <span className="font-bold text-slate-900 mt-0.5 block truncate">{viewDetailsJob.specialization || 'Full Track'}</span>
                 </div>
                 <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-100/80">
-                  <span className="text-[0.65rem] text-amber-700 font-bold block uppercase">Availability</span>
+                  <span className="text-[10px] text-amber-700 font-bold block uppercase">Availability</span>
                   <span className="font-bold text-amber-900 mt-0.5 block truncate">{viewDetailsJob.availability_requirement || 'Immediate'}</span>
                 </div>
                 <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100/80">
-                  <span className="text-[0.65rem] text-indigo-700 font-bold block uppercase">Experience</span>
+                  <span className="text-[10px] text-indigo-700 font-bold block uppercase">Experience</span>
                   <span className="font-bold text-indigo-900 mt-0.5 block">{viewDetailsJob.min_experience || '1+ Years'}</span>
                 </div>
               </div>
@@ -733,14 +790,14 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {viewDetailsJob.must_have_capabilities && (
                     <div className="p-3 bg-emerald-50/40 rounded-xl border border-emerald-100 space-y-1">
-                      <span className="text-[0.65rem] font-bold text-emerald-800 uppercase block">Must-Have Capabilities</span>
-                      <p className="text-xs text-slate-800 font-medium">{viewDetailsJob.must_have_capabilities}</p>
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase block">Must-Have Capabilities</span>
+                      <p className="text-xs text-slate-800 font-medium m-0">{viewDetailsJob.must_have_capabilities}</p>
                     </div>
                   )}
                   {viewDetailsJob.preferred_capabilities && (
                     <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100 space-y-1">
-                      <span className="text-[0.65rem] font-bold text-blue-800 uppercase block">Preferred Capabilities</span>
-                      <p className="text-xs text-slate-800 font-medium">{viewDetailsJob.preferred_capabilities}</p>
+                      <span className="text-[10px] font-bold text-blue-800 uppercase block">Preferred Capabilities</span>
+                      <p className="text-xs text-slate-800 font-medium m-0">{viewDetailsJob.preferred_capabilities}</p>
                     </div>
                   )}
                 </div>
@@ -757,31 +814,31 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                 };
                 return (
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
-                    <span className="text-[0.68rem] font-bold text-slate-900 uppercase flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5 text-[#00a884]" /> Business Context
+                    <span className="text-[11px] font-bold text-slate-900 uppercase flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5 text-[#FF7043]" /> Business Context
                     </span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Product / Service</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Product / Service</span>
                         <span className="font-semibold text-slate-800">{bContext.product_service}</span>
                       </div>
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Business Model</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Business Model</span>
                         <span className="font-semibold text-slate-800">{bContext.business_model}</span>
                       </div>
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Growth Stage</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Growth Stage</span>
                         <span className="font-semibold text-slate-800">{bContext.growth_stage}</span>
                       </div>
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Target Audience</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Target Audience</span>
                         <span className="font-semibold text-slate-800">{bContext.target_audience}</span>
                       </div>
                     </div>
                     {bContext.ideal_customer_profile && (
                       <div className="pt-1 border-t border-slate-100">
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">ICP</span>
-                        <p className="text-slate-700 text-[0.72rem] leading-relaxed">{bContext.ideal_customer_profile}</p>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">ICP</span>
+                        <p className="text-slate-700 text-xs leading-relaxed m-0">{bContext.ideal_customer_profile}</p>
                       </div>
                     )}
                   </div>
@@ -800,31 +857,31 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                 };
                 return (
                   <div className="p-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100/80 space-y-2">
-                    <span className="text-[0.68rem] font-bold text-slate-900 uppercase flex items-center gap-1">
-                      <Compass className="w-3.5 h-3.5 text-[#00a884]" /> Hiring Need
+                    <span className="text-[11px] font-bold text-slate-900 uppercase flex items-center gap-1">
+                      <Compass className="w-3.5 h-3.5 text-emerald-600" /> Hiring Need
                     </span>
                     <div className="space-y-1.5">
                       {hNeed.business_problem && (
                         <div>
-                          <span className="text-[0.62rem] text-amber-700 font-bold block uppercase">Business Problem</span>
-                          <p className="text-slate-800 font-medium text-xs">{hNeed.business_problem}</p>
+                          <span className="text-[10px] text-amber-700 font-bold block uppercase">Business Problem</span>
+                          <p className="text-slate-800 font-medium text-xs m-0">{hNeed.business_problem}</p>
                         </div>
                       )}
                       {hNeed.expected_outcome && (
                         <div>
-                          <span className="text-[0.62rem] text-emerald-700 font-bold block uppercase">Expected Outcome</span>
-                          <p className="text-slate-800 font-medium text-xs">{hNeed.expected_outcome}</p>
+                          <span className="text-[10px] text-emerald-700 font-bold block uppercase">Expected Outcome</span>
+                          <p className="text-slate-800 font-medium text-xs m-0">{hNeed.expected_outcome}</p>
                         </div>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-emerald-100">
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Team Support</span>
-                        <span className="font-semibold text-slate-800 text-[0.72rem]">{hNeed.team_support}</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Team Support</span>
+                        <span className="font-semibold text-slate-800 text-xs">{hNeed.team_support}</span>
                       </div>
                       <div>
-                        <span className="text-[0.62rem] text-slate-400 font-bold block uppercase">Monthly Budget</span>
-                        <span className="font-semibold text-emerald-800 text-[0.72rem]">{hNeed.monthly_budget_range}</span>
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Monthly Budget</span>
+                        <span className="font-semibold text-emerald-800 text-xs">{hNeed.monthly_budget_range}</span>
                       </div>
                     </div>
                   </div>
@@ -835,7 +892,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
               {viewDetailsJob.description && (
                 <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 leading-relaxed text-slate-600">
                   <p className="font-semibold text-slate-900 mb-1">Role Description:</p>
-                  <p className="whitespace-pre-line">{viewDetailsJob.description}</p>
+                  <p className="whitespace-pre-line m-0">{viewDetailsJob.description}</p>
                 </div>
               )}
 
@@ -867,7 +924,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                         setViewDetailsJob(null);
                         handleOpenApplyModal(j);
                       }}
-                      className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#00a884] hover:bg-[#008f70] border-none cursor-pointer shadow-sm"
+                      className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#FF7043] hover:bg-[#E65B30] border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)]"
                     >
                       Apply Now
                     </button>
