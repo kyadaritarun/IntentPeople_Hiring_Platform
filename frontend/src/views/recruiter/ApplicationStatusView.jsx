@@ -25,26 +25,61 @@ export default function ApplicationStatusView({ setActiveTab }) {
   const [selectedAppModal, setSelectedAppModal] = useState(null);
   const [scheduleModalApp, setScheduleModalApp] = useState(null);
   const [feedbackModalApp, setFeedbackModalApp] = useState(null);
+  const [jobsList, setJobsList] = useState([]);
   const [feedbackForm, setFeedbackForm] = useState({
     techScore: 4,
     commScore: 4,
     recommendation: 'ADVANCE',
-    subject: 'Digital Marketing Fundamentals & SEO/SEM Screening',
-    roundLevel: 'Round 1 - Digital Marketing Fundamentals & Channel Screening',
+    subject: 'Technical & Capability Evaluation',
+    roundLevel: 'Round 1 - Candidate Screening & Background',
     notes: ''
   });
   const [feedbacks, setFeedbacks] = useState({});
   const [savingFeedback, setSavingFeedback] = useState(false);
 
   const [interviewForm, setInterviewForm] = useState({
-    round: 'Round 1 - Digital Marketing Fundamentals & Channel Screening',
+    round: 'Round 1 - Candidate Screening & Background',
     date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     time: '14:30',
     mode: 'Google Meet',
     meetingLink: '',
     interviewer: '',
-    notes: 'Please prepare digital marketing campaign case studies, analytics metrics, and review the role requirements.'
+    notes: 'Please prepare relevant portfolio/case studies and review the role requirements.'
   });
+
+  // Helper to resolve the configured interview rounds for an application / job
+  const getJobRounds = (app) => {
+    if (!app) {
+      return [
+        'Round 1 - Candidate Screening & Background',
+        'Round 2 - Technical Assessment & Capabilities',
+        'Round 3 - Hiring Manager & Culture Fit',
+        'Final Round - Executive & Leadership Review'
+      ];
+    }
+
+    const rawRounds = (app.interview_rounds && Array.isArray(app.interview_rounds) && app.interview_rounds.length > 0)
+      ? app.interview_rounds
+      : (jobsList.find(j => j.id === app.job_id)?.interview_rounds && Array.isArray(jobsList.find(j => j.id === app.job_id)?.interview_rounds) && jobsList.find(j => j.id === app.job_id)?.interview_rounds.length > 0)
+        ? jobsList.find(j => j.id === app.job_id)?.interview_rounds
+        : null;
+
+    if (rawRounds && rawRounds.length > 0) {
+      return rawRounds.map((r, i) => {
+        if (typeof r === 'string') return r;
+        const num = r.round_number || (i + 1);
+        const name = r.name || r.title || `Round ${num}`;
+        return name.toLowerCase().startsWith('round') ? name : `Round ${num} - ${name}`;
+      });
+    }
+
+    return [
+      'Round 1 - Candidate Screening & Background',
+      'Round 2 - Technical Assessment & Capabilities',
+      'Round 3 - Hiring Manager & Culture Fit',
+      'Final Round - Executive & Leadership Review'
+    ];
+  };
 
   useEffect(() => {
     fetchApplications();
@@ -62,7 +97,11 @@ export default function ApplicationStatusView({ setActiveTab }) {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const list = await api.getCompanyApplications();
+      const [list, jobs] = await Promise.all([
+        api.getCompanyApplications(),
+        (api.getMyJobs ? api.getMyJobs() : api.getJobs()).catch(() => [])
+      ]);
+      setJobsList(Array.isArray(jobs) ? jobs : []);
       // Sync funnel state and strictly isolate screening rejected candidates
       try {
         const funnelRejectedIds = JSON.parse(localStorage.getItem('uptrix_funnel_rejected_ids') || '[]');
@@ -176,13 +215,16 @@ export default function ApplicationStatusView({ setActiveTab }) {
       (iv.candidate_name && app.candidate?.full_name && iv.candidate_name.toLowerCase() === app.candidate.full_name.toLowerCase())
     );
 
+    const rounds = getJobRounds(app);
+    const defaultRound = rounds[0] || 'Round 1 - Candidate Screening';
+
     setInterviewForm({
-      round: existingIv?.round || 'Round 1 - Digital Marketing Fundamentals & Channel Screening',
+      round: existingIv?.round || defaultRound,
       date: existingIv?.interview_date || new Date(Date.now() + 86400000).toISOString().split('T')[0],
       time: existingIv?.interview_time || '14:30',
       mode: existingIv?.mode || 'Google Meet',
       meetingLink: existingIv?.meeting_url || existingIv?.meet_url || '',
-      interviewer: existingIv?.interviewer_name || (app.job_title ? `Marketing Lead (${app.job_title})` : 'Hiring Manager'),
+      interviewer: existingIv?.interviewer_name || (app.job_title ? `Hiring Lead (${app.job_title})` : 'Hiring Manager'),
       notes: existingIv?.notes || ''
     });
   };
@@ -190,10 +232,13 @@ export default function ApplicationStatusView({ setActiveTab }) {
   const openFeedbackModal = (app) => {
     setFeedbackModalApp(app);
     const existing = feedbacks[app.id] || {};
+    const rounds = getJobRounds(app);
+    const firstRound = rounds[0] || 'Round 1 - Candidate Screening';
+
     setFeedbackForm({
       recommendation: existing.recommendation || 'ADVANCE',
-      subject: existing.subject || 'Digital Marketing Fundamentals & SEO/SEM Screening',
-      roundLevel: existing.roundLevel || 'Round 1 - Digital Marketing Fundamentals & Channel Screening',
+      subject: existing.subject || (app.job_title ? `${app.job_title} Assessment` : 'Technical & Capability Evaluation'),
+      roundLevel: existing.roundLevel || firstRound,
       notes: existing.notes || ''
     });
   };
@@ -924,18 +969,24 @@ export default function ApplicationStatusView({ setActiveTab }) {
 
             <form onSubmit={handleConfirmSchedule} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Interview Round</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">Interview Round *</label>
+                  {scheduleModalApp && (
+                    <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                      {getJobRounds(scheduleModalApp).length} Rounds Defined
+                    </span>
+                  )}
+                </div>
                 <select
                   value={interviewForm.round}
                   onChange={(e) => setInterviewForm({ ...interviewForm, round: e.target.value })}
                   className={selectClass}
                 >
-                  <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening (SEO, SEM & Social)</option>
-                  <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization (Google/Meta Ads)</option>
-                  <option value="Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization">Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization (CRO)</option>
-                  <option value="Round 4 - Brand Strategy & Marketing Campaign Leadership">Round 4 - Brand Strategy & Marketing Campaign Leadership</option>
-                  <option value="Final Round - Head of Marketing / Executive & Culture Fit">Final Round - Head of Marketing / Executive & Culture Fit</option>
-                  <option value="HR Discussion & Offer Negotiation">HR Discussion & Offer Negotiation</option>
+                  {getJobRounds(scheduleModalApp).map((r, idx) => (
+                    <option key={idx} value={r}>
+                      {r}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1362,20 +1413,27 @@ export default function ApplicationStatusView({ setActiveTab }) {
               {/* Option 1: Next Round -> show subject and round level */}
               {feedbackForm.recommendation === 'ADVANCE' && (
                 <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-3 animate-in fade-in">
-                  <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Next Round Setup</span>
+                  <div className="flex items-center justify-between text-amber-900 font-semibold text-xs">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Next Round Setup</span>
+                    </div>
+                    {feedbackModalApp && (
+                      <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-200/60">
+                        {getJobRounds(feedbackModalApp).length} Rounds Configured for Job
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block font-semibold text-slate-700 text-xs mb-1">
-                        Subject *
+                        Subject / Focus *
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. SEO & SEM Strategy, Paid Social & Ads, Funnel CRO"
+                        placeholder="e.g. Technical Deep-Dive, Problem Solving, Culture Fit"
                         value={feedbackForm.subject}
                         onChange={e => setFeedbackForm(prev => ({ ...prev, subject: e.target.value }))}
                         className={inputClass}
@@ -1391,12 +1449,11 @@ export default function ApplicationStatusView({ setActiveTab }) {
                         onChange={e => setFeedbackForm(prev => ({ ...prev, roundLevel: e.target.value }))}
                         className={selectClass}
                       >
-                        <option value="Round 1 - Digital Marketing Fundamentals & Channel Screening">Round 1 - Digital Marketing Fundamentals & Channel Screening (SEO, SEM & Social)</option>
-                        <option value="Round 2 - Performance Marketing, Paid Ads & ROAS Optimization">Round 2 - Performance Marketing, Paid Ads & ROAS Optimization (Google/Meta Ads)</option>
-                        <option value="Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization">Round 3 - Growth Marketing, Funnel Strategy & Conversion Optimization (CRO)</option>
-                        <option value="Round 4 - Brand Strategy & Marketing Campaign Leadership">Round 4 - Brand Strategy & Marketing Campaign Leadership</option>
-                        <option value="Final Round - Head of Marketing / Executive & Culture Fit">Final Round - Head of Marketing / Executive & Culture Fit</option>
-                        <option value="HR Discussion & Offer Negotiation">HR Discussion & Offer Negotiation</option>
+                        {getJobRounds(feedbackModalApp).map((r, idx) => (
+                          <option key={idx} value={r}>
+                            {r}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

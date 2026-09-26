@@ -35,6 +35,9 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
   const [jobSearchQuery, setJobSearchQuery] = useState('');
   const [isJobPickerOpen, setIsJobPickerOpen] = useState(false);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState(new Set());
+  const [selectedPodFilter, setSelectedPodFilter] = useState('ALL');
+  const [podSearchQuery, setPodSearchQuery] = useState('');
+  const [isPodPickerOpen, setIsPodPickerOpen] = useState(false);
   
   // AI Ranking State
   const [aiTopN, setAiTopN] = useState(10);
@@ -48,12 +51,16 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
   const [pdfModalData, setPdfModalData] = useState(null); // { type: 'single' | 'all', app: ..., apps: ..., jobTitle: ... }
   const printContainerRef = useRef(null);
   const jobPickerRef = useRef(null);
+  const podPickerRef = useRef(null);
 
-  // Close job picker on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (jobPickerRef.current && !jobPickerRef.current.contains(e.target)) {
         setIsJobPickerOpen(false);
+      }
+      if (podPickerRef.current && !podPickerRef.current.contains(e.target)) {
+        setIsPodPickerOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -289,22 +296,42 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
   };
 
   // ─── High-Volume Data Filtering & Pagination (20+ Jobs & 300+ Candidates) ───
-  // 1. Filter jobs list by search for 20+ jobs
+  const availablePods = useMemo(() => {
+    return Array.from(new Set(jobsList.map(j => j.group_name).filter(Boolean)));
+  }, [jobsList]);
+
+  const filteredPodsList = useMemo(() => {
+    if (!podSearchQuery.trim()) return availablePods;
+    const q = podSearchQuery.toLowerCase().trim();
+    return availablePods.filter(p => p.toLowerCase().includes(q));
+  }, [availablePods, podSearchQuery]);
+
+  // 1. Filter jobs list by pod and search query
   const filteredJobsList = useMemo(() => {
-    if (!jobSearchQuery.trim()) return jobsList;
+    let list = jobsList;
+    if (selectedPodFilter !== 'ALL') {
+      list = list.filter(j => j.group_name === selectedPodFilter);
+    }
+    if (!jobSearchQuery.trim()) return list;
     const q = jobSearchQuery.toLowerCase().trim();
-    return jobsList.filter(j => 
+    return list.filter(j => 
       (j.title || '').toLowerCase().includes(q) ||
       (j.location || '').toLowerCase().includes(q) ||
-      (j.work_mode || '').toLowerCase().includes(q)
+      (j.work_mode || '').toLowerCase().includes(q) ||
+      (j.group_name || '').toLowerCase().includes(q)
     );
-  }, [jobsList, jobSearchQuery]);
+  }, [jobsList, jobSearchQuery, selectedPodFilter]);
 
-  // 2. Candidates for selected requisition
+  // 2. Candidates for selected requisition & pod
   const requisitionApplicants = useMemo(() => {
-    if (selectedJobFilter === 'ALL') return allApplications;
-    return allApplications.filter(app => String(app.job_id) === String(selectedJobFilter));
-  }, [allApplications, selectedJobFilter]);
+    let list = allApplications;
+    if (selectedPodFilter !== 'ALL') {
+      const allowedJobIds = new Set(jobsList.filter(j => j.group_name === selectedPodFilter).map(j => String(j.id)));
+      list = list.filter(app => allowedJobIds.has(String(app.job_id)));
+    }
+    if (selectedJobFilter === 'ALL') return list;
+    return list.filter(app => String(app.job_id) === String(selectedJobFilter));
+  }, [allApplications, selectedJobFilter, selectedPodFilter, jobsList]);
 
   // 3. Stage counts for selected requisition
   const stageCounts = useMemo(() => {
@@ -1177,14 +1204,125 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1.5 m-0">
+            {selectedPodFilter !== 'ALL' && (
+              <span className="font-semibold text-indigo-600 mr-1.5">[{selectedPodFilter}]</span>
+            )}
             {selectedJobFilter === 'ALL'
-              ? `Reviewing applicants across all ${jobsList.length} active requisitions`
+              ? `Reviewing applicants across all ${filteredJobsList.length} requisitions`
               : `Reviewing candidates for ${getSelectedRequisitionTitle()} (${requisitionApplicants.length} applicants)`}
           </p>
         </div>
 
-        {/* Right Side Header Controls: Requisition Selector, Export, Refresh */}
+        {/* Right Side Header Controls: Pod Selector Popover, Requisition Selector, Export, Refresh */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Pod Selector Popover (All Pods Dropdown) */}
+          {availablePods.length > 0 && (
+            <div className="relative" ref={podPickerRef}>
+              <button
+                type="button"
+                onClick={() => setIsPodPickerOpen(!isPodPickerOpen)}
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all cursor-pointer max-w-[220px] sm:max-w-[260px]"
+              >
+                <Layers className="w-3.5 h-3.5 text-[#5C59E8] shrink-0" />
+                <span className="truncate">
+                  {selectedPodFilter === 'ALL'
+                    ? `All Pods (${availablePods.length})`
+                    : `Pod: ${selectedPodFilter}`}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isPodPickerOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Pods Search & List Dropdown */}
+              {isPodPickerOpen && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 p-2 text-xs animate-in fade-in">
+                  {availablePods.length > 3 && (
+                    <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50 rounded-xl mb-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input 
+                        type="text"
+                        placeholder={`Search ${availablePods.length} pods...`}
+                        value={podSearchQuery}
+                        onChange={(e) => setPodSearchQuery(e.target.value)}
+                        className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder-slate-400 font-medium"
+                        autoFocus
+                      />
+                      {podSearchQuery && (
+                        <button onClick={() => setPodSearchQuery('')} className="p-0.5 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer">
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="max-h-72 overflow-y-auto py-1 divide-y divide-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPodFilter('ALL'); setSelectedJobFilter('ALL'); setIsPodPickerOpen(false); }}
+                      className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-colors border-none cursor-pointer ${
+                        selectedPodFilter === 'ALL' 
+                          ? 'bg-[#5C59E8]/10 text-[#4845D2] font-semibold' 
+                          : 'hover:bg-slate-50 text-slate-700 bg-transparent font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[#5C59E8]" />
+                        <div>
+                          <div className="font-semibold text-xs">All Hiring Pods</div>
+                          <div className="text-[10px] text-slate-400">All {availablePods.length} pods & groups overview</div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-[#5C59E8]/15 text-[#4845D2] font-semibold text-[11px]">
+                        {allApplications.length}
+                      </span>
+                    </button>
+
+                    {filteredPodsList.map(pod => {
+                      const podJobs = jobsList.filter(j => j.group_name === pod);
+                      const podJobIds = new Set(podJobs.map(j => String(j.id)));
+                      const podAppCount = allApplications.filter(a => podJobIds.has(String(a.job_id))).length;
+                      const isSelected = selectedPodFilter === pod;
+
+                      return (
+                        <button
+                          key={pod}
+                          type="button"
+                          onClick={() => { setSelectedPodFilter(pod); setSelectedJobFilter('ALL'); setIsPodPickerOpen(false); }}
+                          className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-colors border-none cursor-pointer ${
+                            isSelected 
+                              ? 'bg-[#5C59E8]/10 text-[#4845D2] font-semibold' 
+                              : 'hover:bg-slate-50 text-slate-700 bg-transparent font-medium'
+                          }`}
+                        >
+                          <div className="min-w-0 pr-2">
+                            <div className="font-semibold text-xs truncate text-slate-900">{pod}</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{podJobs.length} requisition{podJobs.length !== 1 ? 's' : ''}</div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
+                            podAppCount > 0 ? 'bg-[#5C59E8]/15 text-[#4845D2]' : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {podAppCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick reset pod filter button */}
+          {selectedPodFilter !== 'ALL' && (
+            <button
+              type="button"
+              onClick={() => { setSelectedPodFilter('ALL'); setSelectedJobFilter('ALL'); }}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
+              title="Reset to All Pods"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {/* Requisition Selector Popover */}
           <div className="relative" ref={jobPickerRef}>
             <button
@@ -1258,7 +1396,14 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                         }`}
                       >
                         <div className="min-w-0 pr-2">
-                          <div className="font-semibold text-xs truncate text-slate-900">{job.title}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-xs truncate text-slate-900">{job.title}</span>
+                            {job.group_name && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
+                                {job.group_name}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-slate-400 mt-0.5 truncate">{job.work_mode || 'Full-time'} • {job.location || 'India'}</div>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${

@@ -35,6 +35,7 @@ class Company(Base):
     jobs = relationship("Job", back_populates="company")
     members = relationship("CompanyMember", back_populates="company", cascade="all, delete-orphan")
     staff_documents = relationship("StaffDocument", back_populates="company", cascade="all, delete-orphan")
+    staff_groups = relationship("StaffGroup", back_populates="company", cascade="all, delete-orphan")
 
 class CompanyMember(Base):
     __tablename__ = "portal_company_members"
@@ -53,6 +54,7 @@ class CompanyMember(Base):
     company = relationship("Company", back_populates="members")
     user = relationship("User", back_populates="company_member_profile")
     documents = relationship("StaffDocument", back_populates="member", cascade="all, delete-orphan")
+    group_memberships = relationship("StaffGroupMember", back_populates="member", cascade="all, delete-orphan")
 
 class StaffDocument(Base):
     __tablename__ = "portal_staff_documents"
@@ -72,4 +74,33 @@ class StaffDocument(Base):
 
     company = relationship("Company", back_populates="staff_documents")
     member = relationship("CompanyMember", back_populates="documents")
+
+
+class StaffGroup(Base):
+    __tablename__ = "portal_staff_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("portal_companies.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    department = Column(String, nullable=True, default="General")
+    created_by = Column(Integer, ForeignKey("portal_users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    company = relationship("Company", back_populates="staff_groups")
+    members = relationship("StaffGroupMember", back_populates="group", cascade="all, delete-orphan")
+    jobs = relationship("Job", back_populates="group")
+
+
+class StaffGroupMember(Base):
+    __tablename__ = "portal_staff_group_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("portal_staff_groups.id", ondelete="CASCADE"), nullable=False)
+    member_id = Column(Integer, ForeignKey("portal_company_members.id", ondelete="CASCADE"), nullable=False)
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+
+    group = relationship("StaffGroup", back_populates="members")
+    member = relationship("CompanyMember", back_populates="group_memberships")
 

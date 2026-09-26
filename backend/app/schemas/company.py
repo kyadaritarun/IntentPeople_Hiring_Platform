@@ -35,6 +35,7 @@ class TeamMemberCreate(BaseModel):
     role: str  # 'RECRUITER' or 'HIRING_MANAGER'
     title: Optional[str] = None
     avatar_url: Optional[str] = None
+    group_ids: Optional[list[int]] = None
 
 class TeamMemberUpdate(BaseModel):
     name: Optional[str] = None
@@ -45,6 +46,19 @@ class TeamMemberUpdate(BaseModel):
     phone: Optional[str] = None
     place: Optional[str] = None
     avatar_url: Optional[str] = None
+    group_ids: Optional[list[int]] = None
+
+class StaffGroupCreate(BaseModel):
+    name: str
+    department: Optional[str] = "General"
+    description: Optional[str] = None
+    member_ids: Optional[list[int]] = []
+
+class StaffGroupUpdate(BaseModel):
+    name: Optional[str] = None
+    department: Optional[str] = None
+    description: Optional[str] = None
+    member_ids: Optional[list[int]] = None
 
 class StaffDocumentStatusUpdate(BaseModel):
     status: str

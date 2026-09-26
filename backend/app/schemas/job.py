@@ -30,6 +30,8 @@ class JobCreate(BaseModel):
     decision_authority: Optional[str] = None
     success_horizon: Optional[str] = None
     screening_questions: Optional[List[Any]] = None
+    interview_rounds: Optional[List[Any]] = None
+    group_id: Optional[int] = None
 
 class JobStatusUpdate(BaseModel):
     status: str
@@ -63,4 +65,6 @@ class JobUpdate(BaseModel):
     decision_authority: Optional[str] = None
     success_horizon: Optional[str] = None
     screening_questions: Optional[List[Any]] = None
+    interview_rounds: Optional[List[Any]] = None
+    group_id: Optional[int] = None
 

@@ -1,6 +1,10 @@
 from app.schemas.auth import CandidateRegister, CompanyRegister, OTPVerify, ResendOTP, UserLogin, GoogleOAuthLogin
 from app.schemas.candidate import CandidateProfileUpdate
-from app.schemas.company import CompanyProfileUpdate, TeamMemberCreate, TeamMemberUpdate, StaffDocumentStatusUpdate, MemberProfileUpdate
+from app.schemas.company import (
+    CompanyProfileUpdate, TeamMemberCreate, TeamMemberUpdate,
+    StaffDocumentStatusUpdate, MemberProfileUpdate,
+    StaffGroupCreate, StaffGroupUpdate
+)
 from app.schemas.job import JobCreate, JobStatusUpdate
 from app.schemas.application import ApplicationCreate, ApplicationStatusUpdate
 from app.schemas.support import SupportTicketCreate
@@ -19,6 +23,8 @@ __all__ = [
     "MemberProfileUpdate",
     "TeamMemberCreate",
     "TeamMemberUpdate",
+    "StaffGroupCreate",
+    "StaffGroupUpdate",
     "StaffDocumentStatusUpdate",
     "JobCreate",
     "JobStatusUpdate",

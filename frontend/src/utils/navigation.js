@@ -112,6 +112,10 @@ export const TAB_CONFIG = {
     path: '/add-staff',
     title: 'Add Staff Member | Uptrix',
   },
+  hiring_groups: {
+    path: '/hiring-groups',
+    title: 'Hiring Groups & Pods | Uptrix',
+  },
   staff_directory: {
     path: '/staff-directory',
     title: 'Staff Directory | Uptrix',
@@ -176,6 +180,7 @@ export function normalizeTabForRole(tab, role) {
   if (tab === 'profile' || tab === 'candidate_profile') return 'profile';
   if (tab === 'documents' || tab === 'my_documents' || tab === 'recruiter_documents') return isStaff ? 'documents' : 'profile';
   if (tab === 'add_staff' || tab === 'add_staff_member') return 'add_staff';
+  if (tab === 'hiring_groups' || tab === 'groups' || tab === 'staff_groups' || tab === 'pods') return 'hiring_groups';
   if (tab === 'staff_directory' || tab === 'directory') return 'staff_directory';
   if (tab === 'staff_documents' || tab === 'staff_document') return 'staff_documents';
   if (tab === 'messages' || tab === 'message' || tab === 'chat') return 'messages';
@@ -280,6 +285,10 @@ export function getTabFromPathname(pathname, role = null) {
     'chat': 'messages',
     'add-staff': 'add_staff',
     'add-staff-member': 'add_staff',
+    'hiring-groups': 'hiring_groups',
+    'groups': 'hiring_groups',
+    'staff-groups': 'hiring_groups',
+    'pods': 'hiring_groups',
     'staff-directory': 'staff_directory',
     'directory': 'staff_directory',
     'staff': 'staff_directory',

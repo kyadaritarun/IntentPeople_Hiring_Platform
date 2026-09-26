@@ -37,7 +37,12 @@ class Job(Base):
     decision_authority = Column(String, nullable=True)
     success_horizon = Column(String, nullable=True)
     screening_questions = Column(JSON, default=list, nullable=True) # List of custom screening questions
+    created_by = Column(Integer, ForeignKey("portal_users.id"), nullable=True)
+    group_id = Column(Integer, ForeignKey("portal_staff_groups.id", ondelete="SET NULL"), nullable=True)
+    interview_rounds = Column(JSON, default=list, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     company = relationship("Company", back_populates="jobs")
     applications = relationship("Application", back_populates="job")
+    creator = relationship("User", foreign_keys=[created_by])
+    group = relationship("StaffGroup", back_populates="jobs", foreign_keys=[group_id])

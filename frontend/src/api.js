@@ -211,8 +211,9 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getMyJobs() {
-    const res = await fetch(`${API_BASE}/jobs/my`, {
+  async getMyJobs(groupId = null) {
+    const url = groupId ? `${API_BASE}/jobs/my?group_id=${groupId}` : `${API_BASE}/jobs/my`;
+    const res = await fetch(url, {
       headers: { ...getAuthHeaders() }
     });
     return handleResponse(res);
@@ -304,8 +305,9 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getCompanyApplications() {
-    const res = await fetch(`${API_BASE}/applications/company/all`, {
+  async getCompanyApplications(groupId = null) {
+    const url = groupId ? `${API_BASE}/applications/company/all?group_id=${groupId}` : `${API_BASE}/applications/company/all`;
+    const res = await fetch(url, {
       headers: { ...getAuthHeaders() }
     });
     return handleResponse(res);
@@ -405,6 +407,57 @@ export const api = {
 
   async deleteTeamMember(memberId) {
     const res = await fetch(`${API_BASE}/companies/team/${memberId}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  // Staff Groups & Pods Management (Administrator)
+  async getStaffGroups() {
+    const res = await fetch(`${API_BASE}/companies/groups`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async createStaffGroup(groupData) {
+    const res = await fetch(`${API_BASE}/companies/groups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(groupData)
+    });
+    return handleResponse(res);
+  },
+
+  async updateStaffGroup(groupId, groupData) {
+    const res = await fetch(`${API_BASE}/companies/groups/${groupId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(groupData)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteStaffGroup(groupId) {
+    const res = await fetch(`${API_BASE}/companies/groups/${groupId}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async addStaffGroupMembers(groupId, memberIds) {
+    const res = await fetch(`${API_BASE}/companies/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ member_ids: memberIds })
+    });
+    return handleResponse(res);
+  },
+
+  async removeStaffGroupMember(groupId, memberId) {
+    const res = await fetch(`${API_BASE}/companies/groups/${groupId}/members/${memberId}`, {
       method: 'DELETE',
       headers: { ...getAuthHeaders() }
     });

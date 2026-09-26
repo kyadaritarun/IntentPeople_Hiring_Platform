@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from app.database import get_db
 from app import models, schemas
-from app.api.deps import get_current_user, get_user_company
+from app.api.deps import (
+    get_current_user,
+    get_user_company,
+    get_user_group_ids,
+    get_scoped_jobs_query,
+    can_user_access_job
+)
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -60,7 +66,11 @@ def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, loca
             "work_mode": j.work_mode,
             "job_type": j.job_type,
             "status": j.status,
+            "group_id": j.group_id,
+            "group_name": j.group.name if j.group else None,
+            "created_by": j.created_by,
             "screening_questions": j.screening_questions or [],
+            "interview_rounds": j.interview_rounds or [],
             "applicant_count": applicant_count,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "business_context": b_context,
@@ -89,14 +99,18 @@ def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, loca
     return result
 
 @router.get("/my")
-def get_my_jobs(user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_my_jobs(
+    group_id: Optional[int] = Query(None, description="Optional hiring pod/group filter"),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
         raise HTTPException(status_code=403, detail="Only company staff can access company jobs")
     company = get_user_company(user, db)
     if not company:
         return []
 
-    jobs = db.query(models.Job).filter(models.Job.company_id == company.id).order_by(models.Job.id.desc()).all()
+    jobs = get_scoped_jobs_query(user, company.id, db, requested_group_id=group_id).order_by(models.Job.id.desc()).all()
     result = []
     for j in jobs:
         applicant_count = db.query(models.Application).filter(models.Application.job_id == j.id).count()
@@ -134,7 +148,11 @@ def get_my_jobs(user: models.User = Depends(get_current_user), db: Session = Dep
             "work_mode": j.work_mode,
             "job_type": j.job_type,
             "status": j.status,
+            "group_id": j.group_id,
+            "group_name": j.group.name if j.group else None,
+            "created_by": j.created_by,
             "screening_questions": j.screening_questions or [],
+            "interview_rounds": j.interview_rounds or [],
             "applicant_count": applicant_count,
             "created_at": j.created_at.isoformat() if j.created_at else None,
             "business_context": b_context,
@@ -170,8 +188,27 @@ def create_job(data: schemas.JobCreate, user: models.User = Depends(get_current_
     if not company:
         raise HTTPException(status_code=404, detail="Company profile not found")
 
+    assigned_group_id = data.group_id
+    user_group_ids = get_user_group_ids(user, db)
+
+    if user.role != "ADMIN":
+        if assigned_group_id:
+            if assigned_group_id not in user_group_ids:
+                raise HTTPException(status_code=403, detail="You can only assign jobs to your hiring pod / group")
+        elif user_group_ids:
+            assigned_group_id = user_group_ids[0]
+    elif assigned_group_id:
+        grp = db.query(models.StaffGroup).filter(
+            models.StaffGroup.id == assigned_group_id,
+            models.StaffGroup.company_id == company.id
+        ).first()
+        if not grp:
+            raise HTTPException(status_code=404, detail="Selected hiring group not found")
+
     job = models.Job(
         company_id=company.id,
+        created_by=user.id,
+        group_id=assigned_group_id,
         title=data.title,
         description=data.description,
         skills=data.skills,
@@ -200,7 +237,8 @@ def create_job(data: schemas.JobCreate, user: models.User = Depends(get_current_
         monthly_budget_range=data.monthly_budget_range or (company.monthly_budget_range if company else None),
         decision_authority=data.decision_authority or (company.decision_authority if company else None),
         success_horizon=data.success_horizon or (company.success_horizon if company else None),
-        screening_questions=data.screening_questions or []
+        screening_questions=data.screening_questions or [],
+        interview_rounds=data.interview_rounds or []
     )
     db.add(job)
     db.commit()
@@ -214,8 +252,8 @@ def update_job(
     user: models.User = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
-    if user.role != "RECRUITER":
-        raise HTTPException(status_code=403, detail="Only recruiters can edit jobs")
+    if user.role not in ["ADMIN", "RECRUITER"]:
+        raise HTTPException(status_code=403, detail="Only administrators and recruiters can edit jobs")
     
     company = get_user_company(user, db)
     if not company:
@@ -228,7 +266,15 @@ def update_job(
     if job.company_id != company.id:
         raise HTTPException(status_code=403, detail="Unauthorized to edit another organization's job")
 
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to edit jobs outside your hiring group")
+
     update_dict = data.model_dump(exclude_unset=True)
+    if "group_id" in update_dict and update_dict["group_id"] is not None:
+        new_gid = update_dict["group_id"]
+        if user.role != "ADMIN" and new_gid not in get_user_group_ids(user, db):
+            raise HTTPException(status_code=403, detail="Cannot assign job to a hiring group you do not belong to")
+
     for field, val in update_dict.items():
         setattr(job, field, val)
 
@@ -238,11 +284,14 @@ def update_job(
 
 @router.patch("/{job_id}/status")
 def update_job_status(job_id: int, data: schemas.JobStatusUpdate, user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if user.role != "RECRUITER":
-        raise HTTPException(status_code=403, detail="Only recruiters can update job status")
+    if user.role not in ["ADMIN", "RECRUITER"]:
+        raise HTTPException(status_code=403, detail="Only administrators and recruiters can update job status")
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to update jobs outside your hiring group")
 
     job.status = data.status
     db.commit()
@@ -284,10 +333,25 @@ def apply_to_job(job_id: int, data: schemas.ApplicationCreate, user: models.User
     )
     db.add(app)
 
-    recruiter_user_id = job.company.user_id if job.company else None
-    if recruiter_user_id:
+    notif_user_ids = set()
+    if job.created_by:
+        notif_user_ids.add(job.created_by)
+    if job.group_id:
+        group_members = (
+            db.query(models.CompanyMember.user_id)
+            .join(models.StaffGroupMember, models.StaffGroupMember.member_id == models.CompanyMember.id)
+            .filter(models.StaffGroupMember.group_id == job.group_id)
+            .all()
+        )
+        for gm in group_members:
+            if gm[0]:
+                notif_user_ids.add(gm[0])
+    if not notif_user_ids and job.company and job.company.user_id:
+        notif_user_ids.add(job.company.user_id)
+
+    for uid in notif_user_ids:
         notif = models.Notification(
-            user_id=recruiter_user_id,
+            user_id=uid,
             type="NEW_APPLICATION",
             title="New Job Applicant!",
             message=f"{candidate.full_name} applied for '{job.title}'."

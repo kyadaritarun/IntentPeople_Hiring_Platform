@@ -129,6 +129,7 @@ export default function FeedDashboard({
       return isStaff ? 'documents' : 'profile';
     }
     if (tab === 'add_staff' || tab === 'add_staff_member') return 'add_staff';
+    if (tab === 'hiring_groups' || tab === 'staff_groups' || tab === 'groups' || tab === 'pods') return 'hiring_groups';
     if (tab === 'staff_directory' || tab === 'directory') return 'staff_directory';
     if (tab === 'staff_documents' || tab === 'staff_document') return 'staff_documents';
     if (tab === 'messages' || tab === 'message' || tab === 'chat') return 'messages';
@@ -407,6 +408,7 @@ export default function FeedDashboard({
   const adminNavItems = [
     { id: 'admin_dashboard', label: 'Dashboard', icon: LayoutDashboard, tab: 'admin_dashboard' },
     { id: 'add_staff', label: 'Add Staff Member', icon: UserPlus, tab: 'add_staff' },
+    { id: 'hiring_groups', label: 'Hiring Groups', icon: Layers, tab: 'hiring_groups' },
     { id: 'manage_jobs', label: 'Jobs Oversight', icon: Briefcase, tab: 'manage_jobs' },
     { id: 'applicants', label: 'Application Pipeline', icon: CheckCircle2, tab: 'applicants_view' },
     { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' },
@@ -473,6 +475,8 @@ export default function FeedDashboard({
         return 'Company Profile';
       case 'add_staff':
         return 'Add Staff Member';
+      case 'hiring_groups':
+        return 'Hiring Groups & Pods';
       case 'staff_documents':
       case 'documents':
       case 'recruiter_documents':
@@ -1185,12 +1189,18 @@ export default function FeedDashboard({
             )}
 
 
-            {/* 7A-2. ADD STAFF MEMBER & STAFF DIRECTORY IN-PAGE VIEW */}
-            {(activeSidebarItem === 'add_staff' || activeSidebarItem === 'staff_directory') && (
+            {/* 7A-2. ADD STAFF MEMBER & STAFF DIRECTORY & HIRING GROUPS IN-PAGE VIEW */}
+            {(activeSidebarItem === 'add_staff' || activeSidebarItem === 'staff_directory' || activeSidebarItem === 'hiring_groups') && (
               <div className="min-h-full">
                 <AddStaffMember
                   setActiveTab={handleTabChange}
-                  initialView={activeSidebarItem === 'staff_directory' ? 'directory' : 'form'}
+                  initialView={
+                    activeSidebarItem === 'hiring_groups'
+                      ? 'groups'
+                      : activeSidebarItem === 'staff_directory'
+                        ? 'directory'
+                        : 'form'
+                  }
                 />
               </div>
             )}

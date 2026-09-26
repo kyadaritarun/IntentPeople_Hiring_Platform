@@ -54,6 +54,26 @@ def get_team_members(
     members = db.query(models.CompanyMember).filter(models.CompanyMember.company_id == company.id).order_by(models.CompanyMember.id.desc()).all()
     result = []
 
+    # Bulk fetch group memberships
+    all_member_ids = [m.id for m in members]
+    group_map = {mid: [] for mid in all_member_ids}
+    if all_member_ids:
+        try:
+            group_links = db.query(
+                models.StaffGroupMember.member_id,
+                models.StaffGroup.id,
+                models.StaffGroup.name,
+                models.StaffGroup.department
+            ).join(
+                models.StaffGroup, models.StaffGroup.id == models.StaffGroupMember.group_id
+            ).filter(
+                models.StaffGroupMember.member_id.in_(all_member_ids)
+            ).all()
+            for mid, gid, gname, gdept in group_links:
+                group_map[mid].append({"id": gid, "name": gname, "department": gdept})
+        except Exception:
+            pass
+
     # Only include Organization Administrator if explicitly requested (e.g. for internal chat directory)
     if include_admin:
         admin_user = db.query(models.User).filter(models.User.id == company.user_id).first() if company.user_id else None
@@ -68,6 +88,7 @@ def get_team_members(
                 "phone": company.phone or "",
                 "place": company.location or "",
                 "avatar_url": company.logo_url,
+                "groups": [],
                 "created_at": company.created_at.isoformat() if company.created_at else None
             })
 
@@ -83,6 +104,7 @@ def get_team_members(
             "phone": m.phone or "",
             "place": m.place or "",
             "avatar_url": m.avatar_url,
+            "groups": group_map.get(m.id, []),
             "created_at": m.created_at.isoformat() if m.created_at else None
         })
     return result
@@ -262,6 +284,18 @@ def create_team_member(data: schemas.TeamMemberCreate, user: models.User = Depen
     db.commit()
     db.refresh(member)
 
+    assigned_groups = []
+    if data.group_ids:
+        for gid in data.group_ids:
+            grp = db.query(models.StaffGroup).filter(
+                models.StaffGroup.id == gid,
+                models.StaffGroup.company_id == company.id
+            ).first()
+            if grp:
+                db.add(models.StaffGroupMember(group_id=grp.id, member_id=member.id))
+                assigned_groups.append({"id": grp.id, "name": grp.name, "department": grp.department})
+        db.commit()
+
     return {
         "message": f"Successfully created {target_role.replace('_', ' ').title()} account for {data.name}!",
         "member": {
@@ -272,6 +306,7 @@ def create_team_member(data: schemas.TeamMemberCreate, user: models.User = Depen
             "role": member.role,
             "title": member.title,
             "avatar_url": member.avatar_url,
+            "groups": assigned_groups,
             "created_at": member.created_at.isoformat() if member.created_at else None
         }
     }
@@ -355,10 +390,29 @@ def update_team_member(
     if data.password is not None and data.password.strip() and user_rec:
         user_rec.password_hash = security.hash_password(data.password.strip())
 
+    if data.group_ids is not None:
+        db.query(models.StaffGroupMember).filter(models.StaffGroupMember.member_id == member.id).delete()
+        for gid in data.group_ids:
+            grp = db.query(models.StaffGroup).filter(
+                models.StaffGroup.id == gid,
+                models.StaffGroup.company_id == company.id
+            ).first()
+            if grp:
+                db.add(models.StaffGroupMember(group_id=grp.id, member_id=member.id))
+
     db.commit()
     db.refresh(member)
     if user_rec:
         db.refresh(user_rec)
+
+    # Fetch updated groups
+    current_groups = (
+        db.query(models.StaffGroup.id, models.StaffGroup.name, models.StaffGroup.department)
+        .join(models.StaffGroupMember, models.StaffGroupMember.group_id == models.StaffGroup.id)
+        .filter(models.StaffGroupMember.member_id == member.id)
+        .all()
+    )
+    assigned_groups = [{"id": g[0], "name": g[1], "department": g[2]} for g in current_groups]
 
     return {
         "message": f"Successfully updated staff member {member.name}!",
@@ -372,6 +426,7 @@ def update_team_member(
             "phone": member.phone or "",
             "place": member.place or "",
             "avatar_url": member.avatar_url,
+            "groups": assigned_groups,
             "created_at": member.created_at.isoformat() if member.created_at else None
         }
     }
@@ -586,5 +641,387 @@ def delete_staff_document(
     db.delete(doc)
     db.commit()
     return {"message": "Staff document removed successfully"}
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  STAFF GROUPS & PODS MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════
+
+@router.get("/groups")
+def get_staff_groups(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    company = get_user_company(user, db)
+    if not company:
+        return []
+
+    from sqlalchemy import or_
+    from app.api.deps import get_user_group_ids
+
+    if user.role != "ADMIN":
+        user_group_ids = get_user_group_ids(user, db)
+        groups = db.query(models.StaffGroup).filter(
+            models.StaffGroup.company_id == company.id,
+            or_(
+                models.StaffGroup.id.in_(user_group_ids),
+                models.StaffGroup.created_by == user.id
+            )
+        ).order_by(models.StaffGroup.id.asc()).all()
+    else:
+        groups = db.query(models.StaffGroup).filter(
+            models.StaffGroup.company_id == company.id
+        ).order_by(models.StaffGroup.id.asc()).all()
+
+    result = []
+    for g in groups:
+        # Fetch members in this group
+        group_members = (
+            db.query(models.CompanyMember, models.User.email)
+            .join(models.StaffGroupMember, models.StaffGroupMember.member_id == models.CompanyMember.id)
+            .outerjoin(models.User, models.User.id == models.CompanyMember.user_id)
+            .filter(models.StaffGroupMember.group_id == g.id)
+            .all()
+        )
+
+        members_list = []
+        recruiter_count = 0
+        manager_count = 0
+
+        for cm, email in group_members:
+            if cm.role == "RECRUITER":
+                recruiter_count += 1
+            elif cm.role == "HIRING_MANAGER":
+                manager_count += 1
+
+            members_list.append({
+                "id": cm.id,
+                "user_id": cm.user_id,
+                "name": cm.name,
+                "email": email or "",
+                "role": cm.role,
+                "title": cm.title or ("Recruiter" if cm.role == "RECRUITER" else "Hiring Manager"),
+                "phone": cm.phone or "",
+                "place": cm.place or "",
+                "avatar_url": cm.avatar_url
+            })
+
+        result.append({
+            "id": g.id,
+            "company_id": g.company_id,
+            "name": g.name,
+            "description": g.description or "",
+            "department": g.department or "General",
+            "created_by": g.created_by,
+            "created_at": g.created_at.isoformat() if g.created_at else None,
+            "updated_at": g.updated_at.isoformat() if g.updated_at else None,
+            "members": members_list,
+            "member_count": len(members_list),
+            "recruiter_count": recruiter_count,
+            "manager_count": manager_count
+        })
+
+    return result
+
+
+@router.post("/groups", status_code=201)
+def create_staff_group(
+    data: schemas.StaffGroupCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only administrators can create staff groups")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Group name is required")
+
+    # Check for duplicate group name in company
+    existing = db.query(models.StaffGroup).filter(
+        models.StaffGroup.company_id == company.id,
+        models.StaffGroup.name.ilike(data.name.strip())
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"A group named '{data.name.strip()}' already exists")
+
+    new_group = models.StaffGroup(
+        company_id=company.id,
+        name=data.name.strip(),
+        description=data.description.strip() if data.description else "",
+        department=data.department.strip() if data.department else "General",
+        created_by=user.id
+    )
+    db.add(new_group)
+    db.flush()
+
+    members_list = []
+    recruiter_count = 0
+    manager_count = 0
+
+    if data.member_ids:
+        valid_members = (
+            db.query(models.CompanyMember, models.User.email)
+            .outerjoin(models.User, models.User.id == models.CompanyMember.user_id)
+            .filter(
+                models.CompanyMember.id.in_(data.member_ids),
+                models.CompanyMember.company_id == company.id
+            )
+            .all()
+        )
+
+        for cm, email in valid_members:
+            db.add(models.StaffGroupMember(group_id=new_group.id, member_id=cm.id))
+            if cm.role == "RECRUITER":
+                recruiter_count += 1
+            elif cm.role == "HIRING_MANAGER":
+                manager_count += 1
+            members_list.append({
+                "id": cm.id,
+                "user_id": cm.user_id,
+                "name": cm.name,
+                "email": email or "",
+                "role": cm.role,
+                "title": cm.title or ("Recruiter" if cm.role == "RECRUITER" else "Hiring Manager"),
+                "phone": cm.phone or "",
+                "place": cm.place or "",
+                "avatar_url": cm.avatar_url
+            })
+
+    db.commit()
+    db.refresh(new_group)
+
+    return {
+        "message": f"Successfully created staff group '{new_group.name}'!",
+        "group": {
+            "id": new_group.id,
+            "company_id": new_group.company_id,
+            "name": new_group.name,
+            "description": new_group.description or "",
+            "department": new_group.department or "General",
+            "created_by": new_group.created_by,
+            "created_at": new_group.created_at.isoformat() if new_group.created_at else None,
+            "updated_at": new_group.updated_at.isoformat() if new_group.updated_at else None,
+            "members": members_list,
+            "member_count": len(members_list),
+            "recruiter_count": recruiter_count,
+            "manager_count": manager_count
+        }
+    }
+
+
+@router.put("/groups/{group_id}")
+def update_staff_group(
+    group_id: int,
+    data: schemas.StaffGroupUpdate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only administrators can edit staff groups")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    group = db.query(models.StaffGroup).filter(
+        models.StaffGroup.id == group_id,
+        models.StaffGroup.company_id == company.id
+    ).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Staff group not found")
+
+    if data.name is not None and data.name.strip():
+        if data.name.strip().lower() != group.name.lower():
+            existing = db.query(models.StaffGroup).filter(
+                models.StaffGroup.company_id == company.id,
+                models.StaffGroup.name.ilike(data.name.strip()),
+                models.StaffGroup.id != group_id
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail=f"A group named '{data.name.strip()}' already exists")
+        group.name = data.name.strip()
+
+    if data.department is not None:
+        group.department = data.department.strip() or "General"
+    if data.description is not None:
+        group.description = data.description.strip()
+
+    if data.member_ids is not None:
+        db.query(models.StaffGroupMember).filter(models.StaffGroupMember.group_id == group.id).delete()
+        if data.member_ids:
+            valid_mids = [
+                m.id for m in db.query(models.CompanyMember.id).filter(
+                    models.CompanyMember.id.in_(data.member_ids),
+                    models.CompanyMember.company_id == company.id
+                ).all()
+            ]
+            for mid in valid_mids:
+                db.add(models.StaffGroupMember(group_id=group.id, member_id=mid))
+
+    db.commit()
+    db.refresh(group)
+
+    group_members = (
+        db.query(models.CompanyMember, models.User.email)
+        .join(models.StaffGroupMember, models.StaffGroupMember.member_id == models.CompanyMember.id)
+        .outerjoin(models.User, models.User.id == models.CompanyMember.user_id)
+        .filter(models.StaffGroupMember.group_id == group.id)
+        .all()
+    )
+
+    members_list = []
+    recruiter_count = 0
+    manager_count = 0
+    for cm, email in group_members:
+        if cm.role == "RECRUITER":
+            recruiter_count += 1
+        elif cm.role == "HIRING_MANAGER":
+            manager_count += 1
+        members_list.append({
+            "id": cm.id,
+            "user_id": cm.user_id,
+            "name": cm.name,
+            "email": email or "",
+            "role": cm.role,
+            "title": cm.title or ("Recruiter" if cm.role == "RECRUITER" else "Hiring Manager"),
+            "phone": cm.phone or "",
+            "place": cm.place or "",
+            "avatar_url": cm.avatar_url
+        })
+
+    return {
+        "message": f"Updated staff group '{group.name}'",
+        "group": {
+            "id": group.id,
+            "company_id": group.company_id,
+            "name": group.name,
+            "description": group.description or "",
+            "department": group.department or "General",
+            "created_by": group.created_by,
+            "created_at": group.created_at.isoformat() if group.created_at else None,
+            "updated_at": group.updated_at.isoformat() if group.updated_at else None,
+            "members": members_list,
+            "member_count": len(members_list),
+            "recruiter_count": recruiter_count,
+            "manager_count": manager_count
+        }
+    }
+
+
+@router.delete("/groups/{group_id}")
+def delete_staff_group(
+    group_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only administrators can delete staff groups")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    group = db.query(models.StaffGroup).filter(
+        models.StaffGroup.id == group_id,
+        models.StaffGroup.company_id == company.id
+    ).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Staff group not found")
+
+    group_name = group.name
+    db.delete(group)
+    db.commit()
+
+    return {"message": f"Staff group '{group_name}' removed successfully"}
+
+
+@router.post("/groups/{group_id}/members")
+def add_members_to_group(
+    group_id: int,
+    data: schemas.StaffGroupUpdate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only administrators can assign group members")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    group = db.query(models.StaffGroup).filter(
+        models.StaffGroup.id == group_id,
+        models.StaffGroup.company_id == company.id
+    ).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Staff group not found")
+
+    if data.member_ids:
+        existing_mids = set(
+            db.query(models.StaffGroupMember.member_id)
+            .filter(models.StaffGroupMember.group_id == group.id)
+            .scalars()
+            .all()
+        )
+        valid_mids = [
+            m.id for m in db.query(models.CompanyMember.id).filter(
+                models.CompanyMember.id.in_(data.member_ids),
+                models.CompanyMember.company_id == company.id
+            ).all()
+        ]
+        for mid in valid_mids:
+            if mid not in existing_mids:
+                db.add(models.StaffGroupMember(group_id=group.id, member_id=mid))
+        db.commit()
+
+    return {"message": "Group members updated successfully"}
+
+
+@router.delete("/groups/{group_id}/members/{member_id}")
+def remove_member_from_group(
+    group_id: int,
+    member_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Only administrators can remove group members")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    group = db.query(models.StaffGroup).filter(
+        models.StaffGroup.id == group_id,
+        models.StaffGroup.company_id == company.id
+    ).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Staff group not found")
+
+    deleted = (
+        db.query(models.StaffGroupMember)
+        .filter(
+            models.StaffGroupMember.group_id == group.id,
+            models.StaffGroupMember.member_id == member_id
+        )
+        .delete()
+    )
+    db.commit()
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Member was not in this group")
+
+    return {"message": "Member removed from group successfully"}
 
 

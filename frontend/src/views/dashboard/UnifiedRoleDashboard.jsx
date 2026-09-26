@@ -81,6 +81,8 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
   // Live dynamic backend state
   const [loading, setLoading] = useState(true);
+  const [staffGroups, setStaffGroups] = useState([]);
+  const [selectedPodFilter, setSelectedPodFilter] = useState('ALL');
   const [liveData, setLiveData] = useState({
     applications: [],
     savedJobs: [],
@@ -137,10 +139,11 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
             });
           }
         } else if (role === 'RECRUITER' || role === 'HIRING_MANAGER') {
-          const [myJobsRes, compAppsRes, ivRes] = await Promise.allSettled([
+          const [myJobsRes, compAppsRes, ivRes, groupsRes] = await Promise.allSettled([
             api.getMyJobs ? api.getMyJobs() : api.getJobs(),
             api.getCompanyApplications ? api.getCompanyApplications() : Promise.resolve([]),
             api.getInterviews ? api.getInterviews() : Promise.resolve([]),
+            api.getStaffGroups ? api.getStaffGroups() : Promise.resolve([]),
           ]);
 
           if (isMounted) {
@@ -154,15 +157,19 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
               staffDocs: [],
               supportTickets: [],
             });
+            if (groupsRes.status === 'fulfilled') {
+              setStaffGroups(normalizeArray(groupsRes.value));
+            }
           }
         } else if (role === 'ADMIN') {
-          const [jobsRes, teamRes, docsRes, ticketsRes, ivRes, appsRes] = await Promise.allSettled([
+          const [jobsRes, teamRes, docsRes, ticketsRes, ivRes, appsRes, groupsRes] = await Promise.allSettled([
             api.getJobs ? api.getJobs() : Promise.resolve([]),
             api.getTeamMembers ? api.getTeamMembers(true) : Promise.resolve([]),
             api.getStaffDocuments ? api.getStaffDocuments() : Promise.resolve([]),
             api.getSupportTickets ? api.getSupportTickets() : Promise.resolve([]),
             api.getInterviews ? api.getInterviews() : Promise.resolve([]),
             api.getCompanyApplications ? api.getCompanyApplications() : Promise.resolve([]),
+            api.getStaffGroups ? api.getStaffGroups() : Promise.resolve([]),
           ]);
 
           if (isMounted) {
@@ -176,6 +183,9 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
               savedJobs: [],
               profile: null,
             });
+            if (groupsRes.status === 'fulfilled') {
+              setStaffGroups(normalizeArray(groupsRes.value));
+            }
           }
         }
       } catch (err) {
@@ -196,6 +206,47 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
   const isRecruiter = role === 'RECRUITER';
   const isAdmin = role === 'ADMIN';
   const isManager = role === 'HIRING_MANAGER';
+
+  const availablePods = useMemo(() => {
+    if (staffGroups.length > 0) {
+      return staffGroups.map(g => ({ id: String(g.id), name: g.name }));
+    }
+    const map = new Map();
+    liveData.jobs.forEach(j => {
+      if (j.group_name && j.group_id) {
+        map.set(String(j.group_id), j.group_name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [staffGroups, liveData.jobs]);
+
+  const effectiveJobs = useMemo(() => {
+    if (selectedPodFilter === 'ALL') return liveData.jobs;
+    return liveData.jobs.filter(j => String(j.group_id) === String(selectedPodFilter));
+  }, [liveData.jobs, selectedPodFilter]);
+
+  const effectiveJobIds = useMemo(() => {
+    return new Set(effectiveJobs.map(j => j.id));
+  }, [effectiveJobs]);
+
+  const effectiveApplications = useMemo(() => {
+    if (selectedPodFilter === 'ALL') return liveData.applications;
+    return liveData.applications.filter(a => 
+      String(a.group_id) === String(selectedPodFilter) || effectiveJobIds.has(a.job_id)
+    );
+  }, [liveData.applications, selectedPodFilter, effectiveJobIds]);
+
+  const effectiveAppIds = useMemo(() => {
+    return new Set(effectiveApplications.map(a => a.id));
+  }, [effectiveApplications]);
+
+  const effectiveInterviews = useMemo(() => {
+    if (selectedPodFilter === 'ALL') return liveData.interviews;
+    return liveData.interviews.filter(iv => 
+      String(iv.group_id) === String(selectedPodFilter) || 
+      (iv.application_id && effectiveAppIds.has(iv.application_id))
+    );
+  }, [liveData.interviews, selectedPodFilter, effectiveAppIds]);
 
   const candidateViewsCount = useMemo(() => {
     return Number(
@@ -222,10 +273,10 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isRecruiter) {
-      const candidateCount = liveData.applications.length;
-      const openJobsCount = liveData.jobs.filter(j => j.status === 'ACTIVE' || j.is_active !== false).length;
-      const ivCount = liveData.interviews.length;
-      const selectedCount = liveData.applications.filter(a => a.status === 'SELECTED' || a.status === 'HIRED').length;
+      const candidateCount = effectiveApplications.length;
+      const openJobsCount = effectiveJobs.filter(j => j.status === 'ACTIVE' || j.is_active !== false).length;
+      const ivCount = effectiveInterviews.length;
+      const selectedCount = effectiveApplications.filter(a => a.status === 'SELECTED' || a.status === 'HIRED').length;
       const acceptanceRate = candidateCount > 0
         ? `${Math.max(78, Math.round((selectedCount / candidateCount) * 100) + 75)}%`
         : '94%';
@@ -240,7 +291,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
     if (isAdmin) {
       const staffCount = liveData.teamMembers.length;
-      const jobsCount = liveData.jobs.length;
+      const jobsCount = effectiveJobs.length;
       const pendingDocs = liveData.staffDocs.filter(d => d.status === 'PENDING').length;
       const totalEstimatedUsers = (staffCount * 8) + (jobsCount * 12) + 148;
 
@@ -253,9 +304,9 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     // Hiring Manager
-    const candCount = liveData.applications.length;
-    const reqCount = liveData.jobs.length;
-    const pendingScorecards = liveData.interviews.filter(i => i.status !== 'COMPLETED').length;
+    const candCount = effectiveApplications.length;
+    const reqCount = effectiveJobs.length;
+    const pendingScorecards = effectiveInterviews.filter(i => i.status !== 'COMPLETED').length;
 
     return [
       { value: candCount.toString(), label: 'Department Candidates', sparkColor: '#5C59E8' },
@@ -263,7 +314,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
       { value: pendingScorecards.toString(), label: 'Pending Scorecards', isFeatured: true },
       { value: '4.9/5', label: 'Team Evaluation Score', sparkColor: '#00A884' }
     ];
-  }, [isCandidate, isRecruiter, isAdmin, liveData, candidateViewsCount]);
+  }, [isCandidate, isRecruiter, isAdmin, liveData, candidateViewsCount, effectiveJobs, effectiveApplications, effectiveInterviews]);
 
   // 2. DYNAMIC RESPONSE GRAPH DATA (ROW 2 LEFT)
   const responseGraphTitle = isCandidate
@@ -363,19 +414,19 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     } else if (isRecruiter) {
       primaryLegend = 'Applications';
       secondaryLegend = 'Interviews';
-      primaryItems = liveData.applications || [];
-      secondaryItems = liveData.interviews || [];
+      primaryItems = effectiveApplications || [];
+      secondaryItems = effectiveInterviews || [];
     } else if (isManager) {
       primaryLegend = 'Applications';
       secondaryLegend = 'Evaluations';
-      primaryItems = liveData.applications || [];
-      secondaryItems = liveData.interviews || [];
+      primaryItems = effectiveApplications || [];
+      secondaryItems = effectiveInterviews || [];
     } else {
       // Admin
       primaryLegend = 'Applications';
       secondaryLegend = 'Open Requisitions';
-      primaryItems = liveData.applications || [];
-      secondaryItems = liveData.jobs || [];
+      primaryItems = effectiveApplications || [];
+      secondaryItems = effectiveJobs || [];
     }
 
     // 3. Aggregate real items into intervals
@@ -463,9 +514,10 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     isRecruiter,
     isManager,
     isAdmin,
+    effectiveApplications,
+    effectiveJobs,
+    effectiveInterviews,
     liveData.applications,
-    liveData.jobs,
-    liveData.interviews,
     candidateViewsCount,
     responseFilter
   ]);
@@ -495,22 +547,22 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isRecruiter) {
-      const recentJobs = liveData.jobs.slice(0, 2);
+      const recentJobs = effectiveJobs.slice(0, 2);
       const j1 = recentJobs[0];
       const j2 = recentJobs[1];
 
       return {
         title: 'Total Inflow',
-        metric: `${liveData.applications.length} Candidates`,
+        metric: `${effectiveApplications.length} Candidates`,
         sub1: {
           name: j1 ? j1.title : 'Senior Fullstack Engineer',
-          sub: j1 ? `${j1.department || 'Engineering'} · ${j1.location || 'Remote'}` : 'Engineering Department',
-          badge: j1 ? `${liveData.applications.filter(a => a.job_id === j1.id).length || 1} Applicants` : '24 New'
+          sub: j1 ? `${j1.group_name ? `Pod: ${j1.group_name} · ` : ''}${j1.department || 'Engineering'} · ${j1.location || 'Remote'}` : 'Engineering Department',
+          badge: j1 ? `${effectiveApplications.filter(a => a.job_id === j1.id).length || 0} Applicants` : '24 New'
         },
         sub2: {
           name: j2 ? j2.title : 'AI Solutions Architect',
-          sub: j2 ? `${j2.department || 'Operations'} · ${j2.location || 'Remote'}` : 'Platform Operations',
-          badge: j2 ? `${liveData.applications.filter(a => a.job_id === j2.id).length || 1} Applicants` : '18 New'
+          sub: j2 ? `${j2.group_name ? `Pod: ${j2.group_name} · ` : ''}${j2.department || 'Operations'} · ${j2.location || 'Remote'}` : 'Platform Operations',
+          badge: j2 ? `${effectiveApplications.filter(a => a.job_id === j2.id).length || 0} Applicants` : '18 New'
         },
         viewTab: 'applicants'
       };
@@ -538,25 +590,25 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     // Hiring Manager
-    const cand1 = liveData.applications[0];
-    const cand2 = liveData.applications[1];
+    const cand1 = effectiveApplications[0];
+    const cand2 = effectiveApplications[1];
 
     return {
       title: 'Active Pipeline',
-      metric: `${liveData.applications.length} In Review`,
+      metric: `${effectiveApplications.length} In Review`,
       sub1: {
         name: cand1 ? (cand1.candidate_name || cand1.job?.title || 'Staff Candidate') : 'Staff Software Architect',
-        sub: cand1 ? `Position: ${cand1.job?.title || 'Engineering'}` : 'Platform Core',
+        sub: cand1 ? `${cand1.group_name ? `Pod: ${cand1.group_name} · ` : ''}Position: ${cand1.job_title || cand1.job?.title || 'Engineering'}` : 'Platform Core',
         badge: 'Shortlisted'
       },
       sub2: {
         name: cand2 ? (cand2.candidate_name || cand2.job?.title || 'Lead Candidate') : 'Senior UX/UI Specialist',
-        sub: cand2 ? `Position: ${cand2.job?.title || 'Design'}` : 'Product Design',
+        sub: cand2 ? `${cand2.group_name ? `Pod: ${cand2.group_name} · ` : ''}Position: ${cand2.job_title || cand2.job?.title || 'Design'}` : 'Product Design',
         badge: 'In Review'
       },
       viewTab: 'applicants'
     };
-  }, [isCandidate, isRecruiter, isAdmin, liveData]);
+  }, [isCandidate, isRecruiter, isAdmin, liveData, effectiveJobs, effectiveApplications]);
 
   // 4. DYNAMIC SOLID CORAL CARD (ROW 3 LEFT)
   const coralCardData = useMemo(() => {
@@ -589,7 +641,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isRecruiter) {
-      const interviewCount = liveData.interviews.length;
+      const interviewCount = effectiveInterviews.length;
       return {
         label: 'Hiring SLA Velocity',
         metric: '18.4 Days',
@@ -671,12 +723,12 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isRecruiter) {
-      if (liveData.jobs.length > 0) {
-        return liveData.jobs.slice(0, 3).map((job) => ({
+      if (effectiveJobs.length > 0) {
+        return effectiveJobs.slice(0, 3).map((job) => ({
           name: job.title,
-          author: `Author: ${job.company || 'Hiring Lead'}`,
+          author: job.group_name ? `Pod: ${job.group_name}` : `Author: ${job.company || 'Hiring Lead'}`,
           date: job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Active Requisition',
-          status: `${liveData.applications.filter(a => a.job_id === job.id).length || 0} Applicants`,
+          status: `${effectiveApplications.filter(a => a.job_id === job.id).length || 0} Applicants`,
           statusColor: 'text-[#00846A]',
           actionTab: 'applicants'
         }));
@@ -751,6 +803,17 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     // Hiring Manager
+    if (effectiveInterviews.length > 0) {
+      return effectiveInterviews.slice(0, 3).map((iv) => ({
+        name: iv.job_title || 'Candidate Evaluation',
+        author: iv.group_name ? `Pod: ${iv.group_name} · ${iv.candidate_name || 'Applicant'}` : `Candidate: ${iv.candidate_name || 'Applicant'}`,
+        date: iv.interview_date ? `${iv.interview_date} @ ${iv.interview_time || 'TBD'}` : 'Scheduled Round',
+        status: iv.status || 'Ready for Review',
+        statusColor: 'text-[#00846A]',
+        actionTab: 'interviews'
+      }));
+    }
+
     return [
       {
         name: 'Staff React Engineer Portfolio Review',
@@ -777,7 +840,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
         actionTab: 'interviews'
       }
     ];
-  }, [isCandidate, isRecruiter, isAdmin, liveData]);
+  }, [isCandidate, isRecruiter, isAdmin, liveData, effectiveJobs, effectiveApplications, effectiveInterviews]);
 
 
 
@@ -829,12 +892,12 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isRecruiter) {
-      if (liveData.jobs.length > 0) {
-        return liveData.jobs.slice(0, 5).map((job) => ({
+      if (effectiveJobs.length > 0) {
+        return effectiveJobs.slice(0, 5).map((job) => ({
           name: job.title,
-          tag: job.status || 'Active',
+          tag: job.group_name ? `Pod: ${job.group_name}` : (job.status || 'Active'),
           isUp: job.status !== 'PAUSED',
-          perf: `${liveData.applications.filter(a => a.job_id === job.id).length || 0} Inflow`,
+          perf: `${effectiveApplications.filter(a => a.job_id === job.id).length || 0} Inflow`,
           uptime: job.work_mode || 'Remote',
           time: job.created_at ? new Date(job.created_at).toLocaleDateString() : '2026/09/24'
         }));
@@ -871,6 +934,17 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     // Hiring Manager
+    if (effectiveJobs.length > 0) {
+      return effectiveJobs.slice(0, 5).map((job) => ({
+        name: job.title,
+        tag: job.group_name ? `Pod: ${job.group_name}` : (job.status || 'Active'),
+        isUp: job.status !== 'PAUSED',
+        perf: `${effectiveApplications.filter(a => a.job_id === job.id).length || 0} Pipeline`,
+        uptime: job.work_mode || 'Remote',
+        time: job.created_at ? new Date(job.created_at).toLocaleDateString() : '2026/09/24'
+      }));
+    }
+
     return [
       { name: 'Staff Software Architect (Frontend)', tag: 'Active', isUp: true, perf: '95%', uptime: '6 Pipeline', time: '2026/09/24 @ 07:25' },
       { name: 'Lead Product Designer (Design Ops)', tag: 'Reviewing', isUp: false, perf: '88%', uptime: '4 Pipeline', time: '2026/09/24 @ 07:25' },
@@ -878,7 +952,7 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
       { name: 'Platform Reliability Specialist', tag: 'Active', isUp: false, perf: '79%', uptime: '3 Pipeline', time: '2026/09/22 @ 02:40' },
       { name: 'QA Lead & Automation Specialist', tag: 'Final Stage', isUp: true, perf: '92%', uptime: '2 Final', time: '2026/09/20 @ 11:15' },
     ];
-  }, [isCandidate, isRecruiter, isAdmin, liveData]);
+  }, [isCandidate, isRecruiter, isAdmin, liveData, effectiveJobs, effectiveApplications]);
 
   // Consistent card shell used everywhere — white background always, a soft
   // 1px border rather than a heavy shadow, and a slightly deeper shadow on hover
@@ -904,17 +978,52 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
           </p>
         </div>
 
-        {/* Live Sync Status indicator */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {loading ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-amber-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing live data
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-emerald-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
-            </span>
+        {/* Right side controls: Pod Switcher & Live Sync Status */}
+        <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+          {/* Multi-Pod Switcher (shown when user belongs to >1 pod or is Admin with pods) */}
+          {(availablePods.length > 1 || (isAdmin && availablePods.length > 0)) && (
+            <div className="flex items-center p-1 bg-white rounded-xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <button
+                type="button"
+                onClick={() => setSelectedPodFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${
+                  selectedPodFilter === 'ALL'
+                    ? 'bg-indigo-50 text-indigo-700 shadow-2xs font-semibold'
+                    : 'bg-transparent text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Pods ({availablePods.length})
+              </button>
+              {availablePods.map(pod => (
+                <button
+                  key={pod.id}
+                  type="button"
+                  onClick={() => setSelectedPodFilter(pod.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all flex items-center gap-1.5 ${
+                    selectedPodFilter === pod.id
+                      ? 'bg-indigo-50 text-indigo-700 shadow-2xs font-semibold'
+                      : 'bg-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>{pod.name}</span>
+                </button>
+              ))}
+            </div>
           )}
+
+          {/* Live Sync Status indicator */}
+          <div>
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-amber-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing live data
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white text-emerald-600 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

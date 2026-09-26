@@ -4,7 +4,12 @@ from typing import Optional
 
 from app.database import get_db
 from app import models, schemas
-from app.api.deps import get_current_user, get_user_company
+from app.api.deps import (
+    get_current_user,
+    get_user_company,
+    get_scoped_jobs_query,
+    can_user_access_job
+)
 from app.services.scoring import score_candidate_for_job, CandidateScorer
 
 router = APIRouter(prefix="/applications", tags=["Applications & ATS"])
@@ -59,6 +64,9 @@ def _build_applicant_response(a, cand, job, cand_user=None):
         "job_title": job.title if job else "Position",
         "job_location": job.location if job else "",
         "job_work_mode": job.work_mode if job else "",
+        "group_id": getattr(job, "group_id", None) if job else None,
+        "group_name": job.group.name if (job and getattr(job, "group", None)) else None,
+        "interview_rounds": getattr(job, "interview_rounds", []) or [] if job else [],
         "status": a.status,
         "cover_letter": a.cover_letter,
         "screening_answers": a.screening_answers or [],
@@ -222,6 +230,7 @@ def get_my_applications(user: models.User = Depends(get_current_user), db: Sessi
                 "salary_max": j.salary_max if j else None,
                 "skills": j.skills if j else [],
                 "description": j.description if j else "",
+                "interview_rounds": getattr(j, "interview_rounds", []) or [] if j else [],
                 "company_name": comp.company_name if comp else "Agency"
             }
         })
@@ -238,6 +247,11 @@ def get_job_applicants(job_id: int, user: models.User = Depends(get_current_user
         raise HTTPException(status_code=403, detail="Only authorized company staff can view job applicants")
 
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to view applicants for this job")
+
     apps = db.query(models.Application).filter(models.Application.job_id == job_id).order_by(models.Application.id.desc()).all()
     result = []
     for a in apps:
@@ -268,6 +282,8 @@ def get_top_candidates(
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to view top candidates for this job")
 
     # Get all applications for this job, ordered by fit_score descending
     apps = (
@@ -315,6 +331,8 @@ def rescore_job_candidates(
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to rescore candidates for this job")
 
     apps = db.query(models.Application).filter(models.Application.job_id == job_id).all()
     job_dict = _job_to_dict(job)
@@ -346,7 +364,11 @@ def rescore_job_candidates(
 # ═══════════════════════════════════════════════════════════════════════
 
 @router.get("/company/all")
-def get_company_all_applications(user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_company_all_applications(
+    group_id: Optional[int] = Query(None, description="Optional hiring pod/group filter"),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
         raise HTTPException(status_code=403, detail="Only authorized company staff can view company applications")
 
@@ -354,7 +376,7 @@ def get_company_all_applications(user: models.User = Depends(get_current_user), 
     if not company:
         return []
 
-    jobs = db.query(models.Job).filter(models.Job.company_id == company.id).all()
+    jobs = get_scoped_jobs_query(user, company.id, db, requested_group_id=group_id).all()
     job_map = {j.id: j for j in jobs}
     if not job_map:
         return []
@@ -386,6 +408,10 @@ def update_application_status(app_id: int, data: schemas.ApplicationStatusUpdate
 
     candidate = db.query(models.Candidate).filter(models.Candidate.id == app_obj.candidate_id).first()
     job = db.query(models.Job).filter(models.Job.id == app_obj.job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not can_user_access_job(user, job, db):
+        raise HTTPException(status_code=403, detail="You do not have permission to update candidates outside your hiring group")
 
     if candidate and job:
         notif = models.Notification(

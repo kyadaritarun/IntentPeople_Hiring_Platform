@@ -2,10 +2,35 @@ import React, { useState } from 'react';
 import {
   Briefcase, Plus, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Compass,
   HelpCircle, Trash2, ListPlus, Sparkles, CheckSquare, X, ChevronDown,
-  DollarSign, MapPin, Layers, Award, Target, FileText
+  DollarSign, MapPin, Layers, Award, Target, FileText, Calendar, Clock, ArrowRight
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+
+const ROUND_PRESETS = {
+  2: [
+    { round_number: 1, name: 'Round 1: Screening & Candidate Background', duration: '30 mins' },
+    { round_number: 2, name: 'Round 2: Technical Assessment & Final Evaluation', duration: '60 mins' },
+  ],
+  3: [
+    { round_number: 1, name: 'Round 1: Screening & Candidate Background', duration: '30 mins' },
+    { round_number: 2, name: 'Round 2: Technical Assessment & Deep-Dive', duration: '45 mins' },
+    { round_number: 3, name: 'Round 3: Hiring Manager & Culture Fit', duration: '45 mins' },
+  ],
+  4: [
+    { round_number: 1, name: 'Round 1: Recruiter Phone Screening', duration: '30 mins' },
+    { round_number: 2, name: 'Round 2: Technical Assessment & Practical Task', duration: '60 mins' },
+    { round_number: 3, name: 'Round 3: Peer Team & Cross-Functional Fit', duration: '45 mins' },
+    { round_number: 4, name: 'Round 4: Leadership Interview & Offer Review', duration: '45 mins' },
+  ],
+  5: [
+    { round_number: 1, name: 'Round 1: Initial Recruiter Screening', duration: '30 mins' },
+    { round_number: 2, name: 'Round 2: Core Competency & Skills Assessment', duration: '45 mins' },
+    { round_number: 3, name: 'Round 3: Live Case Study / System Design', duration: '60 mins' },
+    { round_number: 4, name: 'Round 4: Hiring Manager Discussion', duration: '45 mins' },
+    { round_number: 5, name: 'Round 5: Executive Leadership & Culture Alignment', duration: '45 mins' },
+  ],
+};
 
 const QUESTION_TEMPLATES = [
   {
@@ -84,13 +109,68 @@ export default function PostJob({ setActiveTab }) {
     success_horizon: compProfile.success_horizon || 'First 90 days'
   });
 
+  const [staffGroups, setStaffGroups] = useState([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [screeningQuestions, setScreeningQuestions] = useState([]);
+  const [interviewRounds, setInterviewRounds] = useState(ROUND_PRESETS[3]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  React.useEffect(() => {
+    if (api.getStaffGroups) {
+      api.getStaffGroups().then(groups => {
+        const grpList = groups || [];
+        setStaffGroups(grpList);
+        if (user && user.role !== 'ADMIN') {
+          const myGroups = grpList.filter(g =>
+            Array.isArray(g.members) && g.members.some(m => m.user_id === user.id)
+          );
+          if (myGroups.length > 0) {
+            setSelectedGroupId(String(myGroups[0].id));
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Interview rounds helper functions
+  const handlePresetChange = (count) => {
+    if (ROUND_PRESETS[count]) {
+      setInterviewRounds(ROUND_PRESETS[count].map(r => ({ ...r })));
+    }
+  };
+
+  const addInterviewRound = () => {
+    const nextNum = interviewRounds.length + 1;
+    setInterviewRounds(prev => [
+      ...prev,
+      {
+        round_number: nextNum,
+        name: `Round ${nextNum}: Interview Assessment`,
+        duration: '45 mins'
+      }
+    ]);
+  };
+
+  const updateInterviewRound = (index, field, value) => {
+    setInterviewRounds(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r));
+  };
+
+  const removeInterviewRound = (index) => {
+    if (interviewRounds.length <= 1) return;
+    setInterviewRounds(prev => {
+      const filtered = prev.filter((_, i) => i !== index);
+      return filtered.map((r, idx) => ({
+        ...r,
+        round_number: idx + 1,
+        name: r.name.replace(/^Round \d+:/, `Round ${idx + 1}:`)
+      }));
+    });
   };
 
   const addQuestion = (type = 'text', customQuestion = '') => {
@@ -173,12 +253,22 @@ export default function PostJob({ setActiveTab }) {
           required: Boolean(q.required)
         }));
 
+      const cleanedRounds = interviewRounds
+        .filter(r => r.name && r.name.trim().length > 0)
+        .map((r, idx) => ({
+          round_number: idx + 1,
+          name: r.name.trim(),
+          duration: r.duration || '45 mins'
+        }));
+
       await api.createJob({
         ...formData,
         salary_min: parseInt(formData.salary_min) || 0,
         salary_max: parseInt(formData.salary_max) || 0,
         skills: skillsArray,
-        screening_questions: cleanedQuestions
+        screening_questions: cleanedQuestions,
+        interview_rounds: cleanedRounds,
+        group_id: selectedGroupId ? parseInt(selectedGroupId) : undefined
       });
       setSuccess(true);
       setTimeout(() => {
@@ -302,6 +392,53 @@ export default function PostJob({ setActiveTab }) {
               />
             </div>
           </div>
+
+          {/* Hiring Pod / Group Assignment */}
+          {(() => {
+            const selectableGroups = user?.role === 'ADMIN'
+              ? staffGroups
+              : staffGroups.filter(g =>
+                  Array.isArray(g.members) && g.members.some(m => m.user_id === user?.id)
+                );
+
+            if (selectableGroups.length === 0) return null;
+
+            return (
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    Assigned Hiring Pod / Group <span className="text-rose-500">*</span>
+                  </span>
+                  {user?.role !== 'ADMIN' && (
+                    <span className="text-[11px] text-indigo-600 font-medium">
+                      {selectableGroups.length > 1
+                        ? `You belong to ${selectableGroups.length} pods — select target pod`
+                        : 'Linked to your recruitment pod'}
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={selectedGroupId}
+                  onChange={e => setSelectedGroupId(e.target.value)}
+                  className={selectClass}
+                  required={user?.role !== 'ADMIN'}
+                >
+                  {user?.role === 'ADMIN' && <option value="">Company-Wide / Unassigned</option>}
+                  {selectableGroups.map(grp => (
+                    <option key={grp.id} value={grp.id}>
+                      {grp.name} ({grp.department || 'General'})
+                    </option>
+                  ))}
+                </select>
+                {selectableGroups.length > 1 && (
+                  <p className="text-[11px] text-slate-400 mt-1.5 m-0">
+                    Only members of the selected pod and Administrators will have access to candidates and evaluations for this position.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Role Parameters: Work Mode, Job Type, Ownership Level, Availability */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -780,6 +917,170 @@ export default function PostJob({ setActiveTab }) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── BOX 6: Interview Rounds & Selection Stages ── */}
+        <div className={`${cardClass} p-5 sm:p-7 space-y-5`}>
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 flex-wrap gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#00A884] flex items-center justify-center">
+                <Calendar className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 m-0">
+                  Interview Rounds &amp; Selection Stages
+                </h2>
+                <p className="text-[11px] text-slate-400 m-0">
+                  Configure the rounds for this requisition. When candidates are shortlisted, these rounds appear in Next Round Setup.
+                </p>
+              </div>
+            </div>
+            <Badge tone="emerald">
+              {interviewRounds.length} {interviewRounds.length === 1 ? 'Round Configured' : 'Rounds Configured'}
+            </Badge>
+          </div>
+
+          {/* Quick Preset Selector */}
+          <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-semibold text-slate-800 block">
+                How many interview rounds for this job?
+              </span>
+              <span className="text-[11px] text-slate-500">
+                Choose a standard hiring workflow preset or customize your stages:
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[2, 3, 4, 5].map((num) => {
+                const isActive = interviewRounds.length === num;
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => handlePresetChange(num)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                      isActive
+                        ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {num} Rounds {num === 3 ? '(Standard)' : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Visual Progression Pipeline Preview */}
+          <div className="overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 min-w-max p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-400 px-1">Pipeline:</span>
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200/60 text-indigo-700 text-xs font-semibold">
+                ⭐ Shortlist
+              </span>
+              {interviewRounds.map((r, idx) => (
+                <React.Fragment key={idx}>
+                  <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
+                  <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 text-xs font-semibold shadow-2xs">
+                    {r.name ? (r.name.length > 28 ? r.name.slice(0, 26) + '...' : r.name) : `Round ${idx + 1}`}
+                  </span>
+                </React.Fragment>
+              ))}
+              <ArrowRight className="w-3 h-3 text-slate-300 shrink-0" />
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                🏆 Offer / Hire
+              </span>
+            </div>
+          </div>
+
+          {/* Rounds List Editor */}
+          <div className="space-y-3">
+            {interviewRounds.map((round, idx) => (
+              <div
+                key={idx}
+                className="p-3.5 sm:p-4 rounded-xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all space-y-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-50 text-[#00A884] flex items-center justify-center text-xs font-bold ring-1 ring-inset ring-[#00A884]/20">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-800">
+                      Round {idx + 1} Setup
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400">
+                      Stage {idx + 1} of {interviewRounds.length}
+                    </span>
+                    {interviewRounds.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeInterviewRound(idx)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-none bg-transparent cursor-pointer"
+                        title="Remove round"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  {/* Round Setup */}
+                  <div className="sm:col-span-8">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Round Setup *
+                    </label>
+                    <input
+                      type="text"
+                      value={round.name}
+                      onChange={(e) => updateInterviewRound(idx, 'name', e.target.value)}
+                      placeholder={`e.g. Round ${idx + 1}: Screening Call or Technical Assessment`}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+
+                  {/* Duration */}
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Duration *
+                    </label>
+                    <select
+                      value={round.duration || '45 mins'}
+                      onChange={(e) => updateInterviewRound(idx, 'duration', e.target.value)}
+                      className={selectClass}
+                    >
+                      <option value="15 mins">15 mins</option>
+                      <option value="30 mins">30 mins</option>
+                      <option value="45 mins">45 mins</option>
+                      <option value="60 mins">60 mins</option>
+                      <option value="90 mins">90 mins</option>
+                      <option value="120 mins">120 mins (2 hrs)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add Custom Round Button */}
+          <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={addInterviewRound}
+              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#00846A] text-xs font-semibold border border-emerald-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Custom Round</span>
+            </button>
+
+            <span className="text-[11px] text-slate-400">
+              💡 Shortlisted candidates will see and follow these rounds in Next Round Setup.
+            </span>
+          </div>
         </div>
 
         {/* ── Action Footer ── */}

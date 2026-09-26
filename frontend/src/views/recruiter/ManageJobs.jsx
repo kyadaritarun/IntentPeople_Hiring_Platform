@@ -39,6 +39,7 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [workModeFilter, setWorkModeFilter] = useState('ALL');
+  const [groupFilter, setGroupFilter] = useState('ALL');
   const [toastMessage, setToastMessage] = useState('');
   const [togglingId, setTogglingId] = useState(null);
 
@@ -179,9 +180,12 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
 
     const matchesStatus = statusFilter === 'ALL' || job.status === statusFilter;
     const matchesWorkMode = workModeFilter === 'ALL' || (job.work_mode || '').toLowerCase() === workModeFilter.toLowerCase();
+    const matchesGroup = groupFilter === 'ALL' || job.group_name === groupFilter;
 
-    return matchesSearch && matchesStatus && matchesWorkMode;
+    return matchesSearch && matchesStatus && matchesWorkMode && matchesGroup;
   });
+
+  const availableGroups = Array.from(new Set(jobs.map(j => j.group_name).filter(Boolean)));
 
   const publishedCount = jobs.filter(j => j.status === 'PUBLISHED').length;
   const closedCount = jobs.filter(j => j.status === 'CLOSED').length;
@@ -368,6 +372,20 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
             <option value="On-site">On-site</option>
           </select>
 
+          {/* Hiring Pod Filter */}
+          {availableGroups.length > 0 && (
+            <select
+              value={groupFilter}
+              onChange={e => setGroupFilter(e.target.value)}
+              className="px-3.5 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all cursor-pointer shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+            >
+              <option value="ALL">All Hiring Pods ({availableGroups.length})</option>
+              {availableGroups.map(grp => (
+                <option key={grp} value={grp}>Pod: {grp}</option>
+              ))}
+            </select>
+          )}
+
           <button
             type="button"
             onClick={fetchJobs}
@@ -460,6 +478,23 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                               <Badge tone="indigo">
                                 {job.screening_questions.length} Screening {job.screening_questions.length === 1 ? 'Q' : 'Qs'}
                               </Badge>
+                            </>
+                          )}
+                          {Array.isArray(job.interview_rounds) && job.interview_rounds.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <Badge tone="emerald">
+                                {job.interview_rounds.length} Interview {job.interview_rounds.length === 1 ? 'Round' : 'Rounds'}
+                              </Badge>
+                            </>
+                          )}
+                          {job.group_name && (
+                            <>
+                              <span>•</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                                <Layers className="w-3 h-3 text-indigo-500" />
+                                {job.group_name}
+                              </span>
                             </>
                           )}
                         </div>

@@ -34,7 +34,7 @@ def ensure_schema_exists():
         print(f"[SCHEMA INIT WARNING] Could not verify/create schema '{schema_name}': {e}")
 
 def ensure_columns_exist():
-    """Auto-migrate columns for new features if they don't exist yet."""
+    """Auto-migrate columns and tables for new features if they don't exist yet."""
     try:
         with engine.connect() as conn:
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS fit_score DOUBLE PRECISION;'))
@@ -43,9 +43,39 @@ def ensure_columns_exist():
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS screening_answers JSON DEFAULT \'[]\'::json;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS top_search_count INTEGER DEFAULT 0;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES "{schema_name}".portal_users(id);'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES "{schema_name}".portal_staff_groups(id) ON DELETE SET NULL;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS interview_rounds JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'CREATE INDEX IF NOT EXISTS idx_portal_jobs_group_id ON "{schema_name}".portal_jobs(group_id);'))
+            conn.execute(text(f'CREATE INDEX IF NOT EXISTS idx_portal_jobs_created_by ON "{schema_name}".portal_jobs(created_by);'))
+            
+            # Create portal_staff_groups table
+            conn.execute(text(f'''
+                CREATE TABLE IF NOT EXISTS "{schema_name}".portal_staff_groups (
+                    id SERIAL PRIMARY KEY,
+                    company_id INTEGER NOT NULL REFERENCES "{schema_name}".portal_companies(id) ON DELETE CASCADE,
+                    name VARCHAR NOT NULL,
+                    description TEXT,
+                    department VARCHAR DEFAULT 'General',
+                    created_by INTEGER REFERENCES "{schema_name}".portal_users(id),
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc'),
+                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc')
+                );
+            '''))
+
+            # Create portal_staff_group_members join table
+            conn.execute(text(f'''
+                CREATE TABLE IF NOT EXISTS "{schema_name}".portal_staff_group_members (
+                    id SERIAL PRIMARY KEY,
+                    group_id INTEGER NOT NULL REFERENCES "{schema_name}".portal_staff_groups(id) ON DELETE CASCADE,
+                    member_id INTEGER NOT NULL REFERENCES "{schema_name}".portal_company_members(id) ON DELETE CASCADE,
+                    assigned_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc'),
+                    CONSTRAINT unique_staff_group_member UNIQUE (group_id, member_id)
+                );
+            '''))
             conn.commit()
     except Exception as e:
-        pass
+        print(f"[AUTO-MIGRATE WARNING] {e}")
 
 # Ensure schema exists on startup
 ensure_schema_exists()

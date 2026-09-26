@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models, schemas
-from app.api.deps import get_current_user, get_user_company
+from app.api.deps import (
+    get_current_user,
+    get_user_company,
+    get_scoped_jobs_query,
+    can_user_access_job
+)
 
 router = APIRouter(prefix="/interviews", tags=["Interviews"])
 
@@ -14,13 +19,20 @@ def create_interview(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new interview. Only recruiters can schedule."""
-    if user.role != "RECRUITER":
+    """Create a new interview. Only recruiters and administrators can schedule."""
+    if user.role not in ["ADMIN", "RECRUITER"]:
         raise HTTPException(status_code=403, detail="Only recruiters can schedule interviews")
 
     company = get_user_company(user, db)
     if not company:
         raise HTTPException(status_code=400, detail="No company associated with this user")
+
+    if data.application_id:
+        app_rec = db.query(models.Application).filter(models.Application.id == data.application_id).first()
+        if app_rec:
+            job = db.query(models.Job).filter(models.Job.id == app_rec.job_id).first()
+            if job and not can_user_access_job(user, job, db):
+                raise HTTPException(status_code=403, detail="Cannot schedule interview for candidates outside your hiring group")
 
     interview = models.Interview(
         company_id=company.id,
@@ -69,7 +81,7 @@ def get_interviews(
     db: Session = Depends(get_db)
 ):
     """List interviews: for staff, all company interviews; for candidates, their scheduled interviews."""
-    if user.role in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
+    if user.role == "ADMIN":
         company = get_user_company(user, db)
         if not company:
             return []
@@ -77,6 +89,33 @@ def get_interviews(
         interviews = (
             db.query(models.Interview)
             .filter(models.Interview.company_id == company.id)
+            .order_by(models.Interview.created_at.desc())
+            .all()
+        )
+
+        return [_serialize_interview(iv, db) for iv in interviews]
+
+    elif user.role in ["RECRUITER", "HIRING_MANAGER"]:
+        company = get_user_company(user, db)
+        if not company:
+            return []
+
+        scoped_jobs = get_scoped_jobs_query(user, company.id, db).all()
+        scoped_job_ids = [j.id for j in scoped_jobs]
+        scoped_app_ids = [
+            a[0] for a in db.query(models.Application.id)
+            .filter(models.Application.job_id.in_(scoped_job_ids)).all()
+        ] if scoped_job_ids else []
+
+        from sqlalchemy import or_
+        conditions = [models.Interview.created_by == user.id]
+        if scoped_app_ids:
+            conditions.append(models.Interview.application_id.in_(scoped_app_ids))
+
+        interviews = (
+            db.query(models.Interview)
+            .filter(models.Interview.company_id == company.id)
+            .filter(or_(*conditions))
             .order_by(models.Interview.created_at.desc())
             .all()
         )
@@ -297,15 +336,26 @@ def create_google_meet_for_interview(
 def _serialize_interview(iv, db: Session = None):
     """Convert an Interview ORM object to a JSON-safe dict."""
     company_name = "Uptrix Partner"
-    if db and iv.company_id:
-        comp = db.query(models.Company).filter(models.Company.id == iv.company_id).first()
-        if comp and comp.company_name:
-            company_name = comp.company_name
+    group_id = None
+    group_name = None
+    if db:
+        if iv.company_id:
+            comp = db.query(models.Company).filter(models.Company.id == iv.company_id).first()
+            if comp and comp.company_name:
+                company_name = comp.company_name
+        if iv.application_id:
+            app_rec = db.query(models.Application).filter(models.Application.id == iv.application_id).first()
+            if app_rec and app_rec.job:
+                group_id = app_rec.job.group_id
+                if app_rec.job.group:
+                    group_name = app_rec.job.group.name
 
     return {
         "id": iv.id,
         "company_id": iv.company_id,
         "company_name": company_name,
+        "group_id": group_id,
+        "group_name": group_name,
         "application_id": iv.application_id,
         "job_title": iv.job_title,
         "candidate_name": iv.candidate_name,
