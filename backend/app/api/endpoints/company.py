@@ -766,6 +766,12 @@ def create_staff_group(
     manager_count = 0
 
     if data.member_ids:
+        if len(data.member_ids) > 2:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 2 members (maximum 1 Recruiter and 1 Hiring Manager). To assign other staff, please create a new group."
+            )
+
         valid_members = (
             db.query(models.CompanyMember, models.User.email)
             .outerjoin(models.User, models.User.id == models.CompanyMember.user_id)
@@ -775,6 +781,20 @@ def create_staff_group(
             )
             .all()
         )
+
+        r_count = sum(1 for cm, _ in valid_members if cm.role == "RECRUITER")
+        m_count = sum(1 for cm, _ in valid_members if cm.role == "HIRING_MANAGER")
+
+        if r_count > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 1 Recruiter. To pair recruiters with different hiring managers, please create a new group."
+            )
+        if m_count > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 1 Hiring Manager. To pair hiring managers with different recruiters, please create a new group."
+            )
 
         for cm, email in valid_members:
             db.add(models.StaffGroupMember(group_id=new_group.id, member_id=cm.id))
@@ -855,16 +875,36 @@ def update_staff_group(
         group.description = data.description.strip()
 
     if data.member_ids is not None:
+        if len(data.member_ids) > 2:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 2 members (maximum 1 Recruiter and 1 Hiring Manager). To assign other staff, please create a new group."
+            )
+        valid_members = (
+            db.query(models.CompanyMember)
+            .filter(
+                models.CompanyMember.id.in_(data.member_ids),
+                models.CompanyMember.company_id == company.id
+            )
+            .all()
+        )
+        r_count = sum(1 for cm in valid_members if cm.role == "RECRUITER")
+        m_count = sum(1 for cm in valid_members if cm.role == "HIRING_MANAGER")
+
+        if r_count > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 1 Recruiter. To pair recruiters with different hiring managers, please create a new group."
+            )
+        if m_count > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="A hiring pod cannot have more than 1 Hiring Manager. To pair hiring managers with different recruiters, please create a new group."
+            )
+
         db.query(models.StaffGroupMember).filter(models.StaffGroupMember.group_id == group.id).delete()
-        if data.member_ids:
-            valid_mids = [
-                m.id for m in db.query(models.CompanyMember.id).filter(
-                    models.CompanyMember.id.in_(data.member_ids),
-                    models.CompanyMember.company_id == company.id
-                ).all()
-            ]
-            for mid in valid_mids:
-                db.add(models.StaffGroupMember(group_id=group.id, member_id=mid))
+        for cm in valid_members:
+            db.add(models.StaffGroupMember(group_id=group.id, member_id=cm.id))
 
     db.commit()
     db.refresh(group)
@@ -967,21 +1007,55 @@ def add_members_to_group(
         raise HTTPException(status_code=404, detail="Staff group not found")
 
     if data.member_ids:
-        existing_mids = set(
-            db.query(models.StaffGroupMember.member_id)
+        existing_members = (
+            db.query(models.CompanyMember)
+            .join(models.StaffGroupMember, models.StaffGroupMember.member_id == models.CompanyMember.id)
             .filter(models.StaffGroupMember.group_id == group.id)
-            .scalars()
             .all()
         )
-        valid_mids = [
-            m.id for m in db.query(models.CompanyMember.id).filter(
-                models.CompanyMember.id.in_(data.member_ids),
+        existing_mids = set(m.id for m in existing_members)
+        if len(existing_mids) >= 2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Hiring pod '{group.name}' is already full with 2 members (1 Recruiter and 1 Hiring Manager). To assign additional staff, please create a new group or remove an existing member first."
+            )
+
+        new_mids = [mid for mid in data.member_ids if mid not in existing_mids]
+        if len(existing_mids) + len(new_mids) > 2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot add {len(new_mids)} member(s). Each hiring pod is limited to 2 members (1 Recruiter and 1 Hiring Manager). Please create a new group instead."
+            )
+
+        valid_new_members = (
+            db.query(models.CompanyMember)
+            .filter(
+                models.CompanyMember.id.in_(new_mids),
                 models.CompanyMember.company_id == company.id
-            ).all()
-        ]
-        for mid in valid_mids:
-            if mid not in existing_mids:
-                db.add(models.StaffGroupMember(group_id=group.id, member_id=mid))
+            )
+            .all()
+        )
+
+        existing_has_rec = any(m.role == "RECRUITER" for m in existing_members)
+        existing_has_mgr = any(m.role == "HIRING_MANAGER" for m in existing_members)
+
+        for cm in valid_new_members:
+            if cm.role == "RECRUITER" and existing_has_rec:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"This pod already has a Recruiter. Each hiring pod can only have 1 Recruiter and 1 Hiring Manager. To pair {cm.name} with a manager, please create a new group."
+                )
+            if cm.role == "HIRING_MANAGER" and existing_has_mgr:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"This pod already has a Hiring Manager. Each hiring pod can only have 1 Recruiter and 1 Hiring Manager. To pair {cm.name} with a recruiter, please create a new group."
+                )
+            if cm.role == "RECRUITER":
+                existing_has_rec = True
+            elif cm.role == "HIRING_MANAGER":
+                existing_has_mgr = True
+            db.add(models.StaffGroupMember(group_id=group.id, member_id=cm.id))
+
         db.commit()
 
     return {"message": "Group members updated successfully"}

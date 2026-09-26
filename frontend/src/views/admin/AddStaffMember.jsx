@@ -4,9 +4,107 @@ import {
   Mail, Lock, User, Briefcase, Eye, EyeOff,
   Users, Check, ArrowRight, Camera, Upload,
   Loader2, Search, Trash2, Plus, RefreshCw, X, Folder, FileCheck, Clock,
-  Pencil, Phone, MapPin, Sparkles, ChevronDown, Layers, Building2, UserCheck, Tag, Filter
+  Pencil, Phone, MapPin, Sparkles, ChevronDown, ChevronUp, Layers, Building2, UserCheck, Tag, Filter,
+  ShieldCheck, Info, HelpCircle
 } from 'lucide-react';
 import { api } from '../../api';
+
+const getGroupCapacityInfo = (group, allGroups = []) => {
+  const members = Array.isArray(group?.members) ? group.members : [];
+  const recs = members.filter(m => m.role === 'RECRUITER');
+  const mgrs = members.filter(m => m.role === 'HIRING_MANAGER');
+  const count = members.length;
+
+  if (count === 2 && recs.length === 1 && mgrs.length === 1) {
+    const otherGroups = Array.isArray(allGroups) ? allGroups.filter(g => g.id !== group.id) : [];
+    const hasSharedRecruiter = recs.some(r =>
+      otherGroups.some(g => Array.isArray(g.members) && g.members.some(m => m.id === r.id || m.user_id === r.user_id))
+    );
+    const hasSharedManager = mgrs.some(mgr =>
+      otherGroups.some(g => Array.isArray(g.members) && g.members.some(m => m.id === mgr.id || m.user_id === mgr.user_id))
+    );
+
+    let scenario = 'Dedicated 1:1 Pod';
+    if (hasSharedRecruiter && !hasSharedManager) {
+      scenario = 'Multi-Pod Recruiter';
+    } else if (!hasSharedRecruiter && hasSharedManager) {
+      scenario = 'Shared Manager Pod';
+    } else if (hasSharedRecruiter && hasSharedManager) {
+      scenario = 'Cross-Department Pod';
+    }
+
+    return {
+      status: 'FULL',
+      label: 'Pod Full (2/2)',
+      scenario,
+      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+      description: `${recs[0]?.name || 'Recruiter'} (Recruiter) & ${mgrs[0]?.name || 'Manager'} (Manager) — Maximum 2 members reached`,
+      isFull: true,
+      hasRecruiter: true,
+      hasManager: true,
+      recruiter: recs[0],
+      manager: mgrs[0]
+    };
+  }
+
+  if (count === 1) {
+    if (recs.length === 1) {
+      return {
+        status: 'NEEDS_MANAGER',
+        label: '1/2 Slots (Needs Manager)',
+        scenario: 'Needs Hiring Manager',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80',
+        description: `Recruiter assigned (${recs[0]?.name || 'Recruiter'}). 1 Hiring Manager slot is open.`,
+        isFull: false,
+        hasRecruiter: true,
+        hasManager: false,
+        recruiter: recs[0],
+        manager: null
+      };
+    } else {
+      return {
+        status: 'NEEDS_RECRUITER',
+        label: '1/2 Slots (Needs Recruiter)',
+        scenario: 'Needs Recruiter',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80',
+        description: `Hiring Manager assigned (${mgrs[0]?.name || 'Manager'}). 1 Recruiter slot is open.`,
+        isFull: false,
+        hasRecruiter: false,
+        hasManager: true,
+        recruiter: null,
+        manager: mgrs[0]
+      };
+    }
+  }
+
+  if (count === 0) {
+    return {
+      status: 'EMPTY',
+      label: 'Empty Pod (0/2)',
+      scenario: 'Empty Pod',
+      badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+      description: '0/2 members. Assign 1 Recruiter and 1 Hiring Manager.',
+      isFull: false,
+      hasRecruiter: false,
+      hasManager: false,
+      recruiter: null,
+      manager: null
+    };
+  }
+
+  return {
+    status: 'CUSTOM',
+    label: `${count}/2 Members`,
+    scenario: `${recs.length} Rec, ${mgrs.length} Mgr`,
+    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80',
+    description: `${recs.length} Recruiter(s), ${mgrs.length} Hiring Manager(s)`,
+    isFull: count >= 2,
+    hasRecruiter: recs.length > 0,
+    hasManager: mgrs.length > 0,
+    recruiter: recs[0] || null,
+    manager: mgrs[0] || null
+  };
+};
 
 export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const [viewMode, setViewMode] = useState(initialView); // 'form' | 'directory' | 'groups'
@@ -357,6 +455,22 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
       return;
     }
 
+    const selRecs = staffMembers.filter(m => groupFormData.member_ids.includes(m.id) && m.role === 'RECRUITER');
+    const selMgrs = staffMembers.filter(m => groupFormData.member_ids.includes(m.id) && m.role === 'HIRING_MANAGER');
+
+    if (groupFormData.member_ids.length > 2) {
+      setGroupError('A hiring pod is strictly limited to 2 members (1 Recruiter and 1 Hiring Manager). To assign additional staff members, please create a new group.');
+      return;
+    }
+    if (selRecs.length > 1) {
+      setGroupError(`A hiring pod can only have 1 Recruiter (selected ${selRecs.length}: ${selRecs.map(r => r.name).join(', ')}). To pair recruiters with different hiring managers, please create separate groups.`);
+      return;
+    }
+    if (selMgrs.length > 1) {
+      setGroupError(`A hiring pod can only have 1 Hiring Manager (selected ${selMgrs.length}: ${selMgrs.map(m => m.name).join(', ')}). To pair hiring managers with different recruiters, please create separate groups.`);
+      return;
+    }
+
     setGroupError('');
     setGroupLoading(true);
 
@@ -422,10 +536,22 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
 
   const handleConfirmAddMembersToGroup = async () => {
     if (!managingGroup || selectedAddMemberIds.length === 0) return;
+    const currentMemberIds = Array.isArray(managingGroup.members) ? managingGroup.members.map(m => m.id) : [];
+    if (currentMemberIds.length >= 2) {
+      setActionMessage(`"${managingGroup.name}" is already full (2/2 members: 1 Recruiter + 1 Hiring Manager). Please create a new group to assign more staff.`);
+      setTimeout(() => setActionMessage(''), 4500);
+      return;
+    }
+    if (currentMemberIds.length + selectedAddMemberIds.length > 2) {
+      setActionMessage(`Cannot exceed 2 members per pod. Please select at most ${2 - currentMemberIds.length} member or create a new group.`);
+      setTimeout(() => setActionMessage(''), 4500);
+      return;
+    }
+
     setManagingLoading(true);
     try {
       await api.addStaffGroupMembers(managingGroup.id, selectedAddMemberIds);
-      setActionMessage(`Added ${selectedAddMemberIds.length} member${selectedAddMemberIds.length > 1 ? 's' : ''} to "${managingGroup.name}"!`);
+      setActionMessage(`Added member to "${managingGroup.name}"!`);
       setTimeout(() => setActionMessage(''), 4000);
       setManagingGroup(null);
       setSelectedAddMemberIds([]);
@@ -506,11 +632,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
             <button
               type="button"
               onClick={() => { setViewMode('directory'); setSuccess(false); }}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${
-                viewMode === 'directory'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'directory'
                   ? 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
-              }`}
+                }`}
             >
               <Users className="w-3.5 h-3.5 text-slate-700" />
               Staff Directory ({staffMembers.length})
@@ -518,11 +643,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
             <button
               type="button"
               onClick={() => setViewMode('form')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${
-                viewMode === 'form'
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'form'
                   ? 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
-              }`}
+                }`}
             >
               <UserPlus className="w-3.5 h-3.5 text-[#FF7043]" />
               + Add Staff Member
@@ -647,27 +771,24 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 <button
                   type="button"
                   onClick={() => setRoleFilter('ALL')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${
-                    roleFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${roleFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
+                    }`}
                 >
                   All ({staffMembers.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setRoleFilter('RECRUITER')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${
-                    roleFilter === 'RECRUITER' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${roleFilter === 'RECRUITER' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
+                    }`}
                 >
                   Recruiters ({recruiterCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => setRoleFilter('HIRING_MANAGER')}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${
-                    roleFilter === 'HIRING_MANAGER' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
-                  }`}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border-none cursor-pointer transition-all ${roleFilter === 'HIRING_MANAGER' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 bg-transparent hover:text-slate-900'
+                    }`}
                 >
                   Managers ({managerCount})
                 </button>
@@ -783,16 +904,14 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                           {/* Role Badge */}
                           <td className="py-4 px-5">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                                isRecruiter
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${isRecruiter
                                   ? 'bg-blue-50 text-blue-700 border-blue-200/80'
                                   : 'bg-purple-50 text-purple-700 border-purple-200/80'
-                              }`}
+                                }`}
                             >
                               <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isRecruiter ? 'bg-blue-500' : 'bg-purple-500'
-                                }`}
+                                className={`w-1.5 h-1.5 rounded-full ${isRecruiter ? 'bg-blue-500' : 'bg-purple-500'
+                                  }`}
                               />
                               {isRecruiter ? 'Recruiter' : 'Hiring Manager'}
                             </span>
@@ -1109,7 +1228,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
               <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
                 {groupSearchQuery || groupDeptFilter !== 'ALL'
                   ? 'Try clearing your search query or department filter.'
-                  : 'Create hiring pods with recruiters and hiring managers. Pod members can collaborate together on job postings, candidate evaluations, and interviews.'}
+                  : 'Create 2-member hiring pods (1 Recruiter + 1 Hiring Manager). Pod members collaborate on job postings and evaluations.'}
               </p>
               <button
                 type="button"
@@ -1125,6 +1244,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 const members = Array.isArray(group.members) ? group.members : [];
                 const recruitersInGroup = members.filter(m => m.role === 'RECRUITER');
                 const managersInGroup = members.filter(m => m.role === 'HIRING_MANAGER');
+                const capInfo = getGroupCapacityInfo(group, staffGroups);
 
                 return (
                   <div
@@ -1134,10 +1254,21 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                     {/* Card Header */}
                     <div className="p-5 pb-3">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-                          <Building2 className="w-3 h-3 text-indigo-500" />
-                          {group.department || 'General'}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                            <Building2 className="w-3 h-3 text-indigo-500" />
+                            {group.department || 'General'}
+                          </span>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${capInfo.badgeClass}`}>
+                            {capInfo.isFull ? <ShieldCheck className="w-3 h-3 text-emerald-600" /> : <Clock className="w-3 h-3 text-amber-600" />}
+                            {capInfo.label}
+                          </span>
+                          {capInfo.scenario && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                              {capInfo.scenario}
+                            </span>
+                          )}
+                        </div>
 
                         {/* Edit & Delete Action Buttons */}
                         <div className="flex items-center gap-1">
@@ -1164,8 +1295,12 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                         {group.name}
                       </h3>
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2 min-h-[32px]">
-                        {group.description || 'Dedicated hiring pod collaborating on sourcing and candidate evaluations.'}
+                        {group.description || 'Dedicated 2-member hiring pod collaborating on sourcing and candidate evaluations.'}
                       </p>
+                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-600 bg-slate-50/80 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                        <Info className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span className="truncate">{capInfo.description}</span>
+                      </div>
                     </div>
 
                     {/* Member Stats Pills */}
@@ -1173,15 +1308,15 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          {group.recruiter_count ?? recruitersInGroup.length} Recruiter{(group.recruiter_count ?? recruitersInGroup.length) === 1 ? '' : 's'}
+                          {group.recruiter_count ?? recruitersInGroup.length}/1 Recruiter
                         </span>
                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60">
                           <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                          {group.manager_count ?? managersInGroup.length} Manager{(group.manager_count ?? managersInGroup.length) === 1 ? '' : 's'}
+                          {group.manager_count ?? managersInGroup.length}/1 Manager
                         </span>
                       </div>
                       <span className="text-[11px] font-bold text-slate-600">
-                        {members.length} {members.length === 1 ? 'member' : 'members'}
+                        {members.length}/2 members
                       </span>
                     </div>
 
@@ -1190,15 +1325,26 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Assigned Members
+                            Assigned Members ({members.length}/2)
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenAddMembersToGroup(group)}
-                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 border-none bg-transparent cursor-pointer flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" /> Add
-                          </button>
+                          {capInfo.isFull ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAddMembersToGroup(group)}
+                              className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200/80 flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Pod has reached 2-member capacity (1 Recruiter + 1 Manager)"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Full (2/2)
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAddMembersToGroup(group)}
+                              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 border-none bg-transparent cursor-pointer flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" /> Add Member (1 Slot Open)
+                            </button>
+                          )}
                         </div>
 
                         {members.length === 0 ? (
@@ -1249,11 +1395,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
 
                                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                     <span
-                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                                        isRec
+                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isRec
                                           ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
                                           : 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                                      }`}
+                                        }`}
                                     >
                                       {isRec ? 'Recruiter' : 'Manager'}
                                     </span>
@@ -1354,9 +1499,8 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                           <div className="min-w-0">
                             <div className="text-xs font-bold text-slate-800 truncate">{m.name}</div>
                             <span
-                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-block ${
-                                isRec ? 'text-blue-700 bg-blue-50' : 'text-purple-700 bg-purple-50'
-                              }`}
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-block ${isRec ? 'text-blue-700 bg-blue-50' : 'text-purple-700 bg-purple-50'
+                                }`}
                             >
                               {isRec ? 'Recruiter' : 'Manager'}
                             </span>
@@ -1468,15 +1612,13 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, role: 'RECRUITER' })}
-                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${
-                      formData.role === 'RECRUITER'
+                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${formData.role === 'RECRUITER'
                         ? 'bg-blue-50/50 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs'
                         : 'bg-white border-slate-200/80 hover:bg-slate-50/60'
-                    }`}
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${
-                      formData.role === 'RECRUITER' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${formData.role === 'RECRUITER' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
+                      }`}>
                       {formData.role === 'RECRUITER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -1493,15 +1635,13 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, role: 'HIRING_MANAGER' })}
-                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${
-                      formData.role === 'HIRING_MANAGER'
+                    className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-3 ${formData.role === 'HIRING_MANAGER'
                         ? 'bg-purple-50/50 border-purple-500 ring-2 ring-purple-500/20 shadow-2xs'
                         : 'bg-white border-slate-200/80 hover:bg-slate-50/60'
-                    }`}
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${
-                      formData.role === 'HIRING_MANAGER' ? 'border-purple-600 bg-purple-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${formData.role === 'HIRING_MANAGER' ? 'border-purple-600 bg-purple-600' : 'border-slate-300'
+                      }`}>
                       {formData.role === 'HIRING_MANAGER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -1708,11 +1848,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                         return (
                           <label
                             key={grp.id}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                              isSelected
+                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isSelected
                                 ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-300/40'
                                 : 'bg-white border-slate-200/80 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <input
@@ -1805,11 +1944,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   <div className="space-y-2 pt-2 border-t border-slate-200/60 text-xs">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-400 font-medium">Assigned Role</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        formData.role === 'RECRUITER'
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${formData.role === 'RECRUITER'
                           ? 'bg-blue-50 text-blue-700 border border-blue-200/80'
                           : 'bg-purple-50 text-purple-700 border border-purple-200/80'
-                      }`}>
+                        }`}>
                         {formData.role.replace('_', ' ')}
                       </span>
                     </div>
@@ -1930,7 +2068,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
       {editingMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col max-h-[90vh]">
-            
+
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-2.5">
@@ -2063,15 +2201,13 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       role: 'RECRUITER',
                       title: editFormData.title && editFormData.title !== 'Hiring Manager' ? editFormData.title : 'Technical Recruiter'
                     })}
-                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${
-                      editFormData.role === 'RECRUITER'
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${editFormData.role === 'RECRUITER'
                         ? 'bg-blue-50/70 border-blue-400 ring-2 ring-blue-400/20'
                         : 'bg-white border-slate-200/80 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
-                    <div className={`w-3.5 h-3.5 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${
-                      editFormData.role === 'RECRUITER' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-3.5 h-3.5 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${editFormData.role === 'RECRUITER' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'
+                      }`}>
                       {editFormData.role === 'RECRUITER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -2087,15 +2223,13 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       role: 'HIRING_MANAGER',
                       title: editFormData.title && editFormData.title !== 'Technical Recruiter' ? editFormData.title : 'Hiring Manager'
                     })}
-                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${
-                      editFormData.role === 'HIRING_MANAGER'
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex items-start gap-2.5 ${editFormData.role === 'HIRING_MANAGER'
                         ? 'bg-purple-50/70 border-purple-400 ring-2 ring-purple-400/20'
                         : 'bg-white border-slate-200/80 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
-                    <div className={`w-3.5 h-3.5 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${
-                      editFormData.role === 'HIRING_MANAGER' ? 'border-purple-600 bg-purple-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-3.5 h-3.5 rounded-full mt-0.5 shrink-0 border flex items-center justify-center ${editFormData.role === 'HIRING_MANAGER' ? 'border-purple-600 bg-purple-600' : 'border-slate-300'
+                      }`}>
                       {editFormData.role === 'HIRING_MANAGER' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -2199,11 +2333,10 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       return (
                         <label
                           key={grp.id}
-                          className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                            isSelected
+                          className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${isSelected
                               ? 'bg-indigo-50 border-indigo-300'
                               : 'bg-white border-slate-200 hover:bg-slate-50'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <input
@@ -2344,24 +2477,117 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 />
               </div>
 
-              {/* Members Multi-select Section */}
+              {/* 2-Member Pod Capacity Banner */}
+              <div className="p-3.5 rounded-xl bg-indigo-50/80 border border-indigo-200/80">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                    Strict 2-Member Pod Rule: 1 Recruiter + 1 Hiring Manager
+                  </span>
+                  <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200 shadow-2xs">
+                    {groupFormData.member_ids.length} / 2 Slots Filled
+                  </span>
+                </div>
+                <p className="text-[11px] text-indigo-700/90 mt-1 leading-relaxed">
+                  Every hiring pod is strictly limited to 1 Recruiter and 1 Hiring Manager. To assign additional staff members, please create a new group.
+                </p>
+              </div>
+
+              {/* Slot 1 & Slot 2 Visual Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Slot 1: Recruiter */}
+                {(() => {
+                  const assignedRec = staffMembers.find(m => groupFormData.member_ids.includes(m.id) && m.role === 'RECRUITER');
+                  return (
+                    <div className="p-3.5 rounded-xl border border-blue-200/80 bg-blue-50/40 flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                          Slot 1: Recruiter (Max 1)
+                        </span>
+                        {assignedRec && (
+                          <button
+                            type="button"
+                            onClick={() => setGroupFormData(prev => ({ ...prev, member_ids: prev.member_ids.filter(id => id !== assignedRec.id) }))}
+                            className="text-[10px] text-rose-600 font-bold hover:underline bg-transparent border-none cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {assignedRec ? (
+                        <div className="flex items-center gap-2">
+                          {assignedRec.avatar_url ? (
+                            <img src={assignedRec.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover border border-blue-200" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#2C4470] text-white flex items-center justify-center font-bold text-xs">
+                              {assignedRec.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-800 truncate">{assignedRec.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono truncate">{assignedRec.email}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-400 italic py-1">
+                          No recruiter assigned yet. Select one below.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Slot 2: Hiring Manager */}
+                {(() => {
+                  const assignedMgr = staffMembers.find(m => groupFormData.member_ids.includes(m.id) && m.role === 'HIRING_MANAGER');
+                  return (
+                    <div className="p-3.5 rounded-xl border border-purple-200/80 bg-purple-50/40 flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                          Slot 2: Hiring Manager (Max 1)
+                        </span>
+                        {assignedMgr && (
+                          <button
+                            type="button"
+                            onClick={() => setGroupFormData(prev => ({ ...prev, member_ids: prev.member_ids.filter(id => id !== assignedMgr.id) }))}
+                            className="text-[10px] text-rose-600 font-bold hover:underline bg-transparent border-none cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {assignedMgr ? (
+                        <div className="flex items-center gap-2">
+                          {assignedMgr.avatar_url ? (
+                            <img src={assignedMgr.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover border border-purple-200" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#7C5CBF] text-white flex items-center justify-center font-bold text-xs">
+                              {assignedMgr.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-800 truncate">{assignedMgr.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono truncate">{assignedMgr.email}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-400 italic py-1">
+                          No hiring manager assigned yet. Select one below.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Members Selection Section */}
               <div className="pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                      Assign Pod Members
-                    </label>
-                    <span className="text-[11px] text-slate-400">
-                      {groupFormData.member_ids.length} selected
-                      {(() => {
-                        const selRecs = staffMembers.filter(m => groupFormData.member_ids.includes(m.id) && m.role === 'RECRUITER').length;
-                        const selMgrs = staffMembers.filter(m => groupFormData.member_ids.includes(m.id) && m.role === 'HIRING_MANAGER').length;
-                        return ` (${selRecs} Recruiters, ${selMgrs} Hiring Managers)`;
-                      })()}
-                    </span>
-                  </div>
-
-                  {/* Role filter buttons */}
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                    Select Staff Member
+                  </label>
                   <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold">
                     <button
                       type="button"
@@ -2392,7 +2618,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Search staff to assign..."
+                    placeholder="Search staff to assign by name or email..."
                     value={groupMemberSearch}
                     onChange={e => setGroupMemberSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50/50 focus:outline-none focus:border-indigo-600"
@@ -2415,29 +2641,51 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       .map(m => {
                         const isSelected = groupFormData.member_ids.includes(m.id);
                         const isRec = m.role === 'RECRUITER';
+                        const existingInRole = staffMembers.find(mem => mem.id !== m.id && groupFormData.member_ids.includes(mem.id) && mem.role === m.role);
 
                         return (
-                          <label
+                          <div
                             key={m.id}
-                            className={`p-2 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                            onClick={() => {
+                              if (isSelected) {
+                                setGroupFormData(prev => ({
+                                  ...prev,
+                                  member_ids: prev.member_ids.filter(id => id !== m.id)
+                                }));
+                                setGroupError('');
+                              } else {
+                                // If slot is already occupied, replace it
+                                const idsWithoutSameRole = groupFormData.member_ids.filter(id => {
+                                  const mem = staffMembers.find(s => s.id === id);
+                                  return mem && mem.role !== m.role;
+                                });
+                                setGroupFormData(prev => ({
+                                  ...prev,
+                                  member_ids: [...idsWithoutSameRole, m.id]
+                                }));
+                                if (existingInRole) {
+                                  setActionMessage(`Replaced ${existingInRole.name} with ${m.name} as pod ${isRec ? 'Recruiter' : 'Hiring Manager'}`);
+                                  setTimeout(() => setActionMessage(''), 3000);
+                                }
+                              }
+                            }}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                               isSelected
-                                ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-300/40'
+                                ? 'bg-indigo-50/80 border-indigo-300 ring-1 ring-indigo-300/40 shadow-xs'
                                 : 'bg-white border-slate-200/80 hover:bg-slate-50'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setGroupFormData(prev => ({ ...prev, member_ids: [...prev.member_ids, m.id] }));
-                                  } else {
-                                    setGroupFormData(prev => ({ ...prev, member_ids: prev.member_ids.filter(id => id !== m.id) }));
-                                  }
-                                }}
-                                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                              />
+                              <div
+                                className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                                  isSelected
+                                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                                    : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                              </div>
+
                               {m.avatar_url ? (
                                 <img
                                   src={m.avatar_url}
@@ -2458,18 +2706,40 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                               </div>
                             </div>
 
-                            <span
-                              className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                                isRec ? 'bg-blue-50 text-blue-700 border border-blue-200/60' : 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                              }`}
-                            >
-                              {isRec ? 'Recruiter' : 'Manager'}
-                            </span>
-                          </label>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isSelected ? (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                  ✓ Assigned
+                                </span>
+                              ) : existingInRole ? (
+                                <span className="text-[10px] text-slate-400">
+                                  Click to replace
+                                </span>
+                              ) : null}
+
+                              <span
+                                className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                  isRec ? 'bg-blue-50 text-blue-700 border border-blue-200/60' : 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                                }`}
+                              >
+                                {isRec ? 'Recruiter' : 'Manager'}
+                              </span>
+                            </div>
+                          </div>
                         );
                       })}
                   </div>
                 )}
+
+                <div className="mt-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200/60 text-[11px] text-slate-500 flex items-center justify-between flex-wrap gap-1">
+                  <span className="flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Want to assign additional staff members?</span>
+                  </span>
+                  <span className="font-semibold text-indigo-600">
+                    Create a new hiring group after saving this pod
+                  </span>
+                </div>
               </div>
 
               {/* Submit Buttons */}
@@ -2517,9 +2787,9 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900 truncate">
-                    Add Members to "{managingGroup.name}"
+                    Add Member to "{managingGroup.name}"
                   </h3>
-                  <p className="text-[11px] text-slate-500">Department: {managingGroup.department}</p>
+                  <p className="text-[11px] text-slate-500">Department: {managingGroup.department || 'General'}</p>
                 </div>
               </div>
               <button
@@ -2533,68 +2803,103 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
 
             {/* Modal Body */}
             <div className="p-5 space-y-3 overflow-y-auto flex-1">
-              <p className="text-xs text-slate-500">
-                Select recruiters and hiring managers to add to this pod:
-              </p>
-
               {(() => {
                 const currentMemberIds = Array.isArray(managingGroup.members) ? managingGroup.members.map(m => m.id) : [];
+                const isFull = currentMemberIds.length >= 2;
+                const existingRec = managingGroup.members?.find(m => m.role === 'RECRUITER');
+                const existingMgr = managingGroup.members?.find(m => m.role === 'HIRING_MANAGER');
                 const availableToAdd = staffMembers.filter(m => !currentMemberIds.includes(m.id));
 
-                if (availableToAdd.length === 0) {
+                if (isFull) {
                   return (
-                    <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                      <UserCheck className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
-                      <p className="text-xs font-semibold text-slate-700">All staff members are already in this pod!</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Provision new staff members in the directory first.</p>
+                    <div className="p-5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                        <h4 className="text-xs font-bold text-amber-900">
+                          Pod at Maximum Capacity (2/2 Members)
+                        </h4>
+                      </div>
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        This pod is full with <strong>1 Recruiter</strong> ({existingRec?.name || 'Assigned'}) and <strong>1 Hiring Manager</strong> ({existingMgr?.name || 'Assigned'}).
+                      </p>
+                      <div className="p-3 bg-white/90 rounded-xl border border-amber-200/60 text-xs text-slate-700 space-y-1">
+                        <div className="font-semibold text-slate-800 flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Want to add additional employees?</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                          Every hiring group is strictly limited to 2 members. To assign a new team member, please create a new hiring group or remove an existing member from this pod.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManagingGroup(null);
+                          handleOpenCreateGroup();
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer border-none shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Create New Hiring Group for New Member
+                      </button>
                     </div>
                   );
                 }
 
+                const neededRole = !existingRec ? 'RECRUITER' : 'HIRING_MANAGER';
+                const neededRoleLabel = neededRole === 'RECRUITER' ? 'Recruiter' : 'Hiring Manager';
+                const roleCandidates = availableToAdd.filter(m => m.role === neededRole);
+
                 return (
-                  <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                    {availableToAdd.map(m => {
-                      const isSelected = selectedAddMemberIds.includes(m.id);
-                      const isRec = m.role === 'RECRUITER';
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200/70 text-xs text-indigo-900 space-y-1">
+                      <div className="font-bold flex items-center justify-between">
+                        <span>1 Open Slot (Needs {neededRoleLabel})</span>
+                        <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-indigo-200 font-bold text-indigo-700">1/2 Full</span>
+                      </div>
+                      <p className="text-[11px] text-indigo-700 leading-relaxed">
+                        {existingRec ? `Recruiter slot is filled by ${existingRec.name}. Select 1 Hiring Manager to complete this pod.` : `Manager slot is filled by ${existingMgr?.name}. Select 1 Recruiter to complete this pod.`}
+                      </p>
+                    </div>
 
-                      return (
-                        <label
-                          key={m.id}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                            isSelected
-                              ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300/40'
-                              : 'bg-white border-slate-200/80 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedAddMemberIds(prev => [...prev, m.id]);
-                                } else {
-                                  setSelectedAddMemberIds(prev => prev.filter(id => id !== m.id));
-                                }
-                              }}
-                              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                            />
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-800 truncate">{m.name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono truncate">{m.email}</div>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                              isRec ? 'bg-blue-50 text-blue-700 border border-blue-200/60' : 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                            }`}
-                          >
-                            {isRec ? 'Recruiter' : 'Manager'}
-                          </span>
-                        </label>
-                      );
-                    })}
+                    {roleCandidates.length === 0 ? (
+                      <div className="p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-xs font-semibold text-slate-700">No available {neededRoleLabel}s found.</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Please add a {neededRoleLabel} in the Staff Directory first.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                        {roleCandidates.map(m => {
+                          const isSelected = selectedAddMemberIds.includes(m.id);
+                          return (
+                            <label
+                              key={m.id}
+                              className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300/40'
+                                  : 'bg-white border-slate-200/80 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="radio"
+                                  name="singleAddMember"
+                                  checked={isSelected}
+                                  onChange={() => setSelectedAddMemberIds([m.id])}
+                                  className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                />
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-800 truncate">{m.name}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono truncate">{m.email}</div>
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {neededRoleLabel}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -2603,7 +2908,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
             {/* Modal Footer */}
             <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/70">
               <span className="text-xs text-slate-500 font-medium">
-                {selectedAddMemberIds.length} selected
+                {selectedAddMemberIds.length} member selected
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -2611,24 +2916,26 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   onClick={() => setManagingGroup(null)}
                   className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200/60 border border-slate-200/80 bg-white cursor-pointer"
                 >
-                  Cancel
+                  Close
                 </button>
-                <button
-                  type="button"
-                  disabled={managingLoading || selectedAddMemberIds.length === 0}
-                  onClick={handleConfirmAddMembersToGroup}
-                  className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 border-none cursor-pointer flex items-center gap-1.5 shadow-[0_1px_2px_rgba(79,70,229,0.3)] transition-colors disabled:opacity-40"
-                >
-                  {managingLoading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Adding...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" /> Add to Pod
-                    </>
-                  )}
-                </button>
+                {Array.isArray(managingGroup?.members) && managingGroup.members.length < 2 && (
+                  <button
+                    type="button"
+                    disabled={managingLoading || selectedAddMemberIds.length === 0}
+                    onClick={handleConfirmAddMembersToGroup}
+                    className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 border-none cursor-pointer flex items-center gap-1.5 shadow-[0_1px_2px_rgba(79,70,229,0.3)] transition-colors disabled:opacity-40"
+                  >
+                    {managingLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Adding...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Complete Pod (2/2)
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
