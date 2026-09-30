@@ -1,119 +1,55 @@
+from datetime import datetime, timedelta
+from app.config import settings
 from app.database import SessionLocal, engine, Base
-from app.models import User, Company, Candidate, Job
-from app.models.company import CompanyMember
+from app.models import User, Candidate
 from app.core.security import hash_password
 
 def seed():
     Base.metadata.create_all(bind=engine)
+    try:
+        from app.database import init_db_extensions
+        init_db_extensions()
+    except Exception as e:
+        print(f"[SEED INIT EXTENSIONS WARNING] {e}")
     db = SessionLocal()
 
     try:
-        # 1. ADMIN: admin@uptrix.com / 123
-        admin_user = db.query(User).filter(User.email == "admin@uptrix.com").first()
-        if not admin_user:
-            admin_user = User(
-                email="admin@uptrix.com",
-                password_hash=hash_password("123"),
-                role="ADMIN",
-                is_verified=True
-            )
-            db.add(admin_user)
-            db.flush()
-        else:
-            admin_user.password_hash = hash_password("123")
-            admin_user.role = "ADMIN"
-            admin_user.is_verified = True
+        # 1. SUPERADMIN ACCOUNTS
+        env_sa_email = (getattr(settings, "SUPERADMIN_EMAIL", None) or "superadmin@intentpeople.com").strip().lower()
+        env_sa_pass = getattr(settings, "SUPERADMIN_PASSWORD", None) or "SuperAdmin@IntentPeople2026!"
+
+        superadmin_accounts = [
+            (env_sa_email, env_sa_pass)
+        ]
+
+        # Clean up superadmin@uptrix.com if present
+        uptrix_sa = db.query(User).filter(User.email.ilike("superadmin@uptrix.com")).first()
+        if uptrix_sa:
+            db.delete(uptrix_sa)
             db.flush()
 
-        # Company: Uptrix Corporation (assigned to admin)
-        uptrix_company = db.query(Company).filter(Company.company_name == "Uptrix Corporation").first()
-        if not uptrix_company:
-            uptrix_company = db.query(Company).filter(Company.company_name.ilike("%uptrix%")).first()
+        seen_sa = set()
+        for sa_email, sa_pwd in superadmin_accounts:
+            if not sa_email or sa_email in seen_sa:
+                continue
+            seen_sa.add(sa_email)
+            sa_user = db.query(User).filter(User.email.ilike(sa_email)).first()
+            if not sa_user:
+                sa_user = User(
+                    email=sa_email,
+                    password_hash=hash_password(sa_pwd),
+                    role="SUPERADMIN",
+                    is_verified=True
+                )
+                db.add(sa_user)
+                db.flush()
+            else:
+                sa_user.password_hash = hash_password(sa_pwd)
+                sa_user.role = "SUPERADMIN"
+                sa_user.is_verified = True
+                db.flush()
 
-        if not uptrix_company:
-            uptrix_company = Company(
-                user_id=admin_user.id,
-                company_name="Uptrix Corporation",
-                business_email="admin@uptrix.com",
-                phone="+91 98765 43210",
-                website="https://uptrix.dev",
-                industry="Digital Marketing & Cloud Media",
-                location="Hyderabad, Telangana, India",
-                about="Uptrix Corporation is a premier digital marketing platform connecting enterprise teams with elite growth engineering and performance marketing talent.",
-                logo_url="https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150&auto=format&fit=crop&q=80",
-                is_verified=True,
-                verification_status="VERIFIED"
-            )
-            db.add(uptrix_company)
-            db.flush()
-        else:
-            uptrix_company.user_id = admin_user.id
-            uptrix_company.business_email = "admin@uptrix.com"
-            uptrix_company.is_verified = True
-            uptrix_company.verification_status = "VERIFIED"
-            db.flush()
-
-        # 2. RECRUITER: recruiter@uptrix.com / 123
-        recruiter_user = db.query(User).filter(User.email == "recruiter@uptrix.com").first()
-        if not recruiter_user:
-            recruiter_user = User(
-                email="recruiter@uptrix.com",
-                password_hash=hash_password("123"),
-                role="RECRUITER",
-                is_verified=True
-            )
-            db.add(recruiter_user)
-            db.flush()
-        else:
-            recruiter_user.password_hash = hash_password("123")
-            recruiter_user.role = "RECRUITER"
-            recruiter_user.is_verified = True
-            db.flush()
-
-        recruiter_member = db.query(CompanyMember).filter(CompanyMember.user_id == recruiter_user.id).first()
-        if not recruiter_member:
-            db.add(CompanyMember(
-                company_id=uptrix_company.id,
-                user_id=recruiter_user.id,
-                name="Uptrix Recruiter",
-                role="RECRUITER",
-                title="Senior Technical Recruiter"
-            ))
-        else:
-            recruiter_member.company_id = uptrix_company.id
-            recruiter_member.role = "RECRUITER"
-
-        # 3. HIRING MANAGER: manager@uptrix.com / 123
-        manager_user = db.query(User).filter(User.email == "manager@uptrix.com").first()
-        if not manager_user:
-            manager_user = User(
-                email="manager@uptrix.com",
-                password_hash=hash_password("123"),
-                role="HIRING_MANAGER",
-                is_verified=True
-            )
-            db.add(manager_user)
-            db.flush()
-        else:
-            manager_user.password_hash = hash_password("123")
-            manager_user.role = "HIRING_MANAGER"
-            manager_user.is_verified = True
-            db.flush()
-
-        manager_member = db.query(CompanyMember).filter(CompanyMember.user_id == manager_user.id).first()
-        if not manager_member:
-            db.add(CompanyMember(
-                company_id=uptrix_company.id,
-                user_id=manager_user.id,
-                name="Varun Sharma",
-                role="HIRING_MANAGER",
-                title="VP of Marketing Engineering"
-            ))
-        else:
-            manager_member.company_id = uptrix_company.id
-            manager_member.role = "HIRING_MANAGER"
-
-        # 4. CANDIDATE: student@gmail.com / 123
+        # 2. CANDIDATE: student@gmail.com / 123
         student_user = db.query(User).filter(User.email == "student@gmail.com").first()
         if not student_user:
             student_user = User(
@@ -157,276 +93,9 @@ def seed():
             db.add(student_candidate)
         else:
             student_candidate.full_name = "Student Candidate"
-
-        # 5. JOBS: Add 10 published jobs for Uptrix Corporation (recruiter@uptrix.com)
-        seed_jobs = [
-            {
-                "title": "Senior Performance Marketing Lead",
-                "location": "Hyderabad, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Senior",
-                "min_experience": "5+ Years",
-                "salary_min": 1800000,
-                "salary_max": 2600000,
-                "salary_currency": "INR",
-                "skills": ["Meta Ads", "Google Ads", "Performance Marketing", "GA4", "ROAS Optimization", "Attribution Modeling"],
-                "specialization": "Paid Acquisition & Media Buying",
-                "ownership_level": "Team Lead",
-                "availability_requirement": "Immediate / 15-30 Days",
-                "must_have_capabilities": "Proven track record scaling Meta & Google ad spend profitably (> ₹50L/mo). Deep expertise in GA4, post-iOS tracking, and CAPI setup.",
-                "preferred_capabilities": "Experience leading creative strategy and collaborating with video editors and copywriters.",
-                "description": "Scale paid acquisition campaigns across Meta, Google Search & YouTube. Own multi-crore ad budgets and optimize full-funnel CAC to LTV metrics for high-growth client portfolios.",
-                "screening_questions": [
-                    {
-                        "id": "sq_seed_1",
-                        "question": "How many years of hands-on experience do you have managing Meta & Google Ads budgets?",
-                        "type": "choice",
-                        "options": ["1 - 2 years", "3 - 5 years", "6+ years"],
-                        "required": True
-                    },
-                    {
-                        "id": "sq_seed_2",
-                        "question": "What is the highest monthly ad budget you have independently managed?",
-                        "type": "choice",
-                        "options": ["Under ₹10 Lakhs", "₹10L - ₹50L", "₹50L - ₹1 Crore", "₹1 Crore+"],
-                        "required": True
-                    },
-                    {
-                        "id": "sq_seed_3",
-                        "question": "Are you comfortable working in our hybrid office model in Hyderabad?",
-                        "type": "yes_no",
-                        "options": ["Yes", "No"],
-                        "required": True
-                    },
-                    {
-                        "id": "sq_seed_4",
-                        "question": "Share a brief link or summary of your highest ROAS performance marketing campaign.",
-                        "type": "text",
-                        "options": [],
-                        "required": False
-                    }
-                ]
-            },
-            {
-                "title": "Full Stack Growth Engineer (React & Node.js)",
-                "location": "Bengaluru, India",
-                "work_mode": "Remote",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Senior",
-                "min_experience": "3-6 Years",
-                "salary_min": 1600000,
-                "salary_max": 2400000,
-                "salary_currency": "INR",
-                "skills": ["React.js", "Node.js", "TypeScript", "TailwindCSS", "PostgreSQL", "A/B Testing", "REST APIs"],
-                "specialization": "Web Engineering & Product Growth",
-                "ownership_level": "Individual Contributor",
-                "availability_requirement": "Immediate or 30 Days",
-                "must_have_capabilities": "Strong proficiency in React.js, modern JavaScript/TypeScript, RESTful API architecture, and database design.",
-                "preferred_capabilities": "Familiarity with marketing analytics APIs, server-side tracking, and web performance optimization.",
-                "description": "Build high-converting landing pages, interactive product funnels, and martech integrations. Collaborate with marketing and analytics teams to engineer viral user loops and seamless checkout flows.",
-                "screening_questions": [
-                    {
-                        "id": "sq_seed_5",
-                        "question": "How many years of production experience do you have with React.js and TypeScript?",
-                        "type": "choice",
-                        "options": ["1 - 2 years", "3 - 5 years", "5+ years"],
-                        "required": True
-                    },
-                    {
-                        "id": "sq_seed_6",
-                        "question": "Please link your GitHub profile or personal portfolio.",
-                        "type": "text",
-                        "options": [],
-                        "required": True
-                    }
-                ]
-            },
-            {
-                "title": "Technical SEO & Organic Growth Strategist",
-                "location": "Hyderabad, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Level",
-                "min_experience": "3-5 Years",
-                "salary_min": 1200000,
-                "salary_max": 1800000,
-                "salary_currency": "INR",
-                "skills": ["Technical SEO", "Ahrefs", "Semrush", "Google Search Console", "Schema Markup", "Core Web Vitals"],
-                "specialization": "Organic Search & Technical SEO",
-                "ownership_level": "Senior Specialist",
-                "availability_requirement": "Immediate",
-                "must_have_capabilities": "Deep knowledge of crawling algorithms, indexation protocols, structured data, schema markup, and JavaScript rendering.",
-                "preferred_capabilities": "Experience executing programmatic SEO campaigns and managing enterprise content migrations.",
-                "description": "Lead comprehensive site audits, programmatic SEO architectures, and core web vitals optimization. Drive organic search acquisition and revenue impact for enterprise brands."
-            },
-            {
-                "title": "Senior Social Media & Brand Content Architect",
-                "location": "Mumbai, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Senior",
-                "min_experience": "4-7 Years",
-                "salary_min": 1400000,
-                "salary_max": 2000000,
-                "salary_currency": "INR",
-                "skills": ["Brand Strategy", "LinkedIn Growth", "Content Marketing", "Copywriting", "Creative Direction", "Canva"],
-                "specialization": "Brand Identity & Viral Storytelling",
-                "ownership_level": "Lead Creator",
-                "availability_requirement": "30 Days",
-                "must_have_capabilities": "Exceptional written English, portfolio of viral organic campaigns, and mastery of LinkedIn & Instagram organic distribution algorithms.",
-                "preferred_capabilities": "Video editing proficiency in CapCut / Premiere Pro and influencer partnership management.",
-                "description": "Architect viral storytelling, thought leadership campaigns, and cross-channel content funnels across LinkedIn, YouTube, and Instagram to accelerate brand equity."
-            },
-            {
-                "title": "Data Analytics & Marketing Intelligence Specialist",
-                "location": "Remote (India)",
-                "work_mode": "Remote",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Senior",
-                "min_experience": "3-6 Years",
-                "salary_min": 1500000,
-                "salary_max": 2200000,
-                "salary_currency": "INR",
-                "skills": ["Google Analytics 4", "Looker Studio", "SQL", "BigQuery", "Attribution Modeling", "Tableau"],
-                "specialization": "Marketing Analytics & Business Intelligence",
-                "ownership_level": "Senior Analyst",
-                "availability_requirement": "Immediate",
-                "must_have_capabilities": "Expertise in SQL query optimization, BigQuery data pipelines, GA4 custom event tracking, and Looker Studio dashboarding.",
-                "preferred_capabilities": "Python data science libraries (Pandas, NumPy) and predictive churn modeling.",
-                "description": "Build automated marketing dashboards, customer cohorts, and predictive revenue models. Empower performance marketers with real-time attribution intelligence."
-            },
-            {
-                "title": "DevOps & Cloud Infrastructure Engineer (AWS)",
-                "location": "Hyderabad, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Senior",
-                "min_experience": "4-6 Years",
-                "salary_min": 1800000,
-                "salary_max": 2500000,
-                "salary_currency": "INR",
-                "skills": ["AWS", "Docker", "Kubernetes", "CI/CD", "Terraform", "PostgreSQL", "Linux"],
-                "specialization": "Cloud DevOps & Infrastructure",
-                "ownership_level": "Core Engineer",
-                "availability_requirement": "30 Days Notice",
-                "must_have_capabilities": "Hands-on production experience with AWS (ECS, RDS, S3, CloudFront), Docker containerization, and GitHub Actions CI/CD.",
-                "preferred_capabilities": "AWS Certified Solutions Architect certification and experience with Redis caching layers.",
-                "description": "Maintain highly reliable cloud microservices, automate CI/CD pipelines, optimize database queries, and ensure zero-downtime deployments for the Uptrix platform."
-            },
-            {
-                "title": "UI/UX Product Designer (Design Systems & SaaS)",
-                "location": "Bengaluru, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Level",
-                "min_experience": "3-5 Years",
-                "salary_min": 1300000,
-                "salary_max": 1900000,
-                "salary_currency": "INR",
-                "skills": ["Figma", "Design Systems", "Prototyping", "User Research", "Wireframing", "Micro-interactions"],
-                "specialization": "Product Design & UI Engineering",
-                "ownership_level": "Lead Designer",
-                "availability_requirement": "Immediate / 15 Days",
-                "must_have_capabilities": "World-class visual aesthetics, deep understanding of SaaS user flows, component libraries, and responsive mobile-first design.",
-                "preferred_capabilities": "Knowledge of TailwindCSS tokens and Framer motion prototyping.",
-                "description": "Craft intuitive, aesthetically exceptional user interfaces and scalable design systems for our portal, web applications, and marketing experiences."
-            },
-            {
-                "title": "Conversion Rate Optimization (CRO) & Funnel Specialist",
-                "location": "Remote (India)",
-                "work_mode": "Remote",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Senior",
-                "min_experience": "3-6 Years",
-                "salary_min": 1400000,
-                "salary_max": 2100000,
-                "salary_currency": "INR",
-                "skills": ["CRO", "VWO", "Hotjar", "Google Optimize", "User Testing", "Landing Page Optimization"],
-                "specialization": "Funnel Architecture & Experimentation",
-                "ownership_level": "Growth Specialist",
-                "availability_requirement": "Immediate",
-                "must_have_capabilities": "Extensive experience forming test hypotheses, executing qualitative user session replays, and running statistically valid A/B tests.",
-                "preferred_capabilities": "Basic frontend coding (HTML/CSS/JS) for rapid variant deployment.",
-                "description": "Design and execute high-velocity split testing programs. Optimize user journeys from initial ad impression to completed purchase and account retention."
-            },
-            {
-                "title": "Retention & Email Marketing Automation Manager",
-                "location": "Delhi NCR, India",
-                "work_mode": "Hybrid",
-                "job_type": "Full-Time",
-                "experience_level": "Mid-Level",
-                "min_experience": "3-5 Years",
-                "salary_min": 1100000,
-                "salary_max": 1700000,
-                "salary_currency": "INR",
-                "skills": ["Klaviyo", "HubSpot", "Lifecycle Marketing", "Email Automation", "Audience Segmentation", "SMS Marketing"],
-                "specialization": "Lifecycle & CRM Marketing",
-                "ownership_level": "Channel Lead",
-                "availability_requirement": "15-30 Days",
-                "must_have_capabilities": "Proven ability to build automated trigger flows (welcome, browse abandon, win-back) and deliver high deliverability domain reputations.",
-                "preferred_capabilities": "HTML email templating and dynamic liquid personalization syntax.",
-                "description": "Design automated customer lifecycle flows, re-engagement triggers, and personalized email drip sequences that maximize customer lifetime value."
-            },
-            {
-                "title": "Enterprise MarTech & Client Solutions Director",
-                "location": "Hyderabad, India",
-                "work_mode": "On-site",
-                "job_type": "Full-Time",
-                "experience_level": "Executive / Lead",
-                "min_experience": "7-10+ Years",
-                "salary_min": 2800000,
-                "salary_max": 4000000,
-                "salary_currency": "INR",
-                "skills": ["Client Relations", "MarTech Architecture", "Enterprise Sales", "Team Leadership", "Strategic Consulting"],
-                "specialization": "Enterprise Client Solutions",
-                "ownership_level": "Director",
-                "availability_requirement": "30-60 Days",
-                "must_have_capabilities": "Extensive leadership experience in global digital agencies, enterprise pitch wins, and cross-functional team orchestration.",
-                "preferred_capabilities": "MBA from a top-tier institution and deep network across tech & e-commerce C-suite executives.",
-                "description": "Lead strategic partnerships with Fortune 500 brands and enterprise clients. Oversee client delivery teams and guide digital transformation initiatives."
-            }
-        ]
-
-        jobs_added_count = 0
-        for jdata in seed_jobs:
-            existing_job = db.query(Job).filter(
-                Job.company_id == uptrix_company.id,
-                Job.title == jdata["title"]
-            ).first()
-            if not existing_job:
-                db.add(Job(
-                    company_id=uptrix_company.id,
-                    title=jdata["title"],
-                    description=jdata["description"],
-                    skills=jdata["skills"],
-                    experience_level=jdata["experience_level"],
-                    min_experience=jdata["min_experience"],
-                    salary_min=jdata["salary_min"],
-                    salary_max=jdata["salary_max"],
-                    salary_currency=jdata["salary_currency"],
-                    location=jdata["location"],
-                    work_mode=jdata["work_mode"],
-                    job_type=jdata["job_type"],
-                    status="PUBLISHED",
-                    specialization=jdata.get("specialization"),
-                    ownership_level=jdata.get("ownership_level"),
-                    availability_requirement=jdata.get("availability_requirement"),
-                    must_have_capabilities=jdata.get("must_have_capabilities"),
-                    preferred_capabilities=jdata.get("preferred_capabilities"),
-                    product_service=uptrix_company.product_service or "Uptrix Full-Service Digital Marketing & Engineering Platform",
-                    business_model=uptrix_company.business_model or "B2B Enterprise",
-                    growth_stage=uptrix_company.growth_stage or "Series B / Growth",
-                    screening_questions=jdata.get("screening_questions", [])
-                ))
-                jobs_added_count += 1
-            else:
-                if jdata.get("screening_questions") and not existing_job.screening_questions:
-                    existing_job.screening_questions = jdata.get("screening_questions")
-
         db.flush()
 
-        # 6. 20 CANDIDATE PROFILES
+        # 3. 20 CANDIDATE PROFILES
         seed_candidates = [
             {
                 "full_name": "Aarav Sharma",
@@ -1800,13 +1469,10 @@ def seed():
             db.flush()
 
         db.commit()
-        print("Database successfully seeded with requested users, jobs, and candidates:")
-        print(" - admin@uptrix.com (123) [ADMIN]")
-        print(" - recruiter@uptrix.com (123) [RECRUITER]")
-        print(" - manager@uptrix.com (123) [HIRING_MANAGER]")
-        print(" - student@gmail.com (123) [CANDIDATE]")
-        print(f" - Added/verified {len(seed_jobs)} jobs for Uptrix Corporation ({jobs_added_count} newly inserted)")
-        print(f" - Added/verified {len(seed_candidates)} candidate profiles ({candidates_added} newly created)")
+        print("Database successfully seeded:")
+        print(f" - Superadmin: {env_sa_email} ({env_sa_pass}) [SUPERADMIN]")
+        print(" - Candidate: student@gmail.com (123) [CANDIDATE]")
+        print(f" - Candidate profiles: {len(seed_candidates)} verified ({candidates_added} newly created)")
 
     except Exception as e:
         db.rollback()

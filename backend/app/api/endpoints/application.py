@@ -11,6 +11,7 @@ from app.api.deps import (
     can_user_access_job
 )
 from app.services.scoring import score_candidate_for_job, CandidateScorer
+from app.api.endpoints.payment import get_plan_config
 
 router = APIRouter(prefix="/applications", tags=["Applications & ATS"])
 
@@ -56,8 +57,51 @@ def _job_to_dict(job):
     }
 
 
-def _build_applicant_response(a, cand, job, cand_user=None):
-    """Build a single applicant response dict with fit_score data."""
+def _build_applicant_response(a, cand, job, cand_user=None, is_locked=False, lock_index=None, max_limit=None):
+    """Build a single applicant response dict with fit_score data and subscription locking."""
+    if is_locked:
+        limit_text = f"first {max_limit}" if max_limit else "plan limit"
+        return {
+            "id": a.id,
+            "job_id": a.job_id,
+            "job_title": job.title if job else "Position",
+            "job_location": job.location if job else "",
+            "job_work_mode": job.work_mode if job else "",
+            "group_id": getattr(job, "group_id", None) if job else None,
+            "group_name": job.group.name if (job and getattr(job, "group", None)) else None,
+            "interview_rounds": getattr(job, "interview_rounds", []) or [] if job else [],
+            "status": a.status,
+            "cover_letter": "•••••••••••• (Candidate profile locked. Upgrade your subscription plan to reveal.)",
+            "screening_answers": [],
+            "fit_score": a.fit_score,
+            "fit_breakdown": a.fit_breakdown,
+            "applied_at": a.applied_at.isoformat() if a.applied_at else None,
+            "is_locked": True,
+            "lock_index": lock_index,
+            "max_limit": max_limit,
+            "lock_reason": f"Plan limit reached (showing {limit_text} candidates). Upgrade your subscription plan to unlock full details for candidate #{lock_index or ''}.",
+            "candidate": {
+                "id": cand.id if cand else None,
+                "full_name": f"Candidate #{lock_index}" if lock_index else "Locked Candidate",
+                "email": "locked@upgrade-plan.uptrix",
+                "avatar_url": None,
+                "title": cand.title if cand else "Applicant",
+                "city": cand.city if cand else "",
+                "state": cand.state if cand else "",
+                "phone": "+91 ••••• •••••",
+                "summary": "This candidate is locked under your current subscription limit. Upgrade your plan to view full candidate profile, resume document, contact details, and pipeline stages.",
+                "skills": (cand.skills[:2] if (cand and cand.skills) else []) + ["+ more locked"],
+                "expertise": [],
+                "experience": [],
+                "education": [],
+                "certifications": [],
+                "hiring_preferences": {},
+                "resume_url": None,
+                "resume_filename": None,
+                "portfolio_url": None
+            }
+        }
+
     return {
         "id": a.id,
         "job_id": a.job_id,
@@ -73,6 +117,9 @@ def _build_applicant_response(a, cand, job, cand_user=None):
         "fit_score": a.fit_score,
         "fit_breakdown": a.fit_breakdown,
         "applied_at": a.applied_at.isoformat() if a.applied_at else None,
+        "is_locked": False,
+        "lock_index": lock_index,
+        "max_limit": max_limit,
         "candidate": {
             "id": cand.id if cand else None,
             "full_name": cand.full_name if cand else "Candidate",
@@ -94,6 +141,7 @@ def _build_applicant_response(a, cand, job, cand_user=None):
             "portfolio_url": cand.portfolio_url if cand else None
         }
     }
+
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -252,12 +300,21 @@ def get_job_applicants(job_id: int, user: models.User = Depends(get_current_user
     if not can_user_access_job(user, job, db):
         raise HTTPException(status_code=403, detail="You do not have permission to view applicants for this job")
 
+    company = job.company
+    cfg = get_plan_config(company.plan_type or "FREE", db) if company else {}
+    max_cands = (
+        company.max_candidates_per_job
+        if (company and company.max_candidates_per_job is not None)
+        else (cfg.get("max_candidates_per_job") if cfg and cfg.get("max_candidates_per_job") is not None else 999999)
+    )
+
     apps = db.query(models.Application).filter(models.Application.job_id == job_id).order_by(models.Application.id.desc()).all()
     result = []
-    for a in apps:
+    for idx, a in enumerate(apps):
         cand = db.query(models.Candidate).filter(models.Candidate.id == a.candidate_id).first()
         cand_user = db.query(models.User).filter(models.User.id == cand.user_id).first() if (cand and cand.user_id) else None
-        result.append(_build_applicant_response(a, cand, job, cand_user))
+        is_locked = (idx >= max_cands)
+        result.append(_build_applicant_response(a, cand, job, cand_user, is_locked=is_locked, lock_index=idx+1, max_limit=max_cands))
     return result
 
 
@@ -383,11 +440,23 @@ def get_company_all_applications(
 
     apps = db.query(models.Application).filter(models.Application.job_id.in_(list(job_map.keys()))).order_by(models.Application.id.desc()).all()
     result = []
+    from collections import defaultdict
+    job_cands_count = defaultdict(int)
+    cfg = get_plan_config(company.plan_type or "FREE", db) if company else {}
+    max_cands = (
+        company.max_candidates_per_job
+        if (company and company.max_candidates_per_job is not None)
+        else (cfg.get("max_candidates_per_job") if cfg and cfg.get("max_candidates_per_job") is not None else 999999)
+    )
+
     for a in apps:
-        cand = db.query(models.Candidate).filter(models.Candidate.id == a.candidate_id).first()
         job = job_map.get(a.job_id)
+        job_cands_count[a.job_id] += 1
+        current_idx = job_cands_count[a.job_id]
+        is_locked = (current_idx > max_cands)
+        cand = db.query(models.Candidate).filter(models.Candidate.id == a.candidate_id).first()
         cand_user = db.query(models.User).filter(models.User.id == cand.user_id).first() if (cand and cand.user_id) else None
-        result.append(_build_applicant_response(a, cand, job, cand_user))
+        result.append(_build_applicant_response(a, cand, job, cand_user, is_locked=is_locked, lock_index=current_idx, max_limit=max_cands))
     return result
 
 

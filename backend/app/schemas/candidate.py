@@ -11,6 +11,7 @@ class CandidateProfileUpdate(BaseModel):
     summary: Optional[str] = None
     skills: Optional[List[str]] = None
     portfolio_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
     avatar_url: Optional[str] = None
     cover_url: Optional[str] = None
     experience: Optional[List[dict]] = None

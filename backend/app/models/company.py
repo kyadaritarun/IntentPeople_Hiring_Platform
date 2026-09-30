@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -13,7 +13,16 @@ class Company(Base):
     phone = Column(String, nullable=True)
     website = Column(String, nullable=True)
     industry = Column(String, nullable=True, default="Digital Marketing")
+    primary_industry = Column(String, nullable=True)
+    sub_industry = Column(String, nullable=True)
+    organisation_type = Column(String, nullable=True)  # Private Limited, Public, Partnership, Sole Proprietorship, Non-Profit, Startup
+    company_size = Column(String, nullable=True)       # 1-10, 11-50, 51-200, 201-500, 501-1000, 1000+
+    contact_person = Column(String, nullable=True)
     location = Column(String, nullable=True)
+    headquarters_location = Column(String, nullable=True)
+    other_locations = Column(Text, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    year_founded = Column(String, nullable=True)
     about = Column(Text, nullable=True)
     logo_url = Column(String, nullable=True)
     product_service = Column(Text, nullable=True)
@@ -29,6 +38,21 @@ class Company(Base):
     success_horizon = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)
     verification_status = Column(String, default="PENDING")  # PENDING, VERIFIED, REJECTED
+    is_active = Column(Boolean, default=True)
+    subdomain = Column(String, unique=True, nullable=True, index=True)
+    
+    # Subscription & Plan details: FREE, PLAN_4999, PLAN_14999
+    plan_type = Column(String, default="FREE")
+    plan_status = Column(String, default="ACTIVE") # PENDING, ACTIVE, EXPIRED
+    plan_activated_at = Column(DateTime, nullable=True)
+    plan_expires_at = Column(DateTime, nullable=True)
+    max_roles = Column(Integer, default=1)
+    max_jobs = Column(Integer, default=1)
+    max_candidates_per_job = Column(Integer, default=15)
+    sidebar_access = Column(JSON, nullable=True)  # Custom sidebar access override
+    razorpay_order_id = Column(String, nullable=True)
+    razorpay_payment_id = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="company_profile")
@@ -103,4 +127,72 @@ class StaffGroupMember(Base):
 
     group = relationship("StaffGroup", back_populates="members")
     member = relationship("CompanyMember", back_populates="group_memberships")
+
+
+class PaymentTransaction(Base):
+    __tablename__ = "portal_payment_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("portal_companies.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("portal_users.id", ondelete="CASCADE"), nullable=False)
+    plan_id = Column(String, nullable=False)  # 'FREE', 'PLAN_4999', 'PLAN_14999'
+    amount = Column(Integer, nullable=False)  # In INR (e.g. 0, 4999, 14999)
+    currency = Column(String, default="INR")
+    razorpay_order_id = Column(String, nullable=True)
+    razorpay_payment_id = Column(String, nullable=True)
+    razorpay_signature = Column(String, nullable=True)
+    status = Column(String, default="SUCCESS")  # 'SUCCESS', 'FAILED', 'PENDING'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PlanConfig(Base):
+    __tablename__ = "portal_plan_configs"
+
+    id = Column(String, primary_key=True)  # 'FREE', 'PLAN_4999', 'PLAN_14999'
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False, default=0)
+    price_display = Column(String, nullable=False, default="₹0")
+    billing = Column(String, nullable=False, default="Free Trial")
+    duration_days = Column(Integer, nullable=False, default=365)
+    max_roles = Column(Integer, nullable=False, default=1)
+    max_jobs = Column(Integer, nullable=False, default=1)
+    max_candidates_per_job = Column(Integer, nullable=False, default=15)
+    badge = Column(String, nullable=True, default="")
+    is_popular = Column(Boolean, default=False)
+    description = Column(Text, nullable=True)
+    features = Column(JSON, default=list)
+    sidebar_access = Column(JSON, default=dict)  # Role-based sidebar permissions
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class VendorInvitation(Base):
+    __tablename__ = "portal_vendor_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, nullable=False, index=True)
+    vendor_name = Column(String, nullable=False)
+    vendor_email = Column(String, nullable=False, index=True)
+    vendor_phone = Column(String, nullable=True)
+    company_name = Column(String, nullable=False)
+    subdomain = Column(String, nullable=False, index=True)
+    price = Column(Integer, nullable=False, default=0)
+    currency = Column(String, default="INR")
+    validity_days = Column(Integer, nullable=False, default=30)
+    billing_note = Column(String, nullable=True)
+    max_roles = Column(Integer, nullable=False, default=2)
+    max_jobs = Column(Integer, nullable=False, default=5)
+    max_candidates_per_job = Column(Integer, nullable=False, default=100)
+    sidebar_access = Column(JSON, nullable=True)
+    status = Column(String, default="PENDING")  # PENDING, PAID, CANCELLED, EXPIRED
+    created_by_user_id = Column(Integer, ForeignKey("portal_users.id"), nullable=True)
+    created_company_id = Column(Integer, ForeignKey("portal_companies.id"), nullable=True)
+    created_user_id = Column(Integer, ForeignKey("portal_users.id"), nullable=True)
+    generated_password = Column(String, nullable=True)
+    razorpay_order_id = Column(String, nullable=True)
+    razorpay_payment_id = Column(String, nullable=True)
+    payment_completed_at = Column(DateTime, nullable=True)
+    invitation_sent_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 

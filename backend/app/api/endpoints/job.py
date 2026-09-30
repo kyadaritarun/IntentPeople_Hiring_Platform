@@ -11,6 +11,7 @@ from app.api.deps import (
     get_scoped_jobs_query,
     can_user_access_job
 )
+from app.core.job_hash import encode_job_id, decode_job_id
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -49,6 +50,7 @@ def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, loca
         applicant_count = db.query(models.Application).filter(models.Application.job_id == j.id).count()
         result.append({
             "id": j.id,
+            "share_code": encode_job_id(j.id),
             "title": j.title,
             "description": j.description,
             "skills": j.skills or [],
@@ -131,6 +133,7 @@ def get_my_jobs(
         }
         result.append({
             "id": j.id,
+            "share_code": encode_job_id(j.id),
             "title": j.title,
             "description": j.description,
             "skills": j.skills or [],
@@ -204,6 +207,16 @@ def create_job(data: schemas.JobCreate, user: models.User = Depends(get_current_
         ).first()
         if not grp:
             raise HTTPException(status_code=404, detail="Selected hiring group not found")
+
+    # Enforce job posting limit according to subscription plan
+    existing_jobs_count = db.query(models.Job).filter(models.Job.company_id == company.id).count()
+    max_jobs = company.max_jobs or (4 if company.plan_type == 'PLAN_4999' else (8 if company.plan_type == 'PLAN_14999' else 1))
+    if existing_jobs_count >= max_jobs:
+        plan_name = "₹4,999 (45-Day) Plan" if company.plan_type == 'PLAN_4999' else ("₹14,999/Month Plan" if company.plan_type == 'PLAN_14999' else "Free Plan")
+        raise HTTPException(
+            status_code=403,
+            detail=f"Job posting limit reached ({existing_jobs_count}/{max_jobs}) for your {plan_name}. Please upgrade your subscription plan to post additional job requisitions."
+        )
 
     job = models.Job(
         company_id=company.id,
@@ -380,6 +393,7 @@ def get_saved_jobs(user: models.User = Depends(get_current_user), db: Session = 
         results.append({
             "id": j.id,
             "job_id": j.id,
+            "share_code": encode_job_id(j.id),
             "title": j.title,
             "company": company.company_name if company else "Digital Agency",
             "company_id": company.id if company else None,
@@ -433,4 +447,88 @@ def unsave_job(job_id: int, user: models.User = Depends(get_current_user), db: S
         db.commit()
 
     return {"message": "Job removed from saved list", "saved": False, "job_id": job_id}
+
+@router.get("/{job_identifier}")
+def get_job(job_identifier: str, db: Session = Depends(get_db)):
+    """Fetch details of a specific job by short code or ID (public access for shared links)."""
+    real_id = decode_job_id(job_identifier)
+    if not real_id:
+        raise HTTPException(status_code=404, detail="Job position not found")
+
+    j = db.query(models.Job).filter(models.Job.id == real_id).first()
+    if not j:
+        raise HTTPException(status_code=404, detail="Job position not found")
+
+    # Prevent public access to drafts, closed, or unpublished jobs
+    if j.status != "PUBLISHED":
+        raise HTTPException(status_code=404, detail="This job opening is currently unavailable or inactive")
+
+    company = db.query(models.Company).filter(models.Company.id == j.company_id).first()
+    b_context = {
+        "product_service": j.product_service or (company.product_service if company else "") or "",
+        "business_model": j.business_model or (company.business_model if company else "") or "",
+        "growth_stage": j.growth_stage or (company.growth_stage if company else "") or "",
+        "target_audience": j.target_audience or (company.target_audience if company else "") or "",
+        "ideal_customer_profile": j.ideal_customer_profile or (company.ideal_customer_profile if company else "") or ""
+    }
+    h_need = {
+        "business_problem": j.business_problem or (company.business_problem if company else "") or "",
+        "expected_outcome": j.expected_outcome or (company.expected_outcome if company else "") or "",
+        "team_support": j.team_support or (company.team_support if company else "") or "",
+        "monthly_budget_range": j.monthly_budget_range or (company.monthly_budget_range if company else "") or "",
+        "decision_authority": j.decision_authority or (company.decision_authority if company else "") or "",
+        "success_horizon": j.success_horizon or (company.success_horizon if company else "") or ""
+    }
+    applicant_count = db.query(models.Application).filter(models.Application.job_id == j.id).count()
+
+    return {
+        "id": j.id,
+        "share_code": encode_job_id(j.id),
+        "title": j.title,
+        "description": j.description,
+        "skills": j.skills or [],
+        "experience_level": j.experience_level or j.ownership_level,
+        "ownership_level": j.ownership_level,
+        "specialization": j.specialization,
+        "must_have_capabilities": j.must_have_capabilities,
+        "preferred_capabilities": j.preferred_capabilities,
+        "availability_requirement": j.availability_requirement,
+        "min_experience": j.min_experience,
+        "salary_min": j.salary_min,
+        "salary_max": j.salary_max,
+        "salary_currency": j.salary_currency,
+        "location": j.location,
+        "work_mode": j.work_mode,
+        "job_type": j.job_type,
+        "status": j.status,
+        "group_id": j.group_id,
+        "group_name": j.group.name if j.group else None,
+        "screening_questions": j.screening_questions or [],
+        "interview_rounds": j.interview_rounds or [],
+        "applicant_count": applicant_count,
+        "created_at": j.created_at.isoformat() if j.created_at else None,
+        "business_context": b_context,
+        "hiring_need": h_need,
+        "company": {
+            "id": company.id if company else None,
+            "company_name": company.company_name if company else "Digital Agency",
+            "logo_url": company.logo_url if company else None,
+            "is_verified": company.is_verified if company else False,
+            "website": company.website if company else "",
+            "industry": company.industry if company else "Digital Marketing",
+            "about": company.about if company else "",
+            "location": company.location if company else "",
+            "product_service": company.product_service if company else "",
+            "business_model": company.business_model if company else "",
+            "growth_stage": company.growth_stage if company else "",
+            "target_audience": company.target_audience if company else "",
+            "ideal_customer_profile": company.ideal_customer_profile if company else "",
+            "business_problem": company.business_problem if company else "",
+            "expected_outcome": company.expected_outcome if company else "",
+            "team_support": company.team_support if company else "",
+            "monthly_budget_range": company.monthly_budget_range if company else "",
+            "decision_authority": company.decision_authority if company else "",
+            "success_horizon": company.success_horizon if company else ""
+        }
+    }
 

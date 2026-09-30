@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import {
   Briefcase, Plus, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Compass,
   HelpCircle, Trash2, ListPlus, Sparkles, CheckSquare, X, ChevronDown,
-  DollarSign, MapPin, Layers, Award, Target, FileText, Calendar, Clock, ArrowRight
+  DollarSign, MapPin, Layers, Award, Target, FileText, Calendar, Clock, ArrowRight,
+  Lock, Crown
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import PlanSelectionModal from '../../components/PlanSelectionModal';
 
 const ROUND_PRESETS = {
   2: [
@@ -116,6 +118,19 @@ export default function PostJob({ setActiveTab }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [totalJobsCount, setTotalJobsCount] = useState(0);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const planType = compProfile.plan_type || 'FREE';
+  const maxJobs = compProfile.max_jobs || (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1));
+  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+  const isJobLimitReached = totalJobsCount >= maxJobs;
+
+  React.useEffect(() => {
+    (api.getMyJobs ? api.getMyJobs() : api.getJobs()).then(j => {
+      if (Array.isArray(j)) setTotalJobsCount(j.length);
+    }).catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (api.getStaffGroups) {
@@ -275,7 +290,11 @@ export default function PostJob({ setActiveTab }) {
         setActiveTab?.('manage_jobs');
       }, 1500);
     } catch (err) {
-      setError(err.message || 'Failed to post job requisition.');
+      const msg = err.message || 'Failed to post job requisition.';
+      setError(msg);
+      if (msg.toLowerCase().includes('plan') || msg.toLowerCase().includes('limit') || msg.toLowerCase().includes('upgrade')) {
+        setShowUpgradeModal(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -311,17 +330,59 @@ export default function PostJob({ setActiveTab }) {
           </p>
         </div>
 
-        {setActiveTab && (
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
             type="button"
-            onClick={() => setActiveTab('manage_jobs')}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            onClick={() => setShowUpgradeModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Manage Plan & Job Limits"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Jobs</span>
+            <Crown className="w-3.5 h-3.5 text-amber-600" />
+            <span>Jobs: {totalJobsCount}/{maxJobs}</span>
+            <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
+              Upgrade
+            </span>
           </button>
-        )}
+
+          {setActiveTab && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('manage_jobs')}
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Jobs</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Plan Limits Banner */}
+      {isJobLimitReached && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-white border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-black text-slate-900 m-0 text-sm">
+                Job Requisitions Limit Reached ({totalJobsCount}/{maxJobs})
+              </h4>
+              <p className="text-slate-600 mt-0.5 m-0 text-[11.5px]">
+                Your current subscription ({planName}) allows up to {maxJobs} job postings. Upgrade your plan to post more positions and increase candidate pipeline capacity.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+          >
+            <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
+            <span>Upgrade Plan</span>
+          </button>
+        </div>
+      )}
 
       {/* Success Notification */}
       {success && (
@@ -1100,27 +1161,51 @@ export default function PostJob({ setActiveTab }) {
               </button>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer border-none"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Publishing Requisition...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Publish Job Requisition</span>
-                </>
-              )}
-            </button>
+            {isJobLimitReached ? (
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer border-none"
+              >
+                <Crown className="w-4 h-4 text-amber-200" />
+                <span>Job Limit Reached ({totalJobsCount}/{maxJobs}) — Upgrade Plan</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer border-none"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Publishing Requisition...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Publish Job Requisition</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
       </form>
+
+      {/* Plan Selection / Upgrade Modal */}
+      {showUpgradeModal && (
+        <PlanSelectionModal
+          isOpen={true}
+          onClose={() => setShowUpgradeModal(false)}
+          triggerReason={`You have reached your limit of ${maxJobs} job postings under ${planName}. Upgrade to post more positions and increase candidate capacity.`}
+          onSuccess={() => {
+            setShowUpgradeModal(false);
+            api.getJobs().then(j => setTotalJobsCount(Array.isArray(j) ? j.length : 0)).catch(() => {});
+          }}
+        />
+      )}
     </div>
   );
 }

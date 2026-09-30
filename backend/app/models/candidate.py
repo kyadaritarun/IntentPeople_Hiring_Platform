@@ -24,6 +24,7 @@ class Candidate(Base):
     resume_url = Column(String, nullable=True)
     resume_filename = Column(String, nullable=True)
     portfolio_url = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     cover_url = Column(String, nullable=True)
     views_count = Column(Integer, default=0)

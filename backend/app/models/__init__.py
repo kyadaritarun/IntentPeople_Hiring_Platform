@@ -1,6 +1,6 @@
 from app.models.user import User, OTPVerification
 from app.models.candidate import Candidate
-from app.models.company import Company, CompanyMember, StaffDocument, StaffGroup, StaffGroupMember
+from app.models.company import Company, CompanyMember, StaffDocument, StaffGroup, StaffGroupMember, PaymentTransaction, PlanConfig, VendorInvitation
 from app.models.job import Job
 from app.models.application import Application
 from app.models.support import SupportTicket
@@ -20,6 +20,9 @@ __all__ = [
     "StaffDocument",
     "StaffGroup",
     "StaffGroupMember",
+    "PaymentTransaction",
+    "PlanConfig",
+    "VendorInvitation",
     "Job",
     "Application",
     "SupportTicket",

@@ -1,4 +1,22 @@
-const API_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '') + '/api';
+function getApiBaseUrl() {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname.toLowerCase();
+    const proto = window.location.protocol;
+    // In production on intentpeople.com or any subdomain (e.g. apexrecruits.intentpeople.com)
+    if (host === 'intentpeople.com' || host.endsWith('.intentpeople.com')) {
+      return `${proto}//backend.intentpeople.com/api`;
+    }
+  }
+
+  const envUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '').trim();
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '') + '/api';
+  }
+
+  return '/api';
+}
+
+const API_BASE = getApiBaseUrl();
 
 function getAuthHeaders() {
   const token = localStorage.getItem('uptrix_token');
@@ -52,6 +70,24 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
+    });
+    return handleResponse(res);
+  },
+
+  async forgotPassword(email) {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return handleResponse(res);
+  },
+
+  async resetPassword(payload) {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
     return handleResponse(res);
   },
@@ -208,6 +244,11 @@ export const api = {
   async getJobs(params = {}) {
     const query = new URLSearchParams(params).toString();
     const res = await fetch(`${API_BASE}/jobs${query ? `?${query}` : ''}`);
+    return handleResponse(res);
+  },
+
+  async getJobById(jobId) {
+    const res = await fetch(`${API_BASE}/jobs/${jobId}`);
     return handleResponse(res);
   },
 
@@ -765,6 +806,238 @@ export const api = {
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
     });
     return handleResponse(res);
+  },
+
+  // ── Subscription Plans & Razorpay Payments ────────────────────────
+  async getSubscriptionPlans() {
+    const res = await fetch(`${API_BASE}/payments/plans`);
+    return handleResponse(res);
+  },
+
+  async getCurrentSubscription() {
+    const res = await fetch(`${API_BASE}/payments/current`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async activateFreePlan() {
+    const res = await fetch(`${API_BASE}/payments/activate-free`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async createRazorpayOrder(planId) {
+    const res = await fetch(`${API_BASE}/payments/razorpay/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ plan_id: planId })
+    });
+    return handleResponse(res);
+  },
+
+  async verifyRazorpayPayment(paymentData) {
+    const res = await fetch(`${API_BASE}/payments/razorpay/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(paymentData)
+    });
+    return handleResponse(res);
+  },
+
+  // ── Superadmin Master Management ─────────────────────────────────────
+  async superadminLogin(email, password) {
+    const res = await fetch(`${API_BASE}/superadmin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    return handleResponse(res);
+  },
+
+  async seedSuperadmin() {
+    const res = await fetch(`${API_BASE}/superadmin/seed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminStats() {
+    const res = await fetch(`${API_BASE}/superadmin/stats`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminCompanies(params = {}) {
+    const query = new URLSearchParams();
+    if (params.q) query.append('q', params.q);
+    if (params.plan_type) query.append('plan_type', params.plan_type);
+    if (params.plan_status) query.append('plan_status', params.plan_status);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/companies${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async updateCompanyPlan(companyId, data) {
+    const res = await fetch(`${API_BASE}/superadmin/companies/${companyId}/plan`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async toggleCompanyVerification(companyId, { is_verified, verification_status }) {
+    const res = await fetch(`${API_BASE}/superadmin/companies/${companyId}/verification`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ is_verified, verification_status })
+    });
+    return handleResponse(res);
+  },
+
+  async toggleCompanyStatus(companyId, isActive, reason = '') {
+    const res = await fetch(`${API_BASE}/superadmin/companies/${companyId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ is_active: isActive, reason })
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminCandidates(params = {}) {
+    const query = new URLSearchParams();
+    if (params.q) query.append('q', params.q);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/candidates${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async toggleCandidateVerification(candidateId, is_verified) {
+    const res = await fetch(`${API_BASE}/superadmin/candidates/${candidateId}/verification`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ is_verified })
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminRecruiters(params = {}) {
+    const query = new URLSearchParams();
+    if (params.q) query.append('q', params.q);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/recruiters${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminPayments(params = {}) {
+    const query = new URLSearchParams();
+    if (params.status_filter) query.append('status_filter', params.status_filter);
+    if (params.plan_id) query.append('plan_id', params.plan_id);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/payments${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminPlanConfigs() {
+    const res = await fetch(`${API_BASE}/superadmin/plans`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async updateSuperadminPlanConfig(planId, data) {
+    const res = await fetch(`${API_BASE}/superadmin/plans/${planId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  // Superadmin Vendor Onboarding & Custom Portals
+  async getSuperadminVendorInvitations(params = {}) {
+    const query = new URLSearchParams();
+    if (params.q) query.append('q', params.q);
+    if (params.status_filter) query.append('status_filter', params.status_filter);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/vendor-invitations${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async createSuperadminVendorInvitation(data) {
+    const res = await fetch(`${API_BASE}/superadmin/vendor-invitations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async resendSuperadminVendorInvitation(invitationId) {
+    const res = await fetch(`${API_BASE}/superadmin/vendor-invitations/${invitationId}/resend`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async simulateSuperadminVendorPayment(invitationId) {
+    const res = await fetch(`${API_BASE}/superadmin/vendor-invitations/${invitationId}/simulate-payment`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async revokeSuperadminVendorInvitation(invitationId) {
+    const res = await fetch(`${API_BASE}/superadmin/vendor-invitations/${invitationId}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  // Public Vendor Payment & Tenant APIs
+  async verifyVendorPaymentToken(token) {
+    const res = await fetch(`${API_BASE}/vendor-invitations/verify/${token}`);
+    return handleResponse(res);
+  },
+
+  async createVendorCheckoutOrder(token) {
+    const res = await fetch(`${API_BASE}/vendor-invitations/checkout/create-order/${token}`, {
+      method: 'POST'
+    });
+    return handleResponse(res);
+  },
+
+  async completeVendorCheckout(token, paymentData = {}) {
+    const res = await fetch(`${API_BASE}/vendor-invitations/checkout/complete/${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData)
+    });
+    return handleResponse(res);
+  },
+
+  async getVendorTenantDetails(subdomain) {
+    const res = await fetch(`${API_BASE}/vendor-invitations/tenant/${subdomain}`);
+    return handleResponse(res);
   }
 };
+
 

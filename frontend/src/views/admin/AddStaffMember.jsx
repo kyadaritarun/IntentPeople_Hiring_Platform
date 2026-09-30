@@ -5,9 +5,11 @@ import {
   Users, Check, ArrowRight, Camera, Upload,
   Loader2, Search, Trash2, Plus, RefreshCw, X, Folder, FileCheck, Clock,
   Pencil, Phone, MapPin, Sparkles, ChevronDown, ChevronUp, Layers, Building2, UserCheck, Tag, Filter,
-  ShieldCheck, Info, HelpCircle
+  ShieldCheck, Info, HelpCircle, Crown
 } from 'lucide-react';
 import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
+import PlanSelectionModal from '../../components/PlanSelectionModal';
 
 const getGroupCapacityInfo = (group, allGroups = []) => {
   const members = Array.isArray(group?.members) ? group.members : [];
@@ -107,7 +109,9 @@ const getGroupCapacityInfo = (group, allGroups = []) => {
 };
 
 export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
+  const { user, refreshUser } = useAuth();
   const [viewMode, setViewMode] = useState(initialView); // 'form' | 'directory' | 'groups'
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Team Directory State
   const [teamMembers, setTeamMembers] = useState([]);
@@ -203,6 +207,9 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const loadTeamMembers = async () => {
     setLoadingTeam(true);
     try {
+      if (refreshUser) {
+        refreshUser().catch(() => {});
+      }
       const [membersData, docsData, groupsData] = await Promise.all([
         api.getTeamMembers().catch(() => []),
         api.getStaffDocuments().catch(() => []),
@@ -600,6 +607,13 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const recruiterCount = staffMembers.filter(m => m.role === 'RECRUITER').length;
   const managerCount = staffMembers.filter(m => m.role === 'HIRING_MANAGER').length;
 
+  const planType = user?.profile?.plan_type || 'FREE';
+  const maxRoles = user?.profile?.max_roles !== undefined
+    ? Math.max(Number(user.profile.max_roles), 1)
+    : 1;
+  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+  const isRoleLimitReached = staffMembers.length >= maxRoles;
+
   return (
     <div className="min-h-full bg-[#F7F8FB] p-4 sm:p-6 lg:p-8 space-y-6 select-text">
 
@@ -628,29 +642,44 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
 
         {/* View Switcher Tabs (Only shown when viewing Staff Directory / Add Staff Member) */}
         {viewMode !== 'groups' && (
-          <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => { setViewMode('directory'); setSuccess(false); }}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'directory'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 bg-transparent'
-                }`}
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Manage Plan & Role Limits"
             >
-              <Users className="w-3.5 h-3.5 text-slate-700" />
-              Staff Directory ({staffMembers.length})
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span>Roles: {staffMembers.length}/{maxRoles}</span>
+              <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
+                Upgrade
+              </span>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('form')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'form'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 bg-transparent'
-                }`}
-            >
-              <UserPlus className="w-3.5 h-3.5 text-[#FF7043]" />
-              + Add Staff Member
-            </button>
+
+            <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => { setViewMode('directory'); setSuccess(false); }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'directory'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                  }`}
+              >
+                <Users className="w-3.5 h-3.5 text-slate-700" />
+                Staff Directory ({staffMembers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('form')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer flex items-center gap-2 ${viewMode === 'form'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 bg-transparent'
+                  }`}
+              >
+                <UserPlus className="w-3.5 h-3.5 text-[#FF7043]" />
+                + Add Staff Member
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1531,6 +1560,33 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
       {viewMode === 'form' && (
         <div className="space-y-6 animate-in fade-in">
 
+          {/* Plan Limits Banner */}
+          {isRoleLimitReached && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-white border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-black text-slate-900 m-0 text-sm">
+                    Staff Roles Capacity Reached ({staffMembers.length}/{maxRoles})
+                  </h4>
+                  <p className="text-slate-600 mt-0.5 m-0 text-[11.5px]">
+                    Your current subscription ({planName}) allows up to {maxRoles} staff roles. Upgrade your plan to add more team members.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+              >
+                <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
+                <span>Upgrade Plan</span>
+              </button>
+            </div>
+          )}
+
           {/* Success Notification Banner */}
           {success && createdUser && (
             <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
@@ -1892,19 +1948,30 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading || uploadingAvatar || !formData.name || !formData.email || !formData.password}
-                  className="px-6 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] disabled:opacity-40 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-2 border-none cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Provisioning Account...
-                    </>
-                  ) : (
-                    <>Create Staff Account <ArrowRight className="w-3.5 h-3.5" /></>
-                  )}
-                </button>
+                {isRoleLimitReached ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 border-none cursor-pointer"
+                  >
+                    <Crown className="w-4 h-4 text-amber-200" />
+                    Role Limit Reached ({staffMembers.length}/{maxRoles}) — Upgrade Plan
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || uploadingAvatar || !formData.name || !formData.email || !formData.password}
+                    className="px-6 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] disabled:opacity-40 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-2 border-none cursor-pointer"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Provisioning Account...
+                      </>
+                    ) : (
+                      <>Create Staff Account <ArrowRight className="w-3.5 h-3.5" /></>
+                    )}
+                  </button>
+                )}
               </div>
 
             </form>
@@ -2940,6 +3007,20 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Plan Selection / Upgrade Modal */}
+      {showUpgradeModal && (
+        <PlanSelectionModal
+          isOpen={true}
+          onClose={() => setShowUpgradeModal(false)}
+          triggerReason={`You currently have ${staffMembers.length}/${maxRoles} roles used under ${planName}. Upgrade to unlock additional staff capacity.`}
+          onSuccess={async () => {
+            setShowUpgradeModal(false);
+            if (refreshUser) await refreshUser();
+            await loadTeamMembers();
+          }}
+        />
       )}
 
     </div>

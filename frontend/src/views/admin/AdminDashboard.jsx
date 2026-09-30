@@ -27,6 +27,7 @@ export default function AdminDashboard({
   const { user, refreshUser } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingTeam, setLoadingTeam] = useState(true);
   const [verifying, setVerifying] = useState(false);
@@ -78,6 +79,10 @@ export default function AdminDashboard({
       .then(members => setTeamMembers(members || []))
       .catch(() => { })
       .finally(() => setLoadingTeam(false));
+
+    api.getCompanyApplications?.()
+      .then(apps => setApplications(apps || []))
+      .catch(() => { });
   };
 
   const handleRequestVerification = async () => {
@@ -139,11 +144,12 @@ export default function AdminDashboard({
   };
 
   // Administrator KPI stats
+  const hiredCount = applications.filter(a => a.status === 'SELECTED' || a.status === 'HIRED').length;
   const adminStats = [
-    { icon: Briefcase, label: 'Active listings', value: jobs.length || 0, delta: '+2 this week', color: NAVY },
-    { icon: Users, label: 'Total applicants', value: 47, delta: '+12 this week', color: '#0E9F6E', tab: 'applicants_view' },
+    { icon: Briefcase, label: 'Active listings', value: jobs.length || 0, delta: `${jobs.length} open`, color: NAVY },
+    { icon: Users, label: 'Total applicants', value: applications.length || 0, delta: `${applications.length} submitted`, color: '#0E9F6E', tab: 'applicants_view' },
     { icon: UserPlus, label: 'Team staff', value: teamMembers.length || 0, delta: 'Recruiters & Managers', color: GOLD_DEEP, action: () => setShowCreateModal(true) },
-    { icon: Award, label: 'Placements hired', value: 3, delta: 'Last: Fri', color: '#D14343', tab: 'applicants_view' },
+    { icon: Award, label: 'Placements hired', value: hiredCount, delta: `${hiredCount} hired`, color: '#D14343', tab: 'applicants_view' },
   ];
 
   const quickActions = [

@@ -3,10 +3,12 @@ import {
   Briefcase, Eye, Plus, Search, Filter, X, RefreshCw,
   CheckCircle2, Clock, MapPin, Users, Building2,
   ChevronRight, ArrowUpRight, Sparkles, Loader2, AlertCircle,
-  Edit3, Save, DollarSign, Layers, FileText, Check
+  Edit3, Save, DollarSign, Layers, FileText, Check, Crown, Lock, Share2
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import PlanSelectionModal from '../../components/PlanSelectionModal';
+import ShareJobModal from '../../components/ShareJobModal';
 
 // Soft-tint badge styling matching UnifiedRoleDashboard and PostJob
 const TINTS = {
@@ -42,6 +44,13 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
   const [groupFilter, setGroupFilter] = useState('ALL');
   const [toastMessage, setToastMessage] = useState('');
   const [togglingId, setTogglingId] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [sharingJob, setSharingJob] = useState(null);
+
+  const planType = user?.profile?.plan_type || 'FREE';
+  const maxJobs = user?.profile?.max_jobs || (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1));
+  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+  const isJobLimitReached = jobs.length >= maxJobs;
 
   // Edit Job State
   const [editingJob, setEditingJob] = useState(null);
@@ -232,7 +241,7 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
             onClick={fetchJobs}
@@ -242,14 +251,44 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#5C59E8]' : ''}`} />
           </button>
 
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Manage Plan & Job Limits"
+          >
+            <Crown className="w-3.5 h-3.5 text-amber-600" />
+            <span>Jobs: {jobs.length}/{maxJobs}</span>
+            <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
+              Upgrade
+            </span>
+          </button>
+
           {canPostJob && (
             <button
               type="button"
-              onClick={() => setActiveTab?.('post_job')}
-              className="px-4 py-2.5 rounded-lg bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none"
+              onClick={() => {
+                if (isJobLimitReached) {
+                  setShowUpgradeModal(true);
+                } else {
+                  setActiveTab?.('post_job');
+                }
+              }}
+              className={`px-4 py-2.5 rounded-lg text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none ${
+                isJobLimitReached ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#FF7043] hover:bg-[#E65B30]'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>Post New Job</span>
+              {isJobLimitReached ? (
+                <>
+                  <Crown className="w-4 h-4 text-amber-200" />
+                  <span>Job Limit Reached ({jobs.length}/{maxJobs})</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Post New Job</span>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -440,8 +479,8 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                   <th className="py-3.5 px-5">Work Mode</th>
                   <th className="py-3.5 px-5">Skills Required</th>
                   <th className="py-3.5 px-5">Status</th>
-                  {!isAdmin && <th className="py-3.5 px-5 text-center">Applicants</th>}
-                  {!isAdmin && <th className="py-3.5 px-5 text-right">Actions</th>}
+                  <th className="py-3.5 px-5 text-center">Applicants</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium">
@@ -535,73 +574,84 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                         </span>
                       </td>
 
-                      {/* Applicants (hidden for Administrator) */}
-                      {!isAdmin && (
-                        <td className="py-4 px-5 text-center">
+                      {/* Applicants */}
+                      <td className="py-4 px-5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedJobId?.(job.id);
+                            setActiveTab?.('applicants_view');
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${(job.applicant_count || 0) > 0
+                            ? 'bg-[#5C59E8]/10 hover:bg-[#5C59E8]/15 text-[#4845D2] border-[#5C59E8]/20 shadow-[0_1px_2px_rgba(92,89,232,0.06)]'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
+                          }`}
+                          title={`View ${job.applicant_count || 0} candidate applicant(s)`}
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          <span>{job.applicant_count || 0}</span>
+                        </button>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 px-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Share Job Link */}
+                          <button
+                            type="button"
+                            onClick={() => setSharingJob(job)}
+                            className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(37,99,235,0.06)] flex items-center gap-1.5 cursor-pointer"
+                            title="Share job opening on LinkedIn, WhatsApp, X, or copy link"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Share</span>
+                          </button>
+
+                          {!isAdmin && (
+                            <>
+                              {/* Edit Job Option */}
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(job)}
+                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 cursor-pointer"
+                                title="Edit job details"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Edit</span>
+                              </button>
+
+                              {/* Status Toggle */}
+                              <button
+                                type="button"
+                                disabled={isToggling}
+                                onClick={() => handleToggleStatus(job.id, job.status)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                  isPublished
+                                    ? 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
+                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/80 shadow-[0_1px_2px_rgba(16,185,129,0.1)]'
+                                }`}
+                                title="Toggle publication status"
+                              >
+                                {isToggling ? '...' : (isPublished ? 'Close Job' : 'Publish Job')}
+                              </button>
+                            </>
+                          )}
+
+                          {/* View Applicants */}
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedJobId?.(job.id);
                               setActiveTab?.('applicants_view');
                             }}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${(job.applicant_count || 0) > 0
-                              ? 'bg-[#5C59E8]/10 hover:bg-[#5C59E8]/15 text-[#4845D2] border-[#5C59E8]/20 shadow-[0_1px_2px_rgba(92,89,232,0.06)]'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                            }`}
-                            title={`View ${job.applicant_count || 0} candidate applicant(s)`}
+                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.1)] flex items-center gap-1.5 cursor-pointer border-none"
+                            title="Review job applicants"
                           >
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{job.applicant_count || 0}</span>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Applicants ({job.applicant_count || 0})</span>
                           </button>
-                        </td>
-                      )}
-
-                      {/* Actions */}
-                      {!isAdmin && (
-                        <td className="py-4 px-5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {/* Edit Job Option */}
-                            <button
-                              type="button"
-                              onClick={() => handleStartEdit(job)}
-                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 cursor-pointer"
-                              title="Edit job details"
-                            >
-                              <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                              <span>Edit</span>
-                            </button>
-
-                            {/* Status Toggle */}
-                            <button
-                              type="button"
-                              disabled={isToggling}
-                              onClick={() => handleToggleStatus(job.id, job.status)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                                isPublished
-                                  ? 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
-                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/80 shadow-[0_1px_2px_rgba(16,185,129,0.1)]'
-                              }`}
-                              title="Toggle publication status"
-                            >
-                              {isToggling ? '...' : (isPublished ? 'Close Job' : 'Publish Job')}
-                            </button>
-
-                            {/* View Applicants */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedJobId?.(job.id);
-                                setActiveTab?.('applicants_view');
-                              }}
-                              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.1)] flex items-center gap-1.5 cursor-pointer border-none"
-                              title="Review job applicants"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Applicants ({job.applicant_count || 0})</span>
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -918,6 +968,24 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Plan Selection / Upgrade Modal */}
+      {showUpgradeModal && (
+        <PlanSelectionModal
+          isOpen={true}
+          onClose={() => setShowUpgradeModal(false)}
+          triggerReason={`You currently have ${jobs.length}/${maxJobs} job postings under ${planName}. Upgrade to post more jobs and access higher candidate visibility.`}
+          onSuccess={() => {
+            setShowUpgradeModal(false);
+            fetchJobs();
+          }}
+        />
+      )}
+
+      {/* Share Job Modal */}
+      {sharingJob && (
+        <ShareJobModal job={sharingJob} onClose={() => setSharingJob(null)} />
       )}
 
     </div>

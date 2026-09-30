@@ -3,9 +3,11 @@ import {
   Bookmark, Briefcase, MapPin, Building2, ExternalLink, 
   Trash2, Send, CheckCircle2, DollarSign, Clock, Search, 
   Filter, ShieldCheck, ChevronRight, ArrowUpRight, Sparkles, 
-  Eye, X, Check, RefreshCw, Layers, Zap, AlertCircle, Compass, HelpCircle
+  Eye, X, Check, RefreshCw, Layers, Zap, AlertCircle, Compass, HelpCircle, Share2,
+  LayoutGrid, LayoutList
 } from 'lucide-react';
 import { api } from '../../api';
+import ShareJobModal from '../../components/ShareJobModal';
 
 export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   const [savedList, setSavedList] = useState(() => {
@@ -25,6 +27,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [workModeFilter, setWorkModeFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('recent');
+  const [viewMode, setViewMode] = useState('table');
 
   // Modals
   const [applyModalJob, setApplyModalJob] = useState(null);
@@ -33,6 +36,7 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   const [screeningErrors, setScreeningErrors] = useState({});
   const [applying, setApplying] = useState(false);
   const [viewDetailsJob, setViewDetailsJob] = useState(null);
+  const [sharingJob, setSharingJob] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
@@ -333,8 +337,38 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             )}
           </div>
 
-          {/* Sort & Applications Link */}
+          {/* Sort & Applications Link & View Switcher */}
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            {/* View Mode Toggle: Table / Grid */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-2.5 py-1.5 rounded-lg border-none cursor-pointer transition-all flex items-center gap-1.5 text-xs font-semibold ${
+                  viewMode === 'table'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'bg-transparent text-slate-500 hover:text-slate-800'
+                }`}
+                title="Table View"
+              >
+                <LayoutList size={13} />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`px-2.5 py-1.5 rounded-lg border-none cursor-pointer transition-all flex items-center gap-1.5 text-xs font-semibold ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'bg-transparent text-slate-500 hover:text-slate-800'
+                }`}
+                title="Grid View"
+              >
+                <LayoutGrid size={13} />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+            </div>
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -420,6 +454,176 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             Reset Filters
           </button>
         </div>
+      ) : viewMode === 'table' ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[760px]">
+              <thead>
+                <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 sm:px-6">Job Role & Organization</th>
+                  <th className="py-3.5 px-4">Location & Setup</th>
+                  <th className="py-3.5 px-4">Compensation</th>
+                  <th className="py-3.5 px-4">Match Fit</th>
+                  <th className="py-3.5 px-4">Saved On</th>
+                  <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {filteredList.map((job) => {
+                  const isApplied = !!appliedJobsMap[job.id];
+                  const matchPct = 90 + ((job.id * 7) % 8);
+
+                  return (
+                    <tr
+                      key={job.id}
+                      className="hover:bg-slate-50/70 transition-colors group"
+                    >
+                      {/* Job Role & Organization */}
+                      <td className="py-3.5 px-4 sm:px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-800 font-extrabold text-sm flex items-center justify-center shrink-0 shadow-2xs group-hover:border-[#FF7043]/40 transition-colors">
+                            {(job.company || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => setViewDetailsJob(job)}
+                              className="text-left font-bold text-slate-900 group-hover:text-[#FF7043] transition-colors truncate max-w-[220px] sm:max-w-[280px] block border-none bg-transparent p-0 cursor-pointer text-xs sm:text-sm"
+                            >
+                              {job.title}
+                            </button>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                              <span className="font-semibold text-slate-700 flex items-center gap-1 truncate max-w-[150px]">
+                                <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
+                                {job.company}
+                              </span>
+                              {job.job_type && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-slate-400 truncate">{job.job_type}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Location & Setup */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 text-slate-600 font-medium">
+                            <MapPin size={11} className="text-slate-400 shrink-0" />
+                            <span className="truncate max-w-[160px] text-xs">{job.location || 'Remote'}</span>
+                          </div>
+                          {job.work_mode && (
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                              job.work_mode.toLowerCase().includes('remote')
+                                ? 'bg-orange-50 text-[#FF7043] border border-orange-200/60'
+                                : job.work_mode.toLowerCase().includes('hybrid')
+                                ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}>
+                              {job.work_mode}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Compensation */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {job.salary ? (
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 inline-block">
+                            {job.salary}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">Competitive</span>
+                        )}
+                      </td>
+
+                      {/* Match Fit */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80">
+                          <Sparkles size={11} className="text-purple-600" />
+                          {matchPct}% Match
+                        </span>
+                      </td>
+
+                      {/* Saved On */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+                          <Clock size={11} className="text-slate-400" />
+                          {job.dateSaved || 'Recently'}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Share Job */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSharingJob(job);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-none bg-transparent cursor-pointer transition-colors"
+                            title="Share job opening"
+                          >
+                            <Share2 size={15} />
+                          </button>
+
+                          {/* View Details */}
+                          <button
+                            type="button"
+                            onClick={() => setViewDetailsJob(job)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 border-none bg-transparent cursor-pointer transition-colors"
+                            title="View full job details"
+                          >
+                            <Eye size={15} />
+                          </button>
+
+                          {/* Remove Bookmark */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemove(job.id, e)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-none bg-transparent cursor-pointer transition-colors"
+                            title="Remove from saved"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+
+                          {/* Easy Apply / Status */}
+                          {isApplied ? (
+                            <div className="inline-flex items-center gap-1.5 ml-1">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
+                                <CheckCircle2 size={12} /> Applied
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab?.('my_applications')}
+                                className="text-[11px] font-semibold text-[#FF7043] hover:text-[#E65B30] hover:underline border-none bg-transparent cursor-pointer"
+                              >
+                                Track
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenApplyModal(job, e)}
+                              className="ml-1 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#FF7043] hover:bg-[#E65B30] shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all border-none cursor-pointer"
+                            >
+                              <Send size={11} /> Easy Apply
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredList.map((job) => {
@@ -454,15 +658,29 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                       </div>
                     </div>
 
-                    {/* Remove Bookmark Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleRemove(job.id, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-none bg-transparent cursor-pointer transition-colors shrink-0"
-                      title="Remove from saved"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {/* Action Buttons: Share + Remove Bookmark */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSharingJob(job);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 border-none bg-transparent cursor-pointer transition-colors"
+                        title="Share job opening"
+                      >
+                        <Share2 size={15} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemove(job.id, e)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-none bg-transparent cursor-pointer transition-colors"
+                        title="Remove from saved"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Metadata Strip */}
@@ -934,6 +1152,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Job Modal */}
+      {sharingJob && (
+        <ShareJobModal job={sharingJob} onClose={() => setSharingJob(null)} />
       )}
 
     </div>

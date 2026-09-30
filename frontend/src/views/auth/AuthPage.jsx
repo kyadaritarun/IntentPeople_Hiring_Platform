@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, UserCheck, AlertCircle, ArrowRight, ChevronLeft, Eye, EyeOff,
   Check, X, Mail, Lock, Phone, MapPin, Globe, Quote, Users, TrendingUp,
-  ShieldCheck, Loader2
+  ShieldCheck, Loader2, CheckCircle2, User, Linkedin
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import OTPModal from '../../components/OTPModal';
+import PlanSelectionModal from '../../components/PlanSelectionModal';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
+import { getDetectedTenantSubdomain } from '../../utils/navigation';
 
 const DISALLOWED_COMPANY_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
 
@@ -43,12 +46,12 @@ const STATS = [
    so inputs and buttons read as a single, deliberate system.
 ---------------------------------------------------------------- */
 const FIELD_SHELL =
-  'flex items-center gap-2.5 rounded-[10px] border bg-white px-3 transition-colors border-slate-200 focus-within:border-[#1E3155] focus-within:ring-2 focus-within:ring-[#1E3155]/10';
+  'flex items-center gap-2 rounded-[9px] border bg-white px-2.5 transition-colors border-slate-200 focus-within:border-[#1E3155] focus-within:ring-2 focus-within:ring-[#1E3155]/10';
 const FIELD_INPUT =
-  'w-full bg-transparent py-2.5 text-[13px] font-medium text-[#12141C] outline-none placeholder:text-slate-400 placeholder:font-normal';
-const FIELD_LABEL = 'block text-[12.5px] font-semibold text-[#12141C] mb-1.5';
+  'w-full bg-transparent py-2 text-[12.5px] font-medium text-[#12141C] outline-none placeholder:text-slate-400 placeholder:font-normal';
+const FIELD_LABEL = 'block text-[11.5px] font-semibold text-[#12141C] mb-1';
 const PRIMARY_BTN =
-  'w-full rounded-[10px] bg-[#1E3155] hover:bg-[#152340] disabled:opacity-60 disabled:cursor-not-allowed text-white text-[13px] font-semibold py-3 flex items-center justify-center gap-2 transition-colors shadow-[0_1px_2px_rgba(16,26,51,0.08)]';
+  'w-full rounded-[9px] bg-[#1E3155] hover:bg-[#152340] disabled:opacity-60 disabled:cursor-not-allowed text-white text-[13px] font-semibold py-2.5 flex items-center justify-center gap-2 transition-colors shadow-[0_1px_2px_rgba(16,26,51,0.08)]';
 const SECONDARY_BTN =
   'w-full rounded-[10px] border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-[#12141C] text-[13px] font-semibold py-2.5 flex items-center justify-center gap-2.5 transition-colors';
 
@@ -61,9 +64,25 @@ function Field({ icon: Icon, error, children }) {
   );
 }
 
-export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackToLanding, onModeChange }) {
+export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackToLanding, onModeChange, tenant = null }) {
   const [mode, setMode] = useState(initialMode || 'login');
   const { loginUser } = useAuth();
+  const [tenantInfo, setTenantInfo] = useState(null);
+
+  useEffect(() => {
+    const detected = tenant || getDetectedTenantSubdomain();
+    if (detected) {
+      api.getVendorTenantDetails(detected)
+        .then((data) => {
+          setTenantInfo(data);
+          // If on a custom tenant portal, default to recruiter/staff login
+          if (mode === 'login' || mode === 'login_candidate') {
+            setMode('login_recruiter');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [tenant]);
 
   useEffect(() => {
     if (initialMode && initialMode !== mode) {
@@ -85,14 +104,18 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     place: '',
     city: '',
     state: '',
-    phone: ''
+    phone: '',
+    linkedin_url: ''
   });
 
   const [compData, setCompData] = useState({
+    full_name: '',
     company_name: '',
     email: '',
     phone: '',
     website: '',
+    location: '',
+    company_size: '',
     company_details: '',
     password: '',
     confirm_password: '',
@@ -105,12 +128,15 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpModalData, setOtpModalData] = useState(null);
+  const [onboardingUser, setOnboardingUser] = useState(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [showCandPassword, setShowCandPassword] = useState(false);
   const [showCandConfirmPassword, setShowCandConfirmPassword] = useState(false);
   const [showCompPassword, setShowCompPassword] = useState(false);
   const [showCompConfirmPassword, setShowCompConfirmPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetSuccessMsg, setResetSuccessMsg] = useState('');
 
   // Load the two type families used across the page. Falls back to
   // system fonts cleanly if the request is blocked (e.g. offline / firewalled).
@@ -151,8 +177,36 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     e.preventDefault();
     setError('');
 
+    if (!candData.full_name?.trim()) {
+      setError('Full name is required.');
+      return;
+    }
+    if (!candData.email?.trim()) {
+      setError('Email address is required.');
+      return;
+    }
+    if (!candData.city?.trim()) {
+      setError('City is required.');
+      return;
+    }
+    if (!candData.state?.trim()) {
+      setError('State is required.');
+      return;
+    }
+    if (!candData.password) {
+      setError('Password is required.');
+      return;
+    }
+    if (candData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (!candData.confirm_password) {
+      setError('Please confirm your password.');
+      return;
+    }
     if (candData.password !== candData.confirm_password) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -174,14 +228,53 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     e.preventDefault();
     setError('');
 
+    if (!compData.full_name?.trim()) {
+      setError('Full name is required.');
+      return;
+    }
+    if (!compData.company_name?.trim()) {
+      setError('Company name is required.');
+      return;
+    }
+    if (!compData.email?.trim()) {
+      setError('Business email is required.');
+      return;
+    }
     const domain = compData.email.split('@')[1]?.toLowerCase();
     if (DISALLOWED_COMPANY_DOMAINS.includes(domain)) {
       setError(`Recruiters must register with an official business domain email. @${domain} is not permitted.`);
       return;
     }
-
+    if (!compData.phone?.trim()) {
+      setError('Phone number is required.');
+      return;
+    }
+    if (!compData.website?.trim()) {
+      setError('Company website is required.');
+      return;
+    }
+    if (!compData.location?.trim()) {
+      setError('Headquarters location is required.');
+      return;
+    }
+    if (!compData.company_size) {
+      setError('Please select your company size.');
+      return;
+    }
+    if (!compData.password) {
+      setError('Password is required.');
+      return;
+    }
+    if (compData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (!compData.confirm_password) {
+      setError('Please confirm your password.');
+      return;
+    }
     if (compData.password !== compData.confirm_password) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
@@ -207,8 +300,18 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     try {
       const res = await api.login(loginEmail, loginPassword);
       loginUser(res.access_token, res.user);
-      if (onAuthSuccess) onAuthSuccess(res.user);
+      if (res.user?.role === 'ADMIN' && (res.user?.profile?.plan_type === 'NONE' || res.user?.profile?.plan_status === 'PENDING')) {
+        setOnboardingUser(res.user);
+      } else {
+        if (onAuthSuccess) onAuthSuccess(res.user);
+      }
     } catch (err) {
+      if (err.message && err.message.toLowerCase().includes('not been verified')) {
+        setOtpModalData({
+          email: loginEmail,
+          role: 'ADMIN'
+        });
+      }
       setError(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
@@ -307,15 +410,27 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
           {['login', 'login_candidate', 'login_recruiter'].includes(mode) && (
             <div className="text-center mb-6">
               <img src="/logo.svg" alt="Uptrix" className="mx-auto h-10 object-contain mb-3 select-none" />
+
+              {tenantInfo && (
+                <div className="mb-3 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold shadow-xs">
+                  <Building2 size={14} className="text-indigo-600" />
+                  <span>{tenantInfo.company_name} Portal ({tenantInfo.subdomain}.intentpeople.com)</span>
+                </div>
+              )}
+
               <h2 className="text-lg font-black text-[#12141C] tracking-tight">
-                {mode === 'login_candidate'
+                {tenantInfo
+                  ? `${tenantInfo.company_name} Portal Login`
+                  : mode === 'login_candidate'
                   ? 'Candidate Portal Login'
                   : mode === 'login_recruiter'
                   ? 'Recruiter / Agency Login'
                   : 'Welcome Back'}
               </h2>
               <p className="text-[13px] text-slate-500 mt-1 max-w-sm mx-auto">
-                {mode === 'login_candidate'
+                {tenantInfo
+                  ? `Sign in to access ${tenantInfo.company_name}'s candidate pipeline, job postings, and assigned workflows.`
+                  : mode === 'login_candidate'
                   ? 'Access your digital marketing profile, job applications & interviews.'
                   : mode === 'login_recruiter'
                   ? 'Post roles, review candidate submissions & manage your hiring funnel.'
@@ -324,10 +439,29 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
             </div>
           )}
 
+          {tenantInfo && tenantInfo.is_active === false && (
+            <div className="bg-rose-50 border border-rose-300 rounded-xl p-3.5 mb-5 text-rose-800 text-xs flex items-start gap-2.5 shadow-2xs">
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-600" />
+              <div>
+                <div className="font-bold text-[13px] text-rose-900 mb-0.5">Organization Account Deactivated</div>
+                <p className="text-rose-700 leading-relaxed">
+                  This organization portal has been deactivated by the Super Administrator. Sign in and platform access are currently suspended. Please contact your organization administrator or platform support.
+                </p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div role="alert" aria-live="polite" className="bg-rose-50 border border-rose-200 rounded-[10px] px-3 py-2.5 mb-4 text-rose-700 text-[12.5px] flex items-start gap-2">
               <AlertCircle size={15} className="shrink-0 mt-0.5" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {resetSuccessMsg && (
+            <div role="status" className="bg-emerald-50 border border-emerald-200 rounded-[10px] px-3 py-2.5 mb-4 text-emerald-800 text-[12.5px] flex items-start gap-2">
+              <CheckCircle2 size={15} className="shrink-0 mt-0.5 text-emerald-600" />
+              <span>{resetSuccessMsg}</span>
             </div>
           )}
 
@@ -353,6 +487,7 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                     }
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
+                    disabled={tenantInfo && tenantInfo.is_active === false}
                     required
                   />
                 </Field>
@@ -369,6 +504,7 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                     placeholder="••••••••"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
+                    disabled={tenantInfo && tenantInfo.is_active === false}
                     required
                   />
                   <button
@@ -384,18 +520,24 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
               </div>
 
               <div className="text-right mb-5">
-                <a
-                  href="#forgot"
-                  onClick={(e) => { e.preventDefault(); alert('Password reset link sent to your email!'); }}
-                  className="text-[12.5px] text-slate-400 hover:text-[#1E3155] font-medium no-underline"
+                <button
+                  type="button"
+                  onClick={() => { setError(''); setResetSuccessMsg(''); setShowForgotModal(true); }}
+                  className="text-[12.5px] text-slate-400 hover:text-[#FF6008] font-medium border-none bg-transparent cursor-pointer p-0 transition-colors"
                 >
                   Forgot password?
-                </a>
+                </button>
               </div>
 
-              <button type="submit" className={PRIMARY_BTN} disabled={loading}>
+              <button
+                type="submit"
+                className={PRIMARY_BTN}
+                disabled={loading || (tenantInfo && tenantInfo.is_active === false)}
+              >
                 {loading && <Loader2 size={15} className="animate-spin" />}
-                {loading
+                {tenantInfo && tenantInfo.is_active === false
+                  ? 'Portal Access Suspended'
+                  : loading
                   ? 'Signing in…'
                   : mode === 'login_candidate'
                   ? 'Sign in as Candidate'
@@ -489,10 +631,12 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                 </button>
               </div>
 
-              <form onSubmit={handleCandidateRegister} noValidate className="flex flex-col flex-1">
-                <div className="flex flex-col gap-3.5 max-h-[380px] overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+              <form onSubmit={handleCandidateRegister} className="flex flex-col flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3.5 gap-y-2.5">
                   <div>
-                    <label htmlFor="cand-name" className={FIELD_LABEL}>Full name</label>
+                    <label htmlFor="cand-name" className={FIELD_LABEL}>
+                      Full name <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={UserCheck}>
                       <input id="cand-name" type="text" name="full_name" autoComplete="name" className={FIELD_INPUT}
                         placeholder="Sarah Jenkins" value={candData.full_name} onChange={handleCandChange} required />
@@ -500,7 +644,9 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="cand-email" className={FIELD_LABEL}>Email address</label>
+                    <label htmlFor="cand-email" className={FIELD_LABEL}>
+                      Email address <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Mail}>
                       <input id="cand-email" type="email" name="email" autoComplete="email" className={FIELD_INPUT}
                         placeholder="you@example.com" value={candData.email} onChange={handleCandChange} required />
@@ -508,45 +654,64 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="cand-phone" className={FIELD_LABEL}>Phone number</label>
+                    <label htmlFor="cand-phone" className={FIELD_LABEL}>
+                      Phone number
+                    </label>
                     <Field icon={Phone}>
                       <input id="cand-phone" type="tel" name="phone" autoComplete="tel" className={FIELD_INPUT}
-                        placeholder="+1 (555) 000-0000" value={candData.phone} onChange={handleCandChange} required />
+                        placeholder="+1 (555) 000-0000" value={candData.phone} onChange={handleCandChange} />
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor="cand-city" className={FIELD_LABEL}>City</label>
-                      <Field icon={MapPin}>
-                        <input id="cand-city" type="text" name="city" autoComplete="address-level2" className={FIELD_INPUT}
-                          placeholder="Austin" value={candData.city} onChange={handleCandChange} required />
-                      </Field>
-                    </div>
-                    <div>
-                      <label htmlFor="cand-state" className={FIELD_LABEL}>State</label>
-                      <Field>
-                        <input id="cand-state" type="text" name="state" autoComplete="address-level1" className={FIELD_INPUT}
-                          placeholder="Texas" value={candData.state} onChange={handleCandChange} required />
-                      </Field>
-                    </div>
+                  <div>
+                    <label htmlFor="cand-linkedin" className={FIELD_LABEL}>
+                      LinkedIn profile
+                    </label>
+                    <Field icon={Linkedin}>
+                      <input id="cand-linkedin" type="url" name="linkedin_url" autoComplete="url" className={FIELD_INPUT}
+                        placeholder="https://linkedin.com/in/username" value={candData.linkedin_url} onChange={handleCandChange} />
+                    </Field>
                   </div>
 
                   <div>
-                    <label htmlFor="cand-password" className={FIELD_LABEL}>Password</label>
+                    <label htmlFor="cand-city" className={FIELD_LABEL}>
+                      City <span className="text-rose-500">*</span>
+                    </label>
+                    <Field icon={MapPin}>
+                      <input id="cand-city" type="text" name="city" autoComplete="address-level2" className={FIELD_INPUT}
+                        placeholder="Austin" value={candData.city} onChange={handleCandChange} required />
+                    </Field>
+                  </div>
+
+                  <div>
+                    <label htmlFor="cand-state" className={FIELD_LABEL}>
+                      State <span className="text-rose-500">*</span>
+                    </label>
+                    <Field>
+                      <input id="cand-state" type="text" name="state" autoComplete="address-level1" className={FIELD_INPUT}
+                        placeholder="Texas" value={candData.state} onChange={handleCandChange} required />
+                    </Field>
+                  </div>
+
+                  <div>
+                    <label htmlFor="cand-password" className={FIELD_LABEL}>
+                      Password <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Lock}>
                       <input id="cand-password" type={showCandPassword ? 'text' : 'password'} name="password" autoComplete="new-password"
                         className={FIELD_INPUT} placeholder="••••••••" value={candData.password} onChange={handleCandChange} required />
                       <button type="button" tabIndex={-1} onClick={() => setShowCandPassword(!showCandPassword)}
                         className="shrink-0 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5">
-                        {showCandPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showCandPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                     </Field>
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label htmlFor="cand-confirm" className={`${FIELD_LABEL} mb-0`}>Confirm password</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="cand-confirm" className={`${FIELD_LABEL} mb-0`}>
+                        Confirm password <span className="text-rose-500">*</span>
+                      </label>
                       {candData.confirm_password && (
                         candData.password === candData.confirm_password ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
@@ -564,19 +729,19 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                         className={FIELD_INPUT} placeholder="••••••••" value={candData.confirm_password} onChange={handleCandChange} required />
                       <button type="button" tabIndex={-1} onClick={() => setShowCandConfirmPassword(!showCandConfirmPassword)}
                         className="shrink-0 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5">
-                        {showCandConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showCandConfirmPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                     </Field>
                   </div>
                 </div>
 
-                <button type="submit" className={`${PRIMARY_BTN} mt-5`} disabled={loading}>
-                  {loading && <Loader2 size={15} className="animate-spin" />}
+                <button type="submit" className={`${PRIMARY_BTN} mt-3.5`} disabled={loading}>
+                  {loading && <Loader2 size={14} className="animate-spin" />}
                   {loading ? 'Creating account…' : 'Create account'}
                 </button>
               </form>
 
-              <p className="text-center text-[12.5px] text-slate-400 mt-4">
+              <p className="text-center text-[12px] text-slate-400 mt-3">
                 Already have an account?{' '}
                 <button type="button" className="bg-transparent border-none text-[#1E3155] font-semibold cursor-pointer underline"
                   onClick={() => { setMode('login'); setError(''); }}>
@@ -603,17 +768,29 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                 </button>
               </div>
 
-              <div className="flex items-start gap-2 bg-[#FFF8EC] border border-[#F2A93B]/30 rounded-[10px] px-3 py-2 mb-4">
-                <ShieldCheck size={14} className="text-[#B5791A] shrink-0 mt-0.5" />
-                <p className="text-[11.5px] text-[#7A5312] leading-snug">
+              <div className="flex items-center gap-2 bg-[#FFF8EC] border border-[#F2A93B]/30 rounded-[9px] px-2.5 py-1.5 mb-3">
+                <ShieldCheck size={13} className="text-[#B5791A] shrink-0" />
+                <p className="text-[11px] text-[#7A5312] leading-tight">
                   Business email required — free providers like @gmail.com aren't accepted.
                 </p>
               </div>
 
-              <form onSubmit={handleCompanyRegister} noValidate className="flex flex-col flex-1">
-                <div className="flex flex-col gap-3.5 max-h-[360px] overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+              <form onSubmit={handleCompanyRegister} className="flex flex-col flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
                   <div>
-                    <label htmlFor="comp-name" className={FIELD_LABEL}>Company name</label>
+                    <label htmlFor="comp-full-name" className={FIELD_LABEL}>
+                      Full name <span className="text-rose-500">*</span>
+                    </label>
+                    <Field icon={User}>
+                      <input id="comp-full-name" type="text" name="full_name" autoComplete="name" className={FIELD_INPUT}
+                        placeholder="e.g. Sarah Jenkins" value={compData.full_name} onChange={handleCompChange} required />
+                    </Field>
+                  </div>
+
+                  <div>
+                    <label htmlFor="comp-name" className={FIELD_LABEL}>
+                      Company name <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Building2}>
                       <input id="comp-name" type="text" name="company_name" autoComplete="organization" className={FIELD_INPUT}
                         placeholder="GrowthX Agency" value={compData.company_name} onChange={handleCompChange} required />
@@ -621,7 +798,9 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="comp-email" className={FIELD_LABEL}>Business email</label>
+                    <label htmlFor="comp-email" className={FIELD_LABEL}>
+                      Business email <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Mail}>
                       <input id="comp-email" type="email" name="email" autoComplete="email" className={FIELD_INPUT}
                         placeholder="hr@growthmarketers.com" value={compData.email} onChange={handleCompChange} required />
@@ -629,7 +808,9 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="comp-phone" className={FIELD_LABEL}>Phone number</label>
+                    <label htmlFor="comp-phone" className={FIELD_LABEL}>
+                      Phone number <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Phone}>
                       <input id="comp-phone" type="tel" name="phone" autoComplete="tel" className={FIELD_INPUT}
                         placeholder="+1 (555) 382-9102" value={compData.phone} onChange={handleCompChange} required />
@@ -637,28 +818,68 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="comp-website" className={FIELD_LABEL}>Company website</label>
+                    <label htmlFor="comp-website" className={FIELD_LABEL}>
+                      Company website <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Globe}>
                       <input id="comp-website" type="url" name="website" autoComplete="url" className={FIELD_INPUT}
-                        placeholder="https://growthmarketers.com" value={compData.website} onChange={handleCompChange} required />
+                        placeholder="https://agency.com" value={compData.website} onChange={handleCompChange} required />
                     </Field>
                   </div>
 
                   <div>
-                    <label htmlFor="comp-password" className={FIELD_LABEL}>Password</label>
+                    <label htmlFor="comp-location" className={FIELD_LABEL}>
+                      Headquarters <span className="text-rose-500">*</span>
+                    </label>
+                    <Field icon={MapPin}>
+                      <input id="comp-location" type="text" name="location" autoComplete="address-level2" className={FIELD_INPUT}
+                        placeholder="e.g. Bengaluru / New York" value={compData.location} onChange={handleCompChange} required />
+                    </Field>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label htmlFor="comp-size" className={FIELD_LABEL}>
+                      Company size <span className="text-rose-500">*</span>
+                    </label>
+                    <Field icon={Users}>
+                      <select
+                        id="comp-size"
+                        name="company_size"
+                        className={`${FIELD_INPUT} cursor-pointer bg-transparent`}
+                        value={compData.company_size}
+                        onChange={handleCompChange}
+                        required
+                      >
+                        <option value="" disabled className="text-slate-400">Select company size...</option>
+                        <option value="1-10">1–10 employees (Startup / Seed)</option>
+                        <option value="11-50">11–50 employees (Early Stage)</option>
+                        <option value="51-200">51–200 employees (Mid Size / Scaling)</option>
+                        <option value="201-500">201–500 employees (Growth Enterprise)</option>
+                        <option value="501-1000">501–1,000 employees (Enterprise)</option>
+                        <option value="1000+">1,000+ employees (Large Global Corp)</option>
+                      </select>
+                    </Field>
+                  </div>
+
+                  <div>
+                    <label htmlFor="comp-password" className={FIELD_LABEL}>
+                      Password <span className="text-rose-500">*</span>
+                    </label>
                     <Field icon={Lock}>
                       <input id="comp-password" type={showCompPassword ? 'text' : 'password'} name="password" autoComplete="new-password"
                         className={FIELD_INPUT} placeholder="••••••••" value={compData.password} onChange={handleCompChange} required />
                       <button type="button" tabIndex={-1} onClick={() => setShowCompPassword(!showCompPassword)}
                         className="shrink-0 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5">
-                        {showCompPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showCompPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                     </Field>
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label htmlFor="comp-confirm" className={`${FIELD_LABEL} mb-0`}>Confirm password</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="comp-confirm" className={`${FIELD_LABEL} mb-0`}>
+                        Confirm password <span className="text-rose-500">*</span>
+                      </label>
                       {compData.confirm_password && (
                         compData.password === compData.confirm_password ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
@@ -676,33 +897,19 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                         className={FIELD_INPUT} placeholder="••••••••" value={compData.confirm_password} onChange={handleCompChange} required />
                       <button type="button" tabIndex={-1} onClick={() => setShowCompConfirmPassword(!showCompConfirmPassword)}
                         className="shrink-0 text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer p-0.5">
-                        {showCompConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showCompConfirmPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                     </Field>
                   </div>
-
-                  <div>
-                    <label htmlFor="comp-details" className={FIELD_LABEL}>Company details</label>
-                    <textarea
-                      id="comp-details"
-                      name="company_details"
-                      rows={3}
-                      className="w-full rounded-[10px] border border-slate-200 focus:border-[#1E3155] focus:ring-2 focus:ring-[#1E3155]/10 outline-none px-3 py-2.5 text-[13px] text-[#12141C] font-medium resize-none placeholder:text-slate-400 placeholder:font-normal transition-colors"
-                      placeholder="What does your agency do, and who do you hire for?"
-                      value={compData.company_details}
-                      onChange={handleCompChange}
-                      required
-                    />
-                  </div>
                 </div>
 
-                <button type="submit" className={`${PRIMARY_BTN} mt-5`} disabled={loading}>
-                  {loading && <Loader2 size={15} className="animate-spin" />}
+                <button type="submit" className={`${PRIMARY_BTN} mt-3.5`} disabled={loading}>
+                  {loading && <Loader2 size={14} className="animate-spin" />}
                   {loading ? 'Creating account…' : 'Create account'}
                 </button>
               </form>
 
-              <p className="text-center text-[12.5px] text-slate-400 mt-4">
+              <p className="text-center text-[12px] text-slate-400 mt-3">
                 Already have an account?{' '}
                 <button type="button" className="bg-transparent border-none text-[#1E3155] font-semibold cursor-pointer underline"
                   onClick={() => { setMode('login'); setError(''); }}>
@@ -717,11 +924,39 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
       {otpModalData && (
         <OTPModal
           email={otpModalData.email}
-          onSuccess={(user) => {
+          onSuccess={(verifiedUser) => {
             setOtpModalData(null);
-            if (onAuthSuccess) onAuthSuccess(user);
+            if (verifiedUser?.role === 'ADMIN') {
+              setOnboardingUser(verifiedUser);
+            } else {
+              if (onAuthSuccess) onAuthSuccess(verifiedUser);
+            }
           }}
           onClose={() => setOtpModalData(null)}
+        />
+      )}
+
+      {showForgotModal && (
+        <ForgotPasswordModal
+          initialEmail={loginEmail}
+          onSuccess={(resetEmail) => {
+            setShowForgotModal(false);
+            if (resetEmail) setLoginEmail(resetEmail);
+            setResetSuccessMsg('Your password has been successfully reset! Please sign in with your new password.');
+          }}
+          onClose={() => setShowForgotModal(false)}
+        />
+      )}
+
+      {onboardingUser && (
+        <PlanSelectionModal
+          isOpen={true}
+          isInitialOnboarding={true}
+          onSuccess={() => {
+            const u = onboardingUser;
+            setOnboardingUser(null);
+            if (onAuthSuccess) onAuthSuccess(u);
+          }}
         />
       )}
     </div>

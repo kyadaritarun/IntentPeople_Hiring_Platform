@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Uptrix Digital Marketing Job Platform API")
@@ -31,13 +31,17 @@ class Settings:
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
+    # Superadmin Master Credentials loaded from .env
+    SUPERADMIN_EMAIL: str = os.getenv("SUPERADMIN_EMAIL", "superadmin@intentpeople.com")
+    SUPERADMIN_PASSWORD: str = os.getenv("SUPERADMIN_PASSWORD", "SuperAdmin@IntentPeople2026!")
+
     # SMTP Email Settings
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))
     SMTP_USER: str = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
-    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "Uptrix Hiring Platform")
+    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "IntentPeople Hiring Platform")
     SMTP_TLS: bool = os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes")
 
     # AWS S3 Storage Settings
@@ -52,6 +56,15 @@ class Settings:
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback")
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+    # Razorpay Payment Gateway Settings
+    @property
+    def RAZORPAY_KEY_ID(self) -> str:
+        return os.getenv("RAZORPAY_KEY_ID") or "rzp_live_SWEEWJkuQSNLrI"
+
+    @property
+    def RAZORPAY_KEY_SECRET(self) -> str:
+        return os.getenv("RAZORPAY_KEY_SECRET") or "IHHD7uSoGSkK2cSQ6gxLToCk"
 
 settings = Settings()
 

@@ -1,4 +1,7 @@
-from app.schemas.auth import CandidateRegister, CompanyRegister, OTPVerify, ResendOTP, UserLogin, GoogleOAuthLogin
+from app.schemas.auth import (
+    CandidateRegister, CompanyRegister, OTPVerify, ResendOTP, UserLogin, GoogleOAuthLogin,
+    ForgotPasswordRequest, ResetPasswordRequest
+)
 from app.schemas.candidate import CandidateProfileUpdate
 from app.schemas.company import (
     CompanyProfileUpdate, TeamMemberCreate, TeamMemberUpdate,
@@ -18,6 +21,8 @@ __all__ = [
     "ResendOTP",
     "UserLogin",
     "GoogleOAuthLogin",
+    "ForgotPasswordRequest",
+    "ResetPasswordRequest",
     "CandidateProfileUpdate",
     "CompanyProfileUpdate",
     "MemberProfileUpdate",

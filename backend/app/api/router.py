@@ -11,7 +11,10 @@ from app.api.endpoints import (
     interview,
     message,
     post,
-    google_auth
+    google_auth,
+    payment,
+    superadmin,
+    vendor_invitation
 )
 
 api_router = APIRouter(prefix="/api")
@@ -27,3 +30,7 @@ api_router.include_router(notification.router)
 api_router.include_router(interview.router)
 api_router.include_router(message.router)
 api_router.include_router(post.router)
+api_router.include_router(payment.router)
+api_router.include_router(superadmin.router)
+api_router.include_router(vendor_invitation.superadmin_router)
+api_router.include_router(vendor_invitation.public_router)

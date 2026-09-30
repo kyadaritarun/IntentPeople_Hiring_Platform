@@ -3,11 +3,20 @@ from typing import Optional
 
 class CompanyProfileUpdate(BaseModel):
     company_name: Optional[str] = None
+    contact_person: Optional[str] = None
     logo_url: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None
     industry: Optional[str] = None
+    primary_industry: Optional[str] = None
+    sub_industry: Optional[str] = None
+    organisation_type: Optional[str] = None
+    company_size: Optional[str] = None
     location: Optional[str] = None
+    headquarters_location: Optional[str] = None
+    other_locations: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    year_founded: Optional[str] = None
     about: Optional[str] = None
     product_service: Optional[str] = None
     business_model: Optional[str] = None

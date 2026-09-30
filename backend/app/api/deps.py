@@ -18,6 +18,26 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if organization account is deactivated
+    if user.role in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
+        comp = get_user_company(user, db)
+        if comp:
+            is_deactivated = (
+                (hasattr(comp, "is_active") and comp.is_active is False)
+                or comp.plan_status in ["DEACTIVATED", "SUSPENDED", "INACTIVE"]
+            )
+            if is_deactivated:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Your organization account has been deactivated by the Super Administrator. Access is suspended."
+                )
+
+    return user
+
+def get_current_superadmin(user: User = Depends(get_current_user)) -> User:
+    if user.role != "SUPERADMIN":
+        raise HTTPException(status_code=403, detail="Superadmin access required")
     return user
 
 def get_user_company(user: User, db: Session):

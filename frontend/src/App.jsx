@@ -3,9 +3,12 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Lazy-loaded top-level view modules for performance & code splitting
 const AuthPage = lazy(() => import('./views/auth/AuthPage'));
-const Landing = lazy(() => import('./views/landing/Landing'));
 const FeedDashboard = lazy(() => import('./views/feed/FeedDashboard'));
 const NotificationModal = lazy(() => import('./components/NotificationModal'));
+const SuperadminLogin = lazy(() => import('./views/superadmin/SuperadminLogin'));
+const SuperadminDashboard = lazy(() => import('./views/superadmin/SuperadminDashboard'));
+const VendorPaymentPage = lazy(() => import('./views/payment/VendorPaymentPage'));
+const PublicJobView = lazy(() => import('./views/public/PublicJobView'));
 
 // Universal page loading fallback
 function PageLoadingFallback() {
@@ -35,6 +38,8 @@ import {
   getPathForTab,
   getAuthModeFromPath,
   getTabFromPathname,
+  getDetectedTenantSubdomain,
+  getJobIdFromUrl,
 } from './utils/navigation';
 
 function MainAppContent() {
@@ -42,7 +47,6 @@ function MainAppContent() {
 
   // Route & Modal state
   const initialAuthMode = getAuthModeFromPath(window.location.pathname);
-  const [showAuthPage, setShowAuthPage] = useState(Boolean(initialAuthMode));
   const [authInitialMode, setAuthInitialMode] = useState(initialAuthMode || 'login');
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -50,7 +54,8 @@ function MainAppContent() {
     return resolved || 'home';
   });
 
-  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [sharedJobId, setSharedJobId] = useState(() => getJobIdFromUrl());
+  const [selectedJobId, setSelectedJobId] = useState(() => getJobIdFromUrl());
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [triggerCreatePost, setTriggerCreatePost] = useState(false);
 
@@ -73,14 +78,21 @@ function MainAppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const pathname = window.location.pathname;
+
+      // Public vendor checkout URLs must never be captured by tab routing
+      if (pathname.startsWith('/vendor-pay')) {
+        return;
+      }
+
       const authMode = getAuthModeFromPath(pathname);
+      const urlJob = getJobIdFromUrl();
+      if (urlJob) {
+        setSharedJobId(urlJob);
+      }
 
       if (!user) {
         if (authMode) {
-          setShowAuthPage(true);
           setAuthInitialMode(authMode);
-        } else {
-          setShowAuthPage(false);
         }
       } else {
         const resolvedTab = getTabFromPathname(pathname, user.role);
@@ -98,13 +110,49 @@ function MainAppContent() {
 
   // Synchronize on authentication change or initial load with authenticated user
   useEffect(() => {
+    const currentPath = window.location.pathname;
+
+    // Public vendor payment and checkout pages must remain directly accessible even if logged in as admin/user
+    if (currentPath.startsWith('/vendor-pay')) {
+      return;
+    }
+
     if (user) {
-      setShowAuthPage(false);
-      const currentPath = window.location.pathname;
+      // Check if candidate or user navigated to a shared job or logged in after clicking Apply
+      const pendingJobStr = typeof window !== 'undefined' ? sessionStorage.getItem('uptrix_pending_apply_job_id') : null;
+      const targetJobId = pendingJobStr || sharedJobId || getJobIdFromUrl();
+
+      if (targetJobId) {
+        setSelectedJobId(targetJobId);
+        if (user.role === 'CANDIDATE') {
+          setActiveTab('find_jobs');
+        } else {
+          setActiveTab('manage_jobs');
+        }
+        try {
+          sessionStorage.removeItem('uptrix_pending_apply_job_id');
+        } catch (e) {}
+        setSharedJobId(null);
+      }
+
+      if (user.role === 'SUPERADMIN') {
+        const isAdminHost = typeof window !== 'undefined' && (
+          window.location.hostname === 'admin.intentpeople.com' ||
+          window.location.hostname.startsWith('admin.')
+        );
+        if (!isAdminHost) {
+          window.location.replace('https://admin.intentpeople.com/');
+          return;
+        }
+        setActiveTab('superadmin_dashboard');
+        document.title = 'Superadmin Console | Uptrix';
+        return;
+      }
+
       const authMode = getAuthModeFromPath(currentPath);
 
-      if (authMode || currentPath === '/' || currentPath === '') {
-        // Redirect to user's default dashboard URL
+      if (authMode || currentPath === '/' || currentPath === '' || currentPath.startsWith('/superadmin')) {
+        // Redirect standard user to their default dashboard URL
         const defaultTab = getDefaultTabForRole(user.role);
         const targetPath = getPathForTab(defaultTab, user.role);
         setActiveTab(defaultTab);
@@ -137,14 +185,10 @@ function MainAppContent() {
       window.history.pushState(null, '', targetPath);
     }
     setAuthInitialMode(mode);
-    setShowAuthPage(true);
   };
 
   const navigateToHome = () => {
-    if (window.location.pathname !== '/') {
-      window.history.pushState(null, '', '/');
-    }
-    setShowAuthPage(false);
+    window.location.href = 'https://intentpeople.com/';
   };
 
   const handleAuthModeChange = (mode) => {
@@ -165,18 +209,101 @@ function MainAppContent() {
     return <PageLoadingFallback />;
   }
 
-  if (!user) {
+  const isAdminDomain = typeof window !== 'undefined' && (
+    window.location.hostname === 'admin.intentpeople.com' ||
+    window.location.hostname.startsWith('admin.')
+  );
+
+  // If someone accesses /superadmin on portal or any non-admin domain, redirect to admin.intentpeople.com
+  if (!isAdminDomain && typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin')) {
+    window.location.replace('https://admin.intentpeople.com/');
+    return <PageLoadingFallback />;
+  }
+
+  // If on admin.intentpeople.com, it is exclusively reserved for SUPERADMIN
+  if (isAdminDomain) {
+    if (!user || user.role !== 'SUPERADMIN') {
+      return (
+        <Suspense fallback={<PageLoadingFallback />}>
+          <SuperadminLogin
+            onLoginSuccess={() => {
+              window.history.pushState(null, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            onBackToLanding={navigateToHome}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <Suspense fallback={<PageLoadingFallback />}>
-        {!showAuthPage ? (
-          <Landing onNavigateToAuth={navigateToAuth} />
-        ) : (
+        <SuperadminDashboard
+          onLogout={() => {
+            window.location.href = '/';
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  const isVendorPayPath = window.location.pathname.startsWith('/vendor-pay');
+
+  if (isVendorPayPath) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <VendorPaymentPage
+          onLoginRedirect={(subdomain) => {
+            window.history.pushState(null, '', `/tenant/${subdomain}`);
+            window.location.reload();
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  const detectedTenant = getDetectedTenantSubdomain();
+
+  if (!user) {
+    const currentPath = window.location.pathname;
+    const authMode = getAuthModeFromPath(currentPath);
+    const isPublicJobRequest = Boolean(sharedJobId && !authMode);
+
+    if (isPublicJobRequest) {
+      return (
+        <Suspense fallback={<PageLoadingFallback />}>
+          <PublicJobView
+            jobId={sharedJobId}
+            onNavigateToAuth={(mode) => {
+              navigateToAuth(mode || 'login_candidate');
+              setSharedJobId(null);
+            }}
+            onBackToLanding={navigateToHome}
+          />
+        </Suspense>
+      );
+    }
+
+    if (detectedTenant) {
+      return (
+        <Suspense fallback={<PageLoadingFallback />}>
           <AuthPage
-            initialMode={authInitialMode}
+            tenant={detectedTenant}
+            initialMode="login_recruiter"
             onBackToLanding={navigateToHome}
             onModeChange={handleAuthModeChange}
           />
-        )}
+        </Suspense>
+      );
+    }
+
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <AuthPage
+          initialMode={authInitialMode}
+          onBackToLanding={navigateToHome}
+          onModeChange={handleAuthModeChange}
+        />
       </Suspense>
     );
   }

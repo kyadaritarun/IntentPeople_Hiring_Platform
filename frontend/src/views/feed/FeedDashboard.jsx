@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   Home, Briefcase, MapPin, Building2, Users, Bookmark, Calendar,
   Image as ImageIcon, Video, FileText, Send, X, Plus, Sparkles, CheckCircle2,
@@ -7,7 +7,7 @@ import {
   CalendarCheck, CalendarOff, UsersRound, LayoutDashboard, PlusCircle,
   HelpCircle, Check, Copy, Folder, ArrowUpRight, Activity, Rocket,
   ClipboardList, Laptop, Brain, Shield, BarChart3, Code, UserPlus,
-  MessageSquare, Menu, Share2, Globe, Server, Layers, Crown, Sliders
+  MessageSquare, Menu, Share2, Globe, Server, Layers, Crown, Sliders, Lock
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api';
@@ -35,6 +35,7 @@ const ApplicationStatusView = lazy(() => import('../recruiter/ApplicationStatusV
 const RecruiterDocumentsView = lazy(() => import('../recruiter/RecruiterDocumentsView'));
 const NotificationModal = lazy(() => import('../../components/NotificationModal'));
 const UnifiedRoleDashboard = lazy(() => import('../dashboard/UnifiedRoleDashboard'));
+import PlanSelectionModal from '../../components/PlanSelectionModal';
 
 // Universal view loading fallback
 function ViewLoadingFallback({ message = "Loading Uptrix Platform..." }) {
@@ -149,7 +150,58 @@ export default function FeedDashboard({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showToast, setShowToast] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planModalTriggerReason, setPlanModalTriggerReason] = useState('');
+  const [currentSubscription, setCurrentSubscription] = useState(null);
   const profileDropdownRef = useRef(null);
+
+  // Synchronize company subscription & sidebar access permissions
+  const fetchSubscription = useCallback(() => {
+    if (isStaff) {
+      api.getCurrentSubscription()
+        .then(sub => {
+          if (sub) setCurrentSubscription(sub);
+        })
+        .catch(() => {});
+    }
+  }, [isStaff]);
+
+  useEffect(() => {
+    fetchSubscription();
+  }, [fetchSubscription]);
+
+  // Compute live active sidebar access dictionary
+  const activeSidebarAccess = currentSubscription?.sidebar_access || user?.profile?.sidebar_access || {};
+
+  const isNavLocked = useCallback((item) => {
+    if (!isStaff || !item) return false;
+    if (item.id === 'support' || item.tab === 'support') return false;
+
+    const roleKey = isAdmin ? 'ADMIN' : (isRecruiter ? 'RECRUITER' : 'MANAGER');
+    const allowed = activeSidebarAccess[roleKey] || activeSidebarAccess[isAdmin ? 'ADMIN' : (isRecruiter ? 'RECRUITER' : 'HIRING_MANAGER')];
+
+    // If superadmin hasn't explicitly set permissions, default to unlocked
+    if (!allowed || !Array.isArray(allowed)) return false;
+
+    // Keys to test against allowed list
+    const candidateKeys = [
+      item.id,
+      item.tab,
+      item.id === 'admin_dashboard' ? 'dashboard' : null,
+      item.id === 'recruiter_dashboard' ? 'dashboard' : null,
+      item.id === 'hiring_manager_dashboard' ? 'dashboard' : null,
+      item.tab === 'applicants_view' ? 'applicants' : null,
+      item.tab === 'recruiter_documents' ? 'documents' : null,
+      item.id === 'documents' ? 'documents' : null,
+      item.id === 'staff_documents' ? 'staff_documents' : null,
+      item.id === 'add_staff' ? 'add_staff' : null,
+      item.id === 'hiring_groups' ? 'hiring_groups' : null,
+      item.id === 'company_profile' ? 'company_profile' : null,
+    ].filter(Boolean);
+
+    const isAllowed = candidateKeys.some(k => allowed.includes(k));
+    return !isAllowed;
+  }, [isStaff, isAdmin, isRecruiter, activeSidebarAccess]);
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -489,6 +541,17 @@ export default function FeedDashboard({
   };
 
   const handleNavClick = (item) => {
+    if (isNavLocked(item)) {
+      if (currentSubscription?.plan_type === 'CUSTOM_VENDOR') {
+        setShowToast(`🔒 "${item.label}" is not enabled for your organization portal.`);
+      } else {
+        setPlanModalTriggerReason(`Upgrade your plan to unlock "${item.label}"`);
+        setShowPlanModal(true);
+        setShowToast(`🔒 "${item.label}" is locked under your current plan tier.`);
+      }
+      setTimeout(() => setShowToast(null), 3500);
+      return;
+    }
     if (item.id === 'create_post') {
       setIsCreatingPost(true);
       return;
@@ -574,15 +637,18 @@ export default function FeedDashboard({
         {/* Middle: Navigation Scroll Container (Simple flat list, no dropdowns) */}
         <div className="flex-1 overflow-y-auto no-scrollbar py-4 px-3 space-y-1.5">
           {currentRoleNavItems.map((item) => {
+            const locked = isNavLocked(item);
             const isActive =
-              activeSidebarItem === item.id ||
-              (item.tab && activeSidebarItem === item.tab) ||
-              (item.id === 'recruiter_dashboard' && (activeSidebarItem === 'recruiter_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
-              (item.id === 'admin_dashboard' && (activeSidebarItem === 'admin_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
-              (item.id === 'hiring_manager_dashboard' && (activeSidebarItem === 'hiring_manager_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
-              (item.id === 'home' && (activeSidebarItem === 'home' || activeSidebarItem === 'dashboard')) ||
-              (item.id === 'profile' && (activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile')) ||
-              (item.id === 'applicants' && (activeSidebarItem === 'applicants' || activeSidebarItem === 'applicants_view'));
+              !locked && (
+                activeSidebarItem === item.id ||
+                (item.tab && activeSidebarItem === item.tab) ||
+                (item.id === 'recruiter_dashboard' && (activeSidebarItem === 'recruiter_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+                (item.id === 'admin_dashboard' && (activeSidebarItem === 'admin_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+                (item.id === 'hiring_manager_dashboard' && (activeSidebarItem === 'hiring_manager_dashboard' || activeSidebarItem === 'dashboard' || activeSidebarItem === 'home')) ||
+                (item.id === 'home' && (activeSidebarItem === 'home' || activeSidebarItem === 'dashboard')) ||
+                (item.id === 'profile' && (activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile')) ||
+                (item.id === 'applicants' && (activeSidebarItem === 'applicants' || activeSidebarItem === 'applicants_view'))
+              );
 
             return (
               <div key={item.id} className="relative group">
@@ -592,28 +658,44 @@ export default function FeedDashboard({
                   className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center h-11 px-0' : 'justify-start gap-3 px-3.5 py-2.5'
                     } rounded-xl text-xs font-semibold transition-all border-none cursor-pointer ${isActive
                       ? 'text-[#5C59E8] font-bold bg-[#F4F3FF]'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-[#F8F9FD]'
+                      : locked
+                        ? 'text-slate-500 hover:text-amber-800 hover:bg-amber-50/60'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-[#F8F9FD]'
                     }`}
-                  title={sidebarCollapsed ? item.label : undefined}
+                  title={sidebarCollapsed ? (locked ? `${item.label} (Locked - Click to Upgrade)` : item.label) : undefined}
                 >
                   <item.icon
-                    className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#5C59E8]' : 'text-slate-400 group-hover:text-slate-600'
+                    className={`w-4 h-4 shrink-0 transition-colors ${isActive
+                      ? 'text-[#5C59E8]'
+                      : locked
+                        ? 'text-slate-400 group-hover:text-amber-600'
+                        : 'text-slate-400 group-hover:text-slate-600'
                       }`}
                   />
                   {!sidebarCollapsed && (
                     <span className="truncate">{item.label}</span>
                   )}
-                </button>
 
-                {/* Active vertical right indicator bar */}
-                {isActive && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-l-full bg-[#5C59E8]" />
-                )}
+                  {/* Lock Indicator Badge if feature is locked */}
+                  {!sidebarCollapsed && locked && (
+                    <span className="ml-auto flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-100/90 border border-amber-200/80 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                      <Lock className="w-2.5 h-2.5 text-amber-600" />
+                      <span>{currentSubscription?.plan_type === 'CUSTOM_VENDOR' ? 'Restricted' : 'Upgrade'}</span>
+                    </span>
+                  )}
+
+                  {/* Active vertical right indicator bar */}
+                  {isActive && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-l-full bg-[#5C59E8]" />
+                  )}
+                </button>
 
                 {/* Collapsed Tooltip Flyout */}
                 {sidebarCollapsed && (
-                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center gap-1.5 select-none">
+                    {locked && <Lock className="w-3 h-3 text-amber-400" />}
                     <span>{item.label}</span>
+                    {locked && <span className="text-[10px] text-amber-300 font-semibold">(Upgrade)</span>}
                     <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
                   </div>
                 )}
@@ -622,10 +704,59 @@ export default function FeedDashboard({
           })}
         </div>
 
+        {/* Staff Subscription Plan Banner */}
+        {isStaff && !sidebarCollapsed && (
+          <div className="px-3 pb-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isAdmin) {
+                  setPlanModalTriggerReason('Subscription plan upgrades can only be made by your company Administrator.');
+                }
+                setShowPlanModal(true);
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/80 transition-all cursor-pointer group shadow-2xs text-left"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+                <div className="truncate">
+                  <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
+                    {user?.profile?.plan_type === 'PLAN_14999' ? 'Growth Scale Plan' : (user?.profile?.plan_type === 'PLAN_4999' ? 'Standard Role Plan' : 'Free Starter Plan')}
+                  </div>
+                  <div className="text-[9.5px] text-amber-800 font-medium">
+                    {isAdmin ? 'Manage plan & limits' : 'Company subscription tier'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[9px] font-black uppercase text-amber-800 bg-amber-200/80 px-1.5 py-0.5 rounded-md group-hover:bg-amber-300 transition-colors shrink-0">
+                {isAdmin ? 'Upgrade' : 'Plan'}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Bottom: User Profile & Notifications Section (In Sidebar Only) */}
         <div className="p-3 border-t border-slate-100 bg-white shrink-0 relative" ref={profileDropdownRef}>
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2.5 py-1">
+              {/* Collapsed Plan Crown for Staff */}
+              {isStaff && (
+                <div className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => setShowPlanModal(true)}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors relative border-none bg-transparent cursor-pointer"
+                    title="Subscription Plans"
+                  >
+                    <Crown className="w-4 h-4" />
+                  </button>
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                    <span>Subscription Plans</span>
+                    <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                  </div>
+                </div>
+              )}
+
               {/* Collapsed Notifications Bell */}
               <div className="relative group">
                 <button
@@ -751,6 +882,19 @@ export default function FeedDashboard({
                 <HelpCircle className="w-4 h-4 text-slate-400" />
                 <span>Help &amp; Support</span>
               </button>
+
+              {isStaff && (
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    setShowPlanModal(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-700 hover:text-amber-900 hover:bg-amber-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+                >
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <span>Subscription &amp; Plans</span>
+                </button>
+              )}
 
               <div className="my-1 border-t border-slate-100" />
 
@@ -1129,14 +1273,54 @@ export default function FeedDashboard({
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* SUB-VIEWS (DYNAMICALLY LOADED VIA REACT.LAZY + SUSPENSE)            */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          <Suspense fallback={<ViewLoadingFallback />}>
-            {/* 2. FIND JOBS VIEW                                                   */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'find_jobs' && (
-              <div className="min-h-full">
-                <JobSearch setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
+          {isNavLocked({ id: activeSidebarItem, tab: activeSidebarItem }) ? (
+            <div className="min-h-[70vh] flex items-center justify-center p-6">
+              <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-amber-200/80 shadow-xl shadow-amber-500/5 text-center space-y-4 animate-in zoom-in-95">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                    Feature Locked
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-2">
+                    {getPageTitle(activeSidebarItem)}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    This feature is locked under your company's current subscription tier. Upgrade your plan to unlock full team access.
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlanModalTriggerReason(`Upgrade your plan to unlock ${getPageTitle(activeSidebarItem)}`);
+                      setShowPlanModal(true);
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Crown className="w-4 h-4" />
+                    <span>Upgrade Plan to Unlock</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange(isAdmin ? 'admin_dashboard' : isRecruiter ? 'recruiter_dashboard' : 'hiring_manager_dashboard')}
+                    className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors border-none cursor-pointer"
+                  >
+                    Return to Dashboard
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
+          ) : (
+            <Suspense fallback={<ViewLoadingFallback />}>
+              {/* 2. FIND JOBS VIEW                                                   */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'find_jobs' && (
+                <div className="min-h-full">
+                  <JobSearch setActiveTab={handleTabChange} selectedJobId={selectedJobId} setSelectedJobId={setSelectedJobId} />
+                </div>
+              )}
 
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* 3. MY APPLICATIONS VIEW                                             */}
@@ -1294,6 +1478,7 @@ export default function FeedDashboard({
               </div>
             )}
           </Suspense>
+        )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 12. VCRUITAI SCHEDULER WIZARD + REVIEW SUMMARY                      */}
@@ -1793,7 +1978,22 @@ export default function FeedDashboard({
         </main>
       </div>
 
-      {/* Upgrade to PRO Modal */}
+      {/* Subscription / Upgrade Modal */}
+      {showPlanModal && (
+        <PlanSelectionModal
+          isOpen={true}
+          triggerReason={planModalTriggerReason}
+          onClose={() => {
+            setShowPlanModal(false);
+            setPlanModalTriggerReason('');
+          }}
+          onSuccess={() => {
+            setShowPlanModal(false);
+            setPlanModalTriggerReason('');
+            fetchSubscription();
+          }}
+        />
+      )}
     </div>
   );
 }

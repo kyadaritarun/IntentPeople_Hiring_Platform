@@ -290,16 +290,16 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isAdmin) {
+      const candidateCount = effectiveApplications.length;
       const staffCount = liveData.teamMembers.length;
-      const jobsCount = effectiveJobs.length;
+      const openJobsCount = effectiveJobs.filter(j => j.status === 'ACTIVE' || j.status === 'PUBLISHED' || j.is_active !== false).length;
       const pendingDocs = liveData.staffDocs.filter(d => d.status === 'PENDING').length;
-      const totalEstimatedUsers = (staffCount * 8) + (jobsCount * 12) + 148;
 
       return [
-        { value: totalEstimatedUsers.toLocaleString(), label: 'Total Users & Staff', sparkColor: '#5C59E8' },
+        { value: candidateCount.toLocaleString(), label: 'Candidate Applicants', sparkColor: '#5C59E8' },
         { value: staffCount.toString(), label: 'Active Staff Members', sparkColor: '#FF7043' },
-        { value: pendingDocs.toString(), label: 'Pending Verifications', isFeatured: true },
-        { value: '99.9%', label: 'System Health', sparkColor: '#00A884' }
+        { value: openJobsCount.toString(), label: 'Active Requisitions', sparkColor: '#00A884' },
+        { value: pendingDocs.toString(), label: 'Pending Verifications', isFeatured: true }
       ];
     }
 

@@ -8,6 +8,10 @@ export const TAB_CONFIG = {
     path: '/home',
     title: 'Home | Uptrix',
   },
+  superadmin_dashboard: {
+    path: '/superadmin',
+    title: 'Superadmin Console | Uptrix',
+  },
   admin_dashboard: {
     path: '/admin-dashboard',
     title: 'Admin Dashboard | Uptrix',
@@ -140,6 +144,7 @@ export const TAB_CONFIG = {
 
 // Default dashboard tab for each user role
 export function getDefaultTabForRole(role) {
+  if (role === 'SUPERADMIN') return 'superadmin_dashboard';
   if (role === 'ADMIN') return 'admin_dashboard';
   if (role === 'RECRUITER') return 'recruiter_dashboard';
   if (role === 'HIRING_MANAGER') return 'hiring_manager_dashboard';
@@ -148,6 +153,7 @@ export function getDefaultTabForRole(role) {
 
 // Normalize tab according to role
 export function normalizeTabForRole(tab, role) {
+  if (role === 'SUPERADMIN') return 'superadmin_dashboard';
   const isAdmin = role === 'ADMIN';
   const isRecruiter = role === 'RECRUITER';
   const isHiringManager = role === 'HIRING_MANAGER';
@@ -191,6 +197,7 @@ export function normalizeTabForRole(tab, role) {
 
 // Get canonical URL path for a tab
 export function getPathForTab(tab, role = null) {
+  if (role === 'SUPERADMIN' || tab === 'superadmin_dashboard') return '/superadmin';
   const normalized = normalizeTabForRole(tab, role);
   const config = TAB_CONFIG[normalized];
   if (config) return config.path;
@@ -204,6 +211,8 @@ export function getPathForTab(tab, role = null) {
 export function getAuthModeFromPath(pathname) {
   if (!pathname) return null;
   const path = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  if (path === '/superadmin/login' || path === '/superadmin-login') return 'superadmin_login';
+  if (path === '/superadmin') return 'superadmin';
   if (path === '/login/candidate' || path === '/candidate-login' || path === '/login-candidate') return 'login_candidate';
   if (path === '/login/recruiter' || path === '/recruiter-login' || path === '/login-recruiter') return 'login_recruiter';
   if (path === '/login') return 'login';
@@ -238,6 +247,9 @@ export function getTabFromPathname(pathname, role = null) {
     'home': 'home',
     'feed': 'home',
     'dashboard': getDefaultTabForRole(role),
+    'superadmin': 'superadmin_dashboard',
+    'superadmin-dashboard': 'superadmin_dashboard',
+    'superadmin/login': 'superadmin_dashboard',
     'admin-dashboard': 'admin_dashboard',
     'admin': 'admin_dashboard',
     'recruiter-dashboard': 'recruiter_dashboard',
@@ -316,3 +328,58 @@ export function getTabFromPathname(pathname, role = null) {
 export function generateGoogleMeetLink() {
   return generateInterviewRoomLink();
 }
+
+// Detect custom organization tenant from path (/tenant/:slug), query (?tenant= or ?subdomain=), or host
+export function getDetectedTenantSubdomain() {
+  if (typeof window === 'undefined') return null;
+
+  // 1. Path match /tenant/:slug
+  const pathMatch = window.location.pathname.match(/^\/tenant\/([a-zA-Z0-9_-]+)/);
+  if (pathMatch && pathMatch[1]) return pathMatch[1].toLowerCase();
+
+  // 2. Query param ?tenant=slug or ?subdomain=slug
+  const params = new URLSearchParams(window.location.search);
+  const qTenant = params.get('tenant') || params.get('subdomain');
+  if (qTenant) return qTenant.toLowerCase();
+
+  // 3. Subdomain on host
+  const host = window.location.hostname.toLowerCase();
+  
+  // If host is an IP address (e.g. 187.77.188.152 or 127.0.0.1), no subdomain
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return null;
+
+  const parts = host.split('.');
+  const isLocalhostSubdomain = parts.length === 2 && parts[1] === 'localhost';
+
+  // Standard domain needs at least 3 parts (e.g. <subdomain>.intentpeople.com)
+  if (parts.length >= 3 || isLocalhostSubdomain) {
+    const sub = parts[0];
+    if (!['www', 'api', 'app', 'backend', 'localhost', '127', 'portal', 'admin', 'superadmin', 'mail', 'smtp', 'ftp'].includes(sub)) {
+      return sub;
+    }
+  }
+  return null;
+}
+
+// Detect job ID or short code from URL path (/jobs/:id, /job/:id) or query (?job=:id, ?jobId=:id, ?id=:id)
+export function getJobIdFromUrl() {
+  if (typeof window === 'undefined') return null;
+
+  // 1. Path match /jobs/:id or /job/:id (supports unguessable short codes e.g. 2yxsr6 or numeric IDs)
+  const pathMatch = window.location.pathname.match(/^\/(?:jobs|job)\/([a-zA-Z0-9_-]+)/i);
+  if (pathMatch && pathMatch[1]) {
+    const val = pathMatch[1].trim();
+    if (val) return val;
+  }
+
+  // 2. Query param ?job=id or ?jobId=id or ?id=id
+  const params = new URLSearchParams(window.location.search);
+  const qId = params.get('jobId') || params.get('job') || (window.location.pathname.startsWith('/job') ? params.get('id') : null);
+  if (qId) {
+    const val = qId.trim();
+    if (val) return val;
+  }
+
+  return null;
+}
+

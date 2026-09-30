@@ -6,13 +6,14 @@ import {
   Building2, Printer, X, Eye, Award, GraduationCap, Compass, DollarSign, Calendar,
   Search, LayoutGrid, List, SlidersHorizontal, CheckSquare, Square, 
   ChevronDown, Check, ArrowUpDown, Layers, AlertCircle, ArrowUpRight,
-  Trophy, Zap, Target, Brain, TrendingUp, BarChart3, Star, Crown, HelpCircle
+  Trophy, Zap, Target, Brain, TrendingUp, BarChart3, Star, Crown, HelpCircle, Lock
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import PlanSelectionModal from '../../components/PlanSelectionModal';
 
 export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, role }) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const currentRole = role || user?.role || 'RECRUITER';
   const isAdmin = currentRole === 'ADMIN';
   const isHiringManager = currentRole === 'HIRING_MANAGER';
@@ -49,6 +50,8 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
   // PDF Preview & Export state
   const [pdfModalData, setPdfModalData] = useState(null); // { type: 'single' | 'all', app: ..., apps: ..., jobTitle: ... }
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState('');
   const printContainerRef = useRef(null);
   const jobPickerRef = useRef(null);
   const podPickerRef = useRef(null);
@@ -80,6 +83,9 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
   const loadData = async () => {
     setLoading(true);
     try {
+      if (refreshUser) {
+        refreshUser().catch(() => {});
+      }
       const [jobsRes, appsRes] = await Promise.allSettled([
         api.getMyJobs ? api.getMyJobs().catch(() => api.getJobs()) : api.getJobs(),
         api.getCompanyApplications ? api.getCompanyApplications() : Promise.resolve([])
@@ -344,6 +350,15 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
       SELECTED: requisitionApplicants.filter(a => ['SELECTED', 'HIRED'].includes(a.status)).length,
       REJECTED: requisitionApplicants.filter(a => a.status === 'REJECTED').length,
     };
+  }, [requisitionApplicants]);
+
+  // Locked & Visible counts for current requisition according to subscription plan
+  const lockedCandidatesCount = useMemo(() => {
+    return requisitionApplicants.filter(a => a.is_locked).length;
+  }, [requisitionApplicants]);
+
+  const visibleCandidatesCount = useMemo(() => {
+    return requisitionApplicants.filter(a => !a.is_locked).length;
   }, [requisitionApplicants]);
 
   // 4. Filter by stage & search query
@@ -1215,6 +1230,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
         {/* Right Side Header Controls: Pod Selector Popover, Requisition Selector, Export, Refresh */}
         <div className="flex items-center gap-2.5 flex-wrap">
+
           {/* Pod Selector Popover (All Pods Dropdown) */}
           {availablePods.length > 0 && (
             <div className="relative" ref={podPickerRef}>
@@ -1708,6 +1724,41 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
         </div>
       )}
 
+      {/* Plan Limits Notification Banner */}
+      {!loading && lockedCandidatesCount > 0 && (
+        <div className="mb-4 bg-gradient-to-r from-amber-50 via-amber-50/60 to-white border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-black text-slate-900 m-0">
+                  {lockedCandidatesCount} Candidate{lockedCandidatesCount !== 1 ? 's' : ''} Blurred & Locked
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 uppercase">
+                  Plan Limit
+                </span>
+              </div>
+              <p className="text-[11.5px] text-slate-600 mt-1 m-0">
+                Showing first {visibleCandidatesCount} candidates. Remaining {lockedCandidatesCount} candidates are blurred under your current plan limit.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setUpgradeReason(`Unlock all ${requisitionApplicants.length} candidates for ${getSelectedRequisitionTitle()}`);
+              setShowUpgradeModal(true);
+            }}
+            className="px-4 py-2.5 bg-gradient-to-r from-slate-900 to-[#1E3155] hover:from-black hover:to-slate-900 text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all shrink-0 cursor-pointer border-none"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#F2A93B]" />
+            <span>Upgrade Plan to Unlock All</span>
+          </button>
+        </div>
+      )}
+
       {/* ── 7. Main Pipeline Workspace Content Area ── */}
       {loading ? (
         <div className="py-20 text-center bg-white border border-slate-200/80 rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
@@ -1803,6 +1854,50 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     const isChecked = selectedCandidateIds.has(app.id);
                     const nextStage = getNextStage(app.status);
                     const nextStageLabel = getNextStageLabel(app.status);
+
+                    if (app.is_locked) {
+                      return (
+                        <div
+                          key={app.id}
+                          onClick={() => handleSelectApp(app)}
+                          className={`p-3.5 cursor-pointer transition-all border-l-4 ${
+                            isSelected 
+                              ? 'bg-amber-50/80 border-amber-500' 
+                              : 'bg-amber-50/20 hover:bg-amber-50/40 border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-200">
+                                <Lock className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-extrabold text-slate-900 text-xs truncate flex items-center gap-1.5">
+                                  <span>Candidate #{app.lock_index || '•'}</span>
+                                  <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded font-black border border-amber-200 uppercase">
+                                    Locked
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 select-none filter blur-[1.5px] truncate mt-0.5">
+                                  {c.title || 'Applicant'} • {c.email || '•••••@email.com'}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUpgradeReason(`Unlock candidate #${app.lock_index || ''} and extra applicants`);
+                                setShowUpgradeModal(true);
+                              }}
+                              className="px-2 py-1 text-[10px] font-extrabold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-md border border-amber-200 shrink-0 cursor-pointer"
+                            >
+                              Upgrade
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div
@@ -1923,6 +2018,50 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
 
               {/* Right Column: Full Candidate Dossier & Evaluation (7.5 cols) */}
               {selectedApp ? (
+                selectedApp.is_locked ? (
+                  <div className="lg:col-span-7 bg-white border border-amber-200/90 rounded-2xl p-8 sm:p-10 shadow-sm text-center flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-500/20 shadow-xs">
+                      <Lock className="w-8 h-8" />
+                    </div>
+                    <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-black uppercase tracking-wider mb-2 border border-amber-200">
+                      Plan Limit Reached
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">
+                      Candidate #{selectedApp.lock_index || ''} is Locked & Blurred
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed mb-6">
+                      Your current subscription plan allows viewing up to <strong>{selectedApp.max_limit || 50}</strong> candidates for this job requisition.
+                      Upgrade your plan to unlock complete candidate information, resume document, phone number, email, and stage management.
+                    </p>
+
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 max-w-sm w-full mb-6 text-left text-xs space-y-2">
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span>Job Position:</span>
+                        <span className="font-bold text-slate-900 truncate max-w-[200px]">{selectedApp.job_title}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span>Candidate Position:</span>
+                        <span className="font-bold text-amber-600">Applicant #{selectedApp.lock_index}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span>Application Status:</span>
+                        <span className="font-bold text-slate-800">{selectedApp.status}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpgradeReason(`Unlock candidate #${selectedApp.lock_index} and additional candidates for ${selectedApp.job_title}`);
+                        setShowUpgradeModal(true);
+                      }}
+                      className="px-6 py-3.5 bg-gradient-to-r from-slate-900 to-[#1E3155] hover:from-black hover:to-slate-900 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer border-none"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#F2A93B]" />
+                      <span>Upgrade Subscription Plan</span>
+                    </button>
+                  </div>
+                ) : (
                 <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6">
                   
                   {/* Candidate Identity Header */}
@@ -2468,6 +2607,7 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                   </div>
 
                 </div>
+                )
               ) : (
                 <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-12 text-center text-slate-400 text-xs shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   Select a candidate from the left list to review their complete dossier and qualifications.
@@ -2512,6 +2652,73 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
                     {paginatedApplicants.map(app => {
                       const c = app.candidate || {};
                       const isChecked = selectedCandidateIds.has(app.id);
+
+                      if (app.is_locked) {
+                        return (
+                          <tr key={app.id} className="bg-amber-50/20 hover:bg-amber-50/40 transition-colors border-b border-amber-100/60">
+                            <td className="p-3.5 text-center">
+                              <Lock className="w-4 h-4 text-amber-500 mx-auto" />
+                            </td>
+                            <td className="p-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-200">
+                                  <Lock className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-extrabold text-slate-900 text-xs">
+                                      Candidate #{app.lock_index || ''}
+                                    </span>
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-200 uppercase">
+                                      Locked
+                                    </span>
+                                  </div>
+                                  <div className="text-[0.68rem] text-slate-400 select-none filter blur-[2px] truncate mt-0.5">
+                                    candidate•locked@uptrix-upgrade.in
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-700">{app.job_title}</div>
+                              <div className="text-[0.68rem] text-slate-400">
+                                {app.job_location || 'India'}
+                              </div>
+                            </td>
+                            <td className="p-3.5 text-center">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-400">
+                                <Lock className="w-2.5 h-2.5" /> Hidden
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="text-[0.68rem] text-slate-400 select-none filter blur-[1.5px]">
+                                Digital Marketing • SEO • Performance Ads
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md border border-amber-200">
+                                Limit Reached
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-slate-400 text-[11px]">
+                              {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'Recent'}
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUpgradeReason(`Unlock candidate #${app.lock_index} and additional candidates`);
+                                  setShowUpgradeModal(true);
+                                }}
+                                className="px-3 py-1.5 bg-gradient-to-r from-[#101A33] to-[#1E3155] hover:from-black hover:to-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 border-none cursor-pointer ml-auto"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-[#F2A93B]" />
+                                <span>Upgrade Plan</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      }
 
                       return (
                         <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
@@ -3254,6 +3461,20 @@ export default function ApplicantsView({ jobId, setActiveTab, setSelectedJobId, 
             })()}
           </div>
         </div>
+      )}
+
+      {/* Plan Selection / Upgrade Modal */}
+      {showUpgradeModal && (
+        <PlanSelectionModal
+          isOpen={true}
+          onClose={() => setShowUpgradeModal(false)}
+          triggerReason={upgradeReason}
+          onSuccess={async () => {
+            setShowUpgradeModal(false);
+            if (refreshUser) await refreshUser();
+            await loadData();
+          }}
+        />
       )}
 
     </div>

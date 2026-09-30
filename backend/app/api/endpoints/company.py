@@ -7,6 +7,7 @@ from app import models, schemas
 from app.core import security
 from app.api.deps import get_current_user, get_user_company
 from app.services.s3 import upload_file_to_s3
+from app.api.endpoints.payment import get_plan_config
 
 router = APIRouter(prefix="/companies", tags=["Company & Recruiter"])
 
@@ -20,6 +21,14 @@ def update_company(data: schemas.CompanyProfileUpdate, user: models.User = Depen
 
     for field, val in data.model_dump(exclude_unset=True).items():
         setattr(company, field, val)
+    if data.headquarters_location:
+        company.location = data.headquarters_location
+    elif data.location:
+        company.headquarters_location = data.location
+    if data.primary_industry:
+        company.industry = data.primary_industry
+    elif data.industry:
+        company.primary_industry = data.industry
     db.commit()
     db.refresh(company)
     return company
@@ -261,6 +270,31 @@ def create_team_member(data: schemas.TeamMemberCreate, user: models.User = Depen
     existing = db.query(models.User).filter(models.User.email == data.email.strip().lower()).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"An account with email '{data.email}' already exists")
+
+    # Enforce staff role limits according to subscription plan
+    existing_members_count = db.query(models.CompanyMember).filter(models.CompanyMember.company_id == company.id).count()
+    cfg = get_plan_config(company.plan_type or "FREE", db)
+    max_roles = company.max_roles if company.max_roles is not None else (cfg.get("max_roles") or 1)
+    if existing_members_count >= max_roles:
+        plan_name = f"{cfg.get('name', 'Subscription Plan')} ({max_roles} roles max)"
+        raise HTTPException(
+            status_code=403,
+            detail=f"Staff role limit reached ({existing_members_count}/{max_roles}) for your {plan_name}. Please upgrade your subscription plan to add more team members."
+        )
+
+    # For 14,999 plan: 2 Recruiters + 2 Hiring Managers
+    if company.plan_type == 'PLAN_14999':
+        current_role_count = db.query(models.CompanyMember).filter(
+            models.CompanyMember.company_id == company.id,
+            models.CompanyMember.role == target_role
+        ).count()
+        if current_role_count >= 2:
+            role_label = "Recruiters" if target_role == "RECRUITER" else "Hiring Managers"
+            other_label = "Hiring Managers" if target_role == "RECRUITER" else "Recruiters"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Role allocation limit reached: The ₹14,999/month plan includes 2 {role_label} and 2 {other_label}."
+            )
 
     # Create new verified User account
     new_user = models.User(

@@ -27,7 +27,8 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
     expertise: Array.isArray(candidate.expertise)
       ? candidate.expertise.join(', ')
       : (typeof candidate.expertise === 'string' ? candidate.expertise : ''),
-    portfolio_url: candidate.portfolio_url || ''
+    portfolio_url: candidate.portfolio_url || '',
+    linkedin_url: candidate.linkedin_url || ''
   });
 
   const [avatarUrl, setAvatarUrl] = useState(candidate.avatar_url || '');
@@ -62,7 +63,8 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
         expertise: Array.isArray(c.expertise)
           ? c.expertise.join(', ')
           : (typeof c.expertise === 'string' ? c.expertise : ''),
-        portfolio_url: c.portfolio_url || ''
+        portfolio_url: c.portfolio_url || '',
+        linkedin_url: c.linkedin_url || ''
       });
       if (c.avatar_url) setAvatarUrl(c.avatar_url);
       setExperiences(Array.isArray(c.experience) ? c.experience : []);

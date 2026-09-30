@@ -5,12 +5,13 @@ import {
   ArrowUpRight, TrendingUp, ShieldCheck, ChevronRight,
   SlidersHorizontal, Check, RefreshCw, Eye, Zap, Layers,
   Target, FileText, Users, AlertCircle, Compass, Copy, Bot, Plus,
-  AlertTriangle, ShieldAlert, HelpCircle, Camera
+  AlertTriangle, ShieldAlert, HelpCircle, Camera, Share2
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import ShareJobModal from '../../components/ShareJobModal';
 
-export default function JobSearch({ setActiveTab }) {
+export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobId }) {
   const { user, refreshUser } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function JobSearch({ setActiveTab }) {
   // Application & Detail Modals
   const [selectedJob, setSelectedJob] = useState(null);
   const [viewDetailsJob, setViewDetailsJob] = useState(null);
+  const [sharingJob, setSharingJob] = useState(null);
   const [aiModalJob, setAiModalJob] = useState(null);
   const [copiedPitch, setCopiedPitch] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
@@ -88,6 +90,24 @@ export default function JobSearch({ setActiveTab }) {
       setUserAvatar(user.avatar_url);
     }
   }, [user?.profile, user?.avatar_url]);
+
+  // Automatically open job details if selectedJobId is specified via shared link
+  useEffect(() => {
+    if (selectedJobId) {
+      if (jobs.length > 0) {
+        const match = jobs.find(j => j.id === Number(selectedJobId) || (j.share_code && j.share_code === String(selectedJobId)));
+        if (match) {
+          setViewDetailsJob(match);
+          return;
+        }
+      }
+      api.getJobById(selectedJobId)
+        .then(j => {
+          if (j) setViewDetailsJob(j);
+        })
+        .catch(() => {});
+    }
+  }, [selectedJobId, jobs]);
 
   const handleUploadPhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -1041,18 +1061,32 @@ export default function JobSearch({ setActiveTab }) {
                           </div>
                         </div>
 
-                        {/* Bookmark Button */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSave(job)}
-                          className={`p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${isSaved
-                              ? 'bg-amber-50 border-amber-200 text-amber-600'
-                              : 'bg-transparent border-slate-200/80 hover:bg-slate-50 text-slate-400 hover:text-slate-700'
-                            }`}
-                          title={isSaved ? 'Remove from saved' : 'Save job'}
-                        >
-                          <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-500' : ''}`} />
-                        </button>
+                        {/* Action buttons: Share + Bookmark */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSharingJob(job);
+                            }}
+                            className="p-2 rounded-xl border border-slate-200/80 bg-white hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer shrink-0 shadow-2xs"
+                            title="Share job opening on social media or copy link"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSave(job)}
+                            className={`p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${isSaved
+                                ? 'bg-amber-50 border-amber-200 text-amber-600'
+                                : 'bg-transparent border-slate-200/80 hover:bg-slate-50 text-slate-400 hover:text-slate-700'
+                              }`}
+                            title={isSaved ? 'Remove from saved' : 'Save job'}
+                          >
+                            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-500' : ''}`} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Meta Tags: Salary + Work Mode + Experience */}
@@ -1127,6 +1161,16 @@ export default function JobSearch({ setActiveTab }) {
                           >
                             <Sparkles className="w-3.5 h-3.5 text-purple-600 group-hover:rotate-12 transition-transform" />
                             <span>AI Analyse</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setSharingJob(job)}
+                            className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/80 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            title="Share job link"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="hidden sm:inline">Share</span>
                           </button>
 
                           <button
@@ -1591,6 +1635,16 @@ export default function JobSearch({ setActiveTab }) {
               </button>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSharingJob(viewDetailsJob)}
+                  className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Share this role on social media"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Share</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setViewDetailsJob(null)}
@@ -2476,6 +2530,11 @@ export default function JobSearch({ setActiveTab }) {
 
           </div>
         </div>
+      )}
+
+      {/* Share Job Modal */}
+      {sharingJob && (
+        <ShareJobModal job={sharingJob} onClose={() => setSharingJob(null)} />
       )}
 
     </div>
