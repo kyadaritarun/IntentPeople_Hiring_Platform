@@ -9,6 +9,7 @@ const SuperadminLogin = lazy(() => import('./views/superadmin/SuperadminLogin'))
 const SuperadminDashboard = lazy(() => import('./views/superadmin/SuperadminDashboard'));
 const VendorPaymentPage = lazy(() => import('./views/payment/VendorPaymentPage'));
 const PublicJobView = lazy(() => import('./views/public/PublicJobView'));
+const CandidateOnboardingView = lazy(() => import('./views/candidate/CandidateOnboardingView'));
 
 // Universal page loading fallback
 function PageLoadingFallback() {
@@ -23,7 +24,7 @@ function PageLoadingFallback() {
           className="h-9 w-auto object-contain select-none"
         />
         <p className="text-[0.72rem] font-bold text-slate-500 uppercase tracking-widest animate-pulse m-0">
-          Loading Uptrix Platform...
+          Loading Platform...
         </p>
       </div>
     </div>
@@ -43,7 +44,7 @@ import {
 } from './utils/navigation';
 
 function MainAppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
 
   // Route & Modal state
   const initialAuthMode = getAuthModeFromPath(window.location.pathname);
@@ -131,7 +132,7 @@ function MainAppContent() {
         }
         try {
           sessionStorage.removeItem('uptrix_pending_apply_job_id');
-        } catch (e) {}
+        } catch (e) { }
         setSharedJobId(null);
       }
 
@@ -209,6 +210,23 @@ function MainAppContent() {
     return <PageLoadingFallback />;
   }
 
+  // 1. PUBLIC VENDOR CHECKOUT & PAYMENT
+  // Public vendor checkout URLs (e.g. /vendor-pay/:token) must ALWAYS be directly accessible on any domain
+  const isVendorPayPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/vendor-pay');
+
+  if (isVendorPayPath) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <VendorPaymentPage
+          onLoginRedirect={(subdomain) => {
+            window.history.pushState(null, '', `/tenant/${subdomain}`);
+            window.location.reload();
+          }}
+        />
+      </Suspense>
+    );
+  }
+
   const isAdminDomain = typeof window !== 'undefined' && (
     window.location.hostname === 'admin.intentpeople.com' ||
     window.location.hostname.startsWith('admin.')
@@ -241,21 +259,6 @@ function MainAppContent() {
         <SuperadminDashboard
           onLogout={() => {
             window.location.href = '/';
-          }}
-        />
-      </Suspense>
-    );
-  }
-
-  const isVendorPayPath = window.location.pathname.startsWith('/vendor-pay');
-
-  if (isVendorPayPath) {
-    return (
-      <Suspense fallback={<PageLoadingFallback />}>
-        <VendorPaymentPage
-          onLoginRedirect={(subdomain) => {
-            window.history.pushState(null, '', `/tenant/${subdomain}`);
-            window.location.reload();
           }}
         />
       </Suspense>
@@ -303,6 +306,26 @@ function MainAppContent() {
           initialMode={authInitialMode}
           onBackToLanding={navigateToHome}
           onModeChange={handleAuthModeChange}
+        />
+      </Suspense>
+    );
+  }
+
+  // CANDIDATE MANDATORY ONBOARDING GATE:
+  // When a new candidate logs in and has not completed onboarding,
+  // show exclusively the Candidate Onboarding page until completed.
+  const isCandidate = user?.role === 'CANDIDATE';
+  const isCandidateOnboardingIncomplete = isCandidate && !user?.profile?.onboarding_completed;
+
+  if (isCandidateOnboardingIncomplete) {
+    return (
+      <Suspense fallback={<PageLoadingFallback />}>
+        <CandidateOnboardingView
+          onComplete={async (targetTab) => {
+            await refreshUser();
+            handleTabChange(targetTab || 'feed');
+          }}
+          onExit={null}
         />
       </Suspense>
     );

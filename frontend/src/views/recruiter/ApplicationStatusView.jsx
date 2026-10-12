@@ -1,7 +1,7 @@
  import React, { useState, useEffect } from 'react';
 import {
   CheckCircle2, Users, Search, Filter, Clock, ArrowUpRight, ArrowRight,
-  ChevronRight, FileText, Download, Mail, Phone, ExternalLink,
+  ChevronRight, ChevronLeft, FileText, Download, Mail, Phone, ExternalLink,
   Calendar, RefreshCw, X, ShieldCheck, Sparkles, Building2,
   Briefcase, AlertCircle, Loader2, UserCheck, UserX, Eye, ArrowLeft,
   Video, Check, Award, MessageSquare, Star
@@ -20,6 +20,8 @@ export default function ApplicationStatusView({ setActiveTab }) {
   const [toastMessage, setToastMessage] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
   const [generatingMeet, setGeneratingMeet] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modals
   const [selectedAppModal, setSelectedAppModal] = useState(null);
@@ -559,6 +561,29 @@ export default function ApplicationStatusView({ setActiveTab }) {
     return matchesSearch && matchesJob && matchesStage;
   });
 
+  // Reset pagination when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedJobFilter, selectedStage, pageSize]);
+
+  const totalPages = Math.ceil(filteredApps.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedApps = filteredApps.slice(startIndex, startIndex + pageSize);
+
+  const getPageNumbers = (current, total) => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
   // Funnel Metrics based exclusively on shortlisted/funnel candidates
   const totalCount = funnelApps.length;
   const shortlistedCount = funnelApps.filter(a => a.status === 'SHORTLISTED').length;
@@ -816,30 +841,38 @@ export default function ApplicationStatusView({ setActiveTab }) {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-5">Candidate</th>
-                  <th className="py-3 px-5">Applied Requisition</th>
-                  <th className="py-3 px-5">Current Funnel Stage</th>
-                  <th className="py-3 px-5 text-center">Interviewing & Hiring Actions</th>
-                  <th className="py-3 px-5 text-right">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-normal">
-                {filteredApps.map((app) => {
-                  const cand = app.candidate || {};
-                  const isUpdating = updatingId === app.id;
-                  const initials = (cand.full_name || 'C')
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .substring(0, 2);
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200/80 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4 text-center w-12 text-slate-400 font-bold">#</th>
+                    <th className="py-3 px-5">Candidate</th>
+                    <th className="py-3 px-5">Applied Requisition</th>
+                    <th className="py-3 px-5">Current Funnel Stage</th>
+                    <th className="py-3 px-5 text-center">Interviewing & Hiring Actions</th>
+                    <th className="py-3 px-5 text-right">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs font-normal">
+                  {paginatedApps.map((app, idx) => {
+                    const cand = app.candidate || {};
+                    const isUpdating = updatingId === app.id;
+                    const initials = (cand.full_name || 'C')
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .substring(0, 2);
 
-                  return (
-                    <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
+                    return (
+                      <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* Row Number */}
+                        <td className="py-3.5 px-4 text-center align-middle">
+                          <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs inline-flex items-center justify-center border border-slate-200/80 shadow-2xs">
+                            {startIndex + idx + 1}
+                          </span>
+                        </td>
                       {/* Candidate Name & Info */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
@@ -935,7 +968,75 @@ export default function ApplicationStatusView({ setActiveTab }) {
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* ── Pagination Controls Bar ── */}
+          <div className="border-t border-slate-200/80 px-5 py-3.5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 text-slate-500 font-medium flex-wrap">
+              <span>
+                Showing <strong className="text-slate-900">{filteredApps.length === 0 ? 0 : startIndex + 1}</strong> to{' '}
+                <strong className="text-slate-900">{Math.min(startIndex + pageSize, filteredApps.length)}</strong> of{' '}
+                <strong className="text-slate-900">{filteredApps.length}</strong> candidates
+              </span>
+              <span className="hidden sm:inline-block text-slate-300">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 text-[11px]">Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-[#5C59E8] cursor-pointer shadow-2xs"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {getPageNumbers(safePage, totalPages).map((p, idx) => (
+                  p === '...' ? (
+                    <span key={`dots-${idx}`} className="px-1 text-slate-400 font-bold">...</span>
+                  ) : (
+                    <button
+                      key={`page-${p}`}
+                      type="button"
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer border transition-colors ${safePage === p
+                        ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       </div>
 
       {/* ── MODAL 1: SCHEDULE / ADVANCE INTERVIEW MODAL ── */}

@@ -652,12 +652,19 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isAdmin) {
+      const totalStaff = liveData.teamMembers.length;
       const pendingDocs = liveData.staffDocs.filter(d => d.status === 'PENDING').length;
+      const verifiedMembers = liveData.teamMembers.filter(m => {
+        const mDocs = liveData.staffDocs.filter(d => String(d.member_id) === String(m.id));
+        return mDocs.length > 0 && mDocs.every(d => d.status === 'VERIFIED');
+      }).length;
+      const complianceRate = totalStaff > 0 ? Math.round((verifiedMembers / totalStaff) * 100) : 100;
+
       return {
         label: 'Compliance Health',
-        metric: '99.85%',
+        metric: `${complianceRate}%`,
         sub1: { name: 'Pending KYC Documents', badge: `${pendingDocs} Pending` },
-        sub2: { name: 'Verified Staff Credentials', badge: `${liveData.teamMembers.length} Verified` },
+        sub2: { name: 'Verified Staff Members', badge: `${verifiedMembers}/${totalStaff} Verified` },
         viewTab: 'staff_documents'
       };
     }
@@ -763,41 +770,64 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
     }
 
     if (isAdmin) {
-      if (liveData.staffDocs.length > 0) {
-        return liveData.staffDocs.slice(0, 3).map((doc) => ({
-          name: doc.document_type || 'Staff Verification Document',
-          author: `Staff ID: ${doc.staff_id || 'Verification Team'}`,
-          date: doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Pending Review',
-          status: doc.status || 'Pending Verification',
-          statusColor: doc.status === 'VERIFIED' ? 'text-[#00846A]' : 'text-[#E15A2C]',
-          actionTab: 'staff_documents'
-        }));
+      const allMembers = liveData.teamMembers || [];
+
+      if (allMembers.length > 0) {
+        return allMembers.slice(0, 5).map((member) => {
+          // Check KYC compliance documents for this staff member
+          const memberDocs = (liveData.staffDocs || []).filter(
+            (d) => String(d.member_id) === String(member.id)
+          );
+
+          let status = 'KYC Awaited';
+          let statusColor = 'text-amber-600';
+
+          if (memberDocs.length > 0) {
+            const pendingCount = memberDocs.filter((d) => d.status === 'PENDING').length;
+            const verifiedCount = memberDocs.filter((d) => d.status === 'VERIFIED').length;
+            const rejectedCount = memberDocs.filter((d) => d.status === 'REJECTED').length;
+
+            if (pendingCount > 0) {
+              status = `${pendingCount} Audit Pending`;
+              statusColor = 'text-[#FF7043]';
+            } else if (rejectedCount > 0) {
+              status = 'Action Required';
+              statusColor = 'text-rose-600';
+            } else if (verifiedCount === memberDocs.length) {
+              status = 'KYC Verified';
+              statusColor = 'text-[#00846A]';
+            } else {
+              status = 'Audit in Progress';
+              statusColor = 'text-[#5C59E8]';
+            }
+          }
+
+          const roleDisplay = member.role === 'ADMIN' ? 'Organization Admin' : (member.role === 'HIRING_MANAGER' ? 'Hiring Manager' : 'Recruiter');
+          const authorText = member.title ? `${member.title} · ${member.email || ''}` : `${roleDisplay} · ${member.email || ''}`;
+          const dateText = member.created_at
+            ? new Date(member.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'Active Staff';
+
+          return {
+            name: member.name || 'Staff Member',
+            author: authorText,
+            date: dateText,
+            status,
+            statusColor,
+            actionTab: 'staff_documents'
+          };
+        });
       }
 
+      // If no staff members added yet, show clear real state
       return [
         {
-          name: 'Staff Member KYC Approval',
-          author: 'Admin: Alex Vance',
-          date: '2026/09/24 @ 07:25 AM',
-          status: 'Compliance Incomplete',
-          statusColor: 'text-[#E15A2C]',
-          actionTab: 'staff_documents'
-        },
-        {
-          name: 'Platform Infrastructure Health Check',
-          author: 'Author: DevOps Cluster',
-          date: '2026/09/24 @ 07:20 AM',
-          status: '0/3 Active Runs',
-          statusColor: 'text-[#00846A]',
-          actionTab: 'support'
-        },
-        {
-          name: 'Role Permission Verification',
-          author: 'Author: Security Audit',
-          date: '2026/09/24 @ 06:45 AM',
-          status: '2/3 Active Runs',
-          statusColor: 'text-[#00846A]',
-          actionTab: 'support'
+          name: 'No Staff Members Registered Yet',
+          author: 'Click to add recruiters and hiring managers to your workspace',
+          date: 'Workspace Ready',
+          status: '0 Active Staff',
+          statusColor: 'text-slate-400',
+          actionTab: 'add_staff'
         }
       ];
     }
@@ -914,22 +944,29 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
 
     if (isAdmin) {
       if (liveData.teamMembers.length > 0) {
-        return liveData.teamMembers.slice(0, 5).map((member) => ({
-          name: member.full_name || member.email,
-          tag: member.role || 'Staff',
-          isUp: member.is_active !== false,
-          perf: member.department || 'Operations',
-          uptime: 'Verified',
-          time: member.created_at ? new Date(member.created_at).toLocaleDateString() : '2026/09/24'
-        }));
+        return liveData.teamMembers.slice(0, 5).map((member) => {
+          const mDocs = liveData.staffDocs.filter(d => String(d.member_id) === String(member.id));
+          const isVerified = mDocs.length > 0 && mDocs.every(d => d.status === 'VERIFIED');
+          return {
+            name: member.name || member.email,
+            tag: member.role || 'Staff',
+            isUp: isVerified || mDocs.length > 0,
+            perf: member.title || member.role || 'Recruiting Team',
+            uptime: isVerified ? 'Verified' : (mDocs.length > 0 ? 'Pending Audit' : 'Docs Awaited'),
+            time: member.created_at ? new Date(member.created_at).toLocaleDateString() : 'Active'
+          };
+        });
       }
 
       return [
-        { name: 'Facebook/whitehouse', tag: 'Sample', isUp: true, perf: '81ms', uptime: '99.9%', time: '2026/09/24 @ 07:25' },
-        { name: 'Stripe/payments_v2', tag: 'Production', isUp: false, perf: '112ms', uptime: '98.5%', time: '2026/09/24 @ 07:25' },
-        { name: 'Uptrix/auth_service', tag: 'Internal', isUp: true, perf: '45ms', uptime: '100%', time: '2026/09/23 @ 05:10' },
-        { name: 'Meet/video_stream_cluster', tag: 'WebRTC', isUp: false, perf: '120ms', uptime: '97.2%', time: '2026/09/22 @ 02:40' },
-        { name: 'AWS/s3_storage_proxy', tag: 'Healthy', isUp: true, perf: '58ms', uptime: '99.9%', time: '2026/09/20 @ 11:15' },
+        {
+          name: user?.name ? `${user.name} (Organization Administrator)` : 'Organization Administrator',
+          tag: 'ADMIN',
+          isUp: true,
+          perf: 'Access & Compliance',
+          uptime: 'Active',
+          time: new Date().toLocaleDateString()
+        }
       ];
     }
 
@@ -1333,22 +1370,6 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                 {projectTestsTitle}
               </h2>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 border border-slate-200/70 cursor-pointer transition-colors"
-                >
-                  <span>Order by Creation</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium flex items-center gap-1 border border-slate-200/70 cursor-pointer transition-colors"
-                >
-                  <span>Sort by Name</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-              </div>
             </div>
 
             {/* Test rows */}
@@ -1365,8 +1386,8 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                   </div>
 
                   <div className="text-left sm:text-center text-[10px] text-slate-400 font-medium">
-                    <div className="text-slate-600 font-semibold">{row.date.split('@')[0]}</div>
-                    <div className="text-slate-400">@{row.date.split('@')[1] || '07:25'} Last Modified</div>
+                    <div className="text-slate-600 font-semibold">{row.date.includes('@') ? row.date.split('@')[0].trim() : row.date}</div>
+                    <div className="text-slate-400">{row.date.includes('@') ? `@${row.date.split('@')[1].trim()}` : (isAdmin ? 'Staff Record' : 'Last Active')}</div>
                   </div>
 
                   <div className={`text-xs font-semibold ${row.statusColor} flex items-center gap-1 shrink-0`}>
@@ -1374,11 +1395,9 @@ export default function UnifiedRoleDashboard({ role = 'CANDIDATE', user, onNavig
                     <span>{row.status}</span>
                   </div>
 
-                  {/* 3 Circular Actions: Edit, Calendar, Play — soft tinted */}
+                  {/* Action Button */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <IconButton icon={PenLine} tone="orange" onClick={() => onNavigateTab(row.actionTab)} title="Edit / View Details" />
-                    <IconButton icon={Calendar} tone="indigo" onClick={() => onNavigateTab('interviews')} title="Calendar Schedule" />
-                    <IconButton icon={Play} tone="emerald" onClick={() => onNavigateTab(row.actionTab)} title="Execute / Run Session" />
+                    <IconButton icon={Play} tone="emerald" onClick={() => onNavigateTab(row.actionTab)} title="View / Run Session" />
                   </div>
                 </div>
               ))}

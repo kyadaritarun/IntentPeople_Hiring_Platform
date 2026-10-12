@@ -8,6 +8,7 @@ import {
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import PlanSelectionModal from '../../components/PlanSelectionModal';
+import { MARKETING_SPECIALISATIONS, CUSTOMER_MODELS } from '../../utils/marketingTaxonomy';
 
 const ROUND_PRESETS = {
   2: [
@@ -86,29 +87,70 @@ function Badge({ tone = 'orange', children, className = '' }) {
 export default function PostJob({ setActiveTab }) {
   const { user } = useAuth();
   const compProfile = user?.profile || {};
+  const hd = compProfile.hiring_defaults_data || {};
+  const gs = compProfile.growth_stage_data || {};
+  const mt = compProfile.marketing_team_data || {};
+  const ta = compProfile.target_audience_data || {};
+
+  const bm = compProfile.business_model_data || {};
+
+  const defaultWorkMode = hd.workplace_model === 'Hybrid' ? 'Hybrid' : (hd.workplace_model === 'On-site / Office-based' ? 'Onsite' : 'Remote');
+  const defaultJobType = Array.isArray(hd.employment_types) && hd.employment_types.length > 0 ? (hd.employment_types[0] === 'Full-time' ? 'Full-Time' : hd.employment_types[0]) : 'Full-Time';
+  const defaultLocation = compProfile.headquarters_location || compProfile.location || '';
+
+  const defaultJobDescription = (() => {
+    const sections = [];
+
+    // 1. Company & Product Background
+    const companySummary = compProfile.company_description || bm.core_products_services || '';
+    if (companySummary) {
+      sections.push(`About ${compProfile.company_name || 'Our Company'}:\n${companySummary}`);
+    }
+
+    // 2. Role Responsibilities placeholder
+    sections.push('Key Responsibilities:\n• Lead and execute core initiatives for our functional team\n• Collaborate with cross-functional stakeholders to achieve key quarterly deliverables\n• Drive best practices, continuous improvement, and high execution quality');
+
+    // 3. Why Join Us / Culture Pitch
+    if (hd.why_join_us) {
+      sections.push(`Why Join Us:\n${hd.why_join_us}`);
+    }
+
+    // 4. Standard Benefits & Perks Package
+    if (Array.isArray(hd.benefits_perks) && hd.benefits_perks.length > 0) {
+      sections.push(`Benefits & Perks:\n${hd.benefits_perks.map(b => `• ${b}`).join('\n')}`);
+    }
+
+    // 5. Working Hours & Timezone Requirements
+    if (hd.working_hours_timezone) {
+      sections.push(`Work Schedule & Timezone Requirements:\n• Working hours: ${hd.working_hours_timezone}`);
+    }
+
+    return sections.join('\n\n');
+  })();
 
   const [formData, setFormData] = useState({
     title: '',
     specialization: '',
-    ownership_level: 'End-to-End Ownership',
+    ownership_level: 'Personally executed',
     availability_requirement: 'Immediate (0-15 days)',
     must_have_capabilities: '',
     preferred_capabilities: '',
-    description: '',
+    description: defaultJobDescription,
     skills: '',
     min_experience: '',
     salary_min: '',
     salary_max: '',
     salary_currency: 'USD',
-    location: '',
-    work_mode: 'Remote',
-    job_type: 'Full-Time',
-    business_problem: compProfile.business_problem || 'Lead volume is rising, but qualified pipeline is inconsistent.',
-    expected_outcome: compProfile.expected_outcome || 'Build a repeatable demand programme and improve lead-to-opportunity quality.',
-    team_support: compProfile.team_support || 'Marketing head, content specialist, shared design support',
-    monthly_budget_range: compProfile.monthly_budget_range || '₹8–12 lakh',
-    decision_authority: compProfile.decision_authority || 'Own campaigns and recommend budget allocation',
-    success_horizon: compProfile.success_horizon || 'First 90 days'
+    location: defaultLocation,
+    work_mode: defaultWorkMode,
+    job_type: defaultJobType,
+    business_model: bm.customer_model || compProfile.business_model || 'B2B',
+    business_problem: gs.marketing_challenge || compProfile.business_problem || ta.customer_problem || '',
+    expected_outcome: gs.desired_outcomes || compProfile.expected_outcome || '',
+    team_support: mt.team_size ? `${mt.team_size} team members${mt.leadership_structure ? ` • ${mt.leadership_structure}` : ''}` : (compProfile.team_support || ''),
+    monthly_budget_range: mt.monthly_budget_range || compProfile.monthly_budget_range || '',
+    decision_authority: mt.decision_authority || compProfile.decision_authority || '',
+    success_horizon: gs.planning_horizon || compProfile.success_horizon || ''
   });
 
   const [staffGroups, setStaffGroups] = useState([]);
@@ -122,8 +164,9 @@ export default function PostJob({ setActiveTab }) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const planType = compProfile.plan_type || 'FREE';
-  const maxJobs = compProfile.max_jobs || (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1));
-  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+  const isCustomVendor = planType === 'CUSTOM_VENDOR';
+  const maxJobs = compProfile.max_jobs || (isCustomVendor ? 999 : (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1)));
+  const planName = isCustomVendor ? 'Enterprise Partner Contract' : (planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan'));
   const isJobLimitReached = totalJobsCount >= maxJobs;
 
   React.useEffect(() => {
@@ -369,18 +412,30 @@ export default function PostJob({ setActiveTab }) {
                 Job Requisitions Limit Reached ({totalJobsCount}/{maxJobs})
               </h4>
               <p className="text-slate-600 mt-0.5 m-0 text-[11.5px]">
-                Your current subscription ({planName}) allows up to {maxJobs} job postings. Upgrade your plan to post more positions and increase candidate pipeline capacity.
+                {isCustomVendor
+                  ? `Your organization contract allows up to ${maxJobs} active job postings. To increase your quota, please contact your IntentPeople account administrator.`
+                  : `Your current subscription (${planName}) allows up to ${maxJobs} job postings. Upgrade your plan to post more positions and increase candidate pipeline capacity.`}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowUpgradeModal(true)}
-            className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
-          >
-            <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
-            <span>Upgrade Plan</span>
-          </button>
+          {!isCustomVendor ? (
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(true)}
+              className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+            >
+              <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
+              <span>Upgrade Plan</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setActiveTab && setActiveTab('support')}
+              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Contact Support</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -442,15 +497,20 @@ export default function PostJob({ setActiveTab }) {
               <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Specialization <span className="text-rose-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 name="specialization"
-                className={inputClass}
-                placeholder="e.g. Paid Search, Meta Ads, MarTech Engineering"
+                className={selectClass}
                 value={formData.specialization}
                 onChange={handleChange}
                 required
-              />
+              >
+                <option value="">Select Marketing Specialisation</option>
+                {MARKETING_SPECIALISATIONS.map(spec => (
+                  <option key={spec.id} value={spec.title || spec.name}>
+                    {spec.title || spec.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -533,18 +593,17 @@ export default function PostJob({ setActiveTab }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Ownership Level</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">Desired Ownership Level</label>
               <select
                 name="ownership_level"
                 className={selectClass}
                 value={formData.ownership_level}
                 onChange={handleChange}
               >
-                <option value="End-to-End Ownership">End-to-End Ownership</option>
-                <option value="Project / Pod Lead">Project / Pod Lead</option>
-                <option value="Autonomous Contributor">Autonomous Contributor</option>
-                <option value="Strategic Department Head">Strategic Department Head</option>
-                <option value="Individual Contributor">Individual Contributor</option>
+                <option value="Personally executed">Personally executed (Hands-on Execution)</option>
+                <option value="Managed delivery">Managed delivery (Team / Agency Management)</option>
+                <option value="Approved strategy">Approved strategy (Strategic Oversight)</option>
+                <option value="End-to-End Ownership">End-to-End Ownership (Strategy & Execution)</option>
               </select>
             </div>
 
@@ -704,13 +763,20 @@ export default function PostJob({ setActiveTab }) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
-              Detailed Job Description &amp; Responsibilities <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+              <label className="block text-xs font-medium text-slate-700">
+                Detailed Job Description &amp; Responsibilities <span className="text-rose-500">*</span>
+              </label>
+              {(hd.benefits_perks?.length > 0 || hd.working_hours_timezone || compProfile.company_description) && (
+                <span className="text-[11px] font-semibold text-[#5C59E8] bg-indigo-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#5C59E8]" /> Auto-populated with Company &amp; Benefits Defaults
+                </span>
+              )}
+            </div>
             <textarea
               name="description"
               className={textareaClass}
-              rows={5}
+              rows={8}
               placeholder="Outline day-to-day responsibilities, key performance metrics, tools stack, and company advantages..."
               value={formData.description}
               onChange={handleChange}
@@ -742,7 +808,7 @@ export default function PostJob({ setActiveTab }) {
                 rows={2}
                 value={formData.business_problem}
                 onChange={handleChange}
-                placeholder="Lead volume is rising, but qualified pipeline is inconsistent."
+                placeholder="e.g. Operational bottleneck or core business challenge this role needs to solve..."
                 className={textareaClass}
               />
             </div>
@@ -754,12 +820,38 @@ export default function PostJob({ setActiveTab }) {
                 rows={2}
                 value={formData.expected_outcome}
                 onChange={handleChange}
-                placeholder="Build a repeatable demand programme and improve lead-to-opportunity quality."
+                placeholder="e.g. Concrete business deliverables or success metrics expected from this hire..."
                 className={textareaClass}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Customer / Business Model</label>
+                <select
+                  name="business_model"
+                  value={formData.business_model}
+                  onChange={handleChange}
+                  className={selectClass}
+                >
+                  {CUSTOMER_MODELS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">Monthly Ad Budget Range</label>
+                <input
+                  type="text"
+                  name="monthly_budget_range"
+                  value={formData.monthly_budget_range}
+                  onChange={handleChange}
+                  placeholder="e.g. $10k–$25k/mo or $50k+/mo"
+                  className={inputClass}
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1.5">Team Support</label>
                 <input
@@ -767,19 +859,7 @@ export default function PostJob({ setActiveTab }) {
                   name="team_support"
                   value={formData.team_support}
                   onChange={handleChange}
-                  placeholder="Marketing head, content specialist, shared design support"
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">Monthly Budget Range</label>
-                <input
-                  type="text"
-                  name="monthly_budget_range"
-                  value={formData.monthly_budget_range}
-                  onChange={handleChange}
-                  placeholder="₹8–12 lakh or $10k–$15k"
+                  placeholder="e.g. Department head, peers, dedicated design or analyst support..."
                   className={inputClass}
                 />
               </div>
@@ -791,7 +871,7 @@ export default function PostJob({ setActiveTab }) {
                   name="decision_authority"
                   value={formData.decision_authority}
                   onChange={handleChange}
-                  placeholder="Own campaigns and recommend budget allocation"
+                  placeholder="e.g. Recommends strategy, owns day-to-day execution, reports to VP"
                   className={inputClass}
                 />
               </div>
@@ -803,7 +883,7 @@ export default function PostJob({ setActiveTab }) {
                   name="success_horizon"
                   value={formData.success_horizon}
                   onChange={handleChange}
-                  placeholder="First 90 days"
+                  placeholder="e.g. First 90 days or 6 months"
                   className={inputClass}
                 />
               </div>
@@ -1162,14 +1242,24 @@ export default function PostJob({ setActiveTab }) {
             )}
 
             {isJobLimitReached ? (
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(true)}
-                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer border-none"
-              >
-                <Crown className="w-4 h-4 text-amber-200" />
-                <span>Job Limit Reached ({totalJobsCount}/{maxJobs}) — Upgrade Plan</span>
-              </button>
+              isCustomVendor ? (
+                <button
+                  type="button"
+                  disabled
+                  className="px-6 py-2.5 rounded-lg bg-slate-200 text-slate-500 text-xs font-bold cursor-not-allowed border-none"
+                >
+                  Job Limit Reached ({totalJobsCount}/{maxJobs})
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer border-none"
+                >
+                  <Crown className="w-4 h-4 text-amber-200" />
+                  <span>Job Limit Reached ({totalJobsCount}/{maxJobs}) — Upgrade Plan</span>
+                </button>
+              )
             ) : (
               <button
                 type="submit"
@@ -1195,7 +1285,7 @@ export default function PostJob({ setActiveTab }) {
       </form>
 
       {/* Plan Selection / Upgrade Modal */}
-      {showUpgradeModal && (
+      {showUpgradeModal && !isCustomVendor && (
         <PlanSelectionModal
           isOpen={true}
           onClose={() => setShowUpgradeModal(false)}

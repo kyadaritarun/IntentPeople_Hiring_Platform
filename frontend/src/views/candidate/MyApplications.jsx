@@ -4,11 +4,12 @@ import {
   ArrowUpRight, Search, Filter, AlertCircle, XCircle, Calendar,
   Sparkles, Send, Eye, RefreshCw, X, ShieldCheck, FileText,
   Check, DollarSign, ExternalLink, Award, ArrowRight, Video,
-  LayoutList, LayoutGrid, Star, MessageSquare, TrendingUp
+  LayoutList, LayoutGrid, Star, MessageSquare, TrendingUp, Target
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import GoogleMeetCard from '../../components/interview/GoogleMeetCard';
+import RecruiterMatchDossier from '../../components/RecruiterMatchDossier';
 
 const STAGES = [
   { key: 'APPLIED', label: 'Applied', desc: 'Application received' },
@@ -404,7 +405,7 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
               My Applications
             </h1>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-600" /> Live ATS Pipeline
+              <Sparkles className="w-3 h-3 text-emerald-600" /> Track your Live status
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1.5 m-0">
@@ -718,11 +719,17 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
                                       <span className="truncate">{j.location || 'Remote'}</span>
                                     </div>
                                     {app.fit_score != null && (
-                                      <div className="mt-1">
-                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/70">
-                                          <Sparkles className="w-2.5 h-2.5 text-purple-600" />
-                                          <span>{Math.round(app.fit_score)}% Match</span>
+                                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                                          <Sparkles className="w-2.5 h-2.5 text-indigo-600" />
+                                          <span>{Math.round(app.fit_score)}% Fit</span>
                                         </span>
+                                        {(app.domain_alignment != null || app.fit_breakdown?.domain_alignment != null) && (
+                                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                                            <Target className="w-2.5 h-2.5 text-emerald-600" />
+                                            <span>{Math.round(app.domain_alignment || app.fit_breakdown?.domain_alignment)}% Domain</span>
+                                          </span>
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -844,12 +851,12 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
 
                     {/* AI Fit Score Card (if scored) */}
                     {activeApp.fit_score != null && (
-                      <div className="p-3 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-2">
+                      <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                             <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">
-                              AI Match Score
+                              AI Role-Fit Match
                             </span>
                           </div>
                           <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
@@ -862,19 +869,38 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
                             style={{ width: `${Math.min(100, Math.max(0, activeApp.fit_score))}%` }}
                           />
                         </div>
-                        {activeApp.fit_breakdown && typeof activeApp.fit_breakdown === 'object' && (
-                          <div className="grid grid-cols-3 gap-1 pt-1 text-[10px] text-purple-800 font-medium">
-                            {activeApp.fit_breakdown.skills != null && (
-                              <div>Skills: <span className="font-bold">{Math.round(activeApp.fit_breakdown.skills)}%</span></div>
-                            )}
-                            {activeApp.fit_breakdown.experience != null && (
-                              <div>Exp: <span className="font-bold">{Math.round(activeApp.fit_breakdown.experience)}%</span></div>
-                            )}
-                            {activeApp.fit_breakdown.relevance != null && (
-                              <div>Role: <span className="font-bold">{Math.round(activeApp.fit_breakdown.relevance)}%</span></div>
-                            )}
-                          </div>
-                        )}
+                        {(() => {
+                          const breakdown = activeApp.fit_breakdown?.breakdown || activeApp.fit_breakdown || {};
+                          const domainAlign = activeApp.domain_alignment || activeApp.fit_breakdown?.domain_alignment || breakdown.domain_alignment || breakdown.marketing_alignment;
+                          return (
+                            <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px]">
+                              {domainAlign != null && (
+                                <div className="bg-white/80 p-1.5 rounded-md border border-emerald-100 flex items-center justify-between">
+                                  <span className="text-emerald-700 font-semibold">Domain:</span>
+                                  <span className="font-extrabold text-emerald-800">{Math.round(domainAlign)}%</span>
+                                </div>
+                              )}
+                              {breakdown.skills != null && (
+                                <div className="bg-white/80 p-1.5 rounded-md border border-purple-100 flex items-center justify-between">
+                                  <span className="text-purple-700 font-semibold">Skills:</span>
+                                  <span className="font-extrabold text-purple-800">{Math.round(breakdown.skills)}%</span>
+                                </div>
+                              )}
+                              {breakdown.experience != null && (
+                                <div className="bg-white/80 p-1.5 rounded-md border border-purple-100 flex items-center justify-between">
+                                  <span className="text-purple-700 font-semibold">Exp:</span>
+                                  <span className="font-extrabold text-purple-800">{Math.round(breakdown.experience)}%</span>
+                                </div>
+                              )}
+                              {breakdown.relevance != null && (
+                                <div className="bg-white/80 p-1.5 rounded-md border border-purple-100 flex items-center justify-between">
+                                  <span className="text-purple-700 font-semibold">Role:</span>
+                                  <span className="font-extrabold text-purple-800">{Math.round(breakdown.relevance)}%</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -1038,10 +1064,18 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
                           </span>
                         )}
                         {app.fit_score != null && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200/80 flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5 text-purple-600" />
-                            <span>{Math.round(app.fit_score)}% Match</span>
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-indigo-600" />
+                              <span>{Math.round(app.fit_score)}% Fit</span>
+                            </span>
+                            {(app.domain_alignment != null || app.fit_breakdown?.domain_alignment != null) && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center gap-1">
+                                <Target className="w-2.5 h-2.5 text-emerald-600" />
+                                <span>{Math.round(app.domain_alignment || app.fit_breakdown?.domain_alignment)}% Domain</span>
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
 
@@ -1273,50 +1307,78 @@ export default function MyApplications({ setActiveTab, setSelectedJobId }) {
                 )}
               </div>
 
-              {/* AI Fit Score Details (if available) */}
-              {viewingApp.fit_score != null && (
-                <div className="p-4 rounded-xl bg-purple-50/70 border border-purple-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-purple-600" />
-                      <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
-                        AI Candidate Fit Assessment
-                      </span>
+              {/* AI Fit Score Details & 8-Dimension Dossier */}
+              {viewingApp.fit_score != null && (() => {
+                const breakdown = viewingApp.fit_breakdown?.breakdown || viewingApp.fit_breakdown || {};
+                const domainAlign = viewingApp.domain_alignment || viewingApp.fit_breakdown?.domain_alignment || breakdown.domain_alignment || breakdown.marketing_alignment;
+
+                return (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-purple-600" />
+                          <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                            AI Candidate Fit & Domain Assessment
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            {Math.round(viewingApp.fit_score)}% AI Role-Fit
+                          </span>
+                          {domainAlign != null && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                              <Target className="w-3 h-3 text-emerald-600" />
+                              {Math.round(domainAlign)}% Domain
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full bg-purple-200/60 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-purple-600 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(0, viewingApp.fit_score))}%` }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px] text-purple-900">
+                        {domainAlign != null && (
+                          <div className="bg-white/80 p-2 rounded-lg border border-emerald-100">
+                            <span className="text-emerald-700 block text-[10px] font-bold">Domain Alignment</span>
+                            <span className="font-extrabold text-emerald-800">{Math.round(domainAlign)}%</span>
+                          </div>
+                        )}
+                        {breakdown.skills != null && (
+                          <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
+                            <span className="text-purple-600 block text-[10px] font-bold">Skills Match</span>
+                            <span className="font-bold">{Math.round(breakdown.skills)}%</span>
+                          </div>
+                        )}
+                        {breakdown.experience != null && (
+                          <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
+                            <span className="text-purple-600 block text-[10px] font-bold">Experience Depth</span>
+                            <span className="font-bold">{Math.round(breakdown.experience)}%</span>
+                          </div>
+                        )}
+                        {breakdown.relevance != null && (
+                          <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
+                            <span className="text-purple-600 block text-[10px] font-bold">Role Relevance</span>
+                            <span className="font-bold">{Math.round(breakdown.relevance)}%</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
-                      {Math.round(viewingApp.fit_score)}% Match
-                    </span>
-                  </div>
-                  <div className="w-full bg-purple-200/60 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-purple-600 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, Math.max(0, viewingApp.fit_score))}%` }}
+
+                    {/* Full 8-Dimension Match Dossier */}
+                    <RecruiterMatchDossier
+                      candidate={user}
+                      job={viewingApp.job}
+                      fitScore={viewingApp.fit_score}
+                      fitBreakdown={viewingApp.fit_breakdown}
+                      compact={true}
                     />
                   </div>
-                  {viewingApp.fit_breakdown && typeof viewingApp.fit_breakdown === 'object' && (
-                    <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] text-purple-900">
-                      {viewingApp.fit_breakdown.skills != null && (
-                        <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
-                          <span className="text-purple-600 block text-[10px]">Skills Match</span>
-                          <span className="font-bold">{Math.round(viewingApp.fit_breakdown.skills)}%</span>
-                        </div>
-                      )}
-                      {viewingApp.fit_breakdown.experience != null && (
-                        <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
-                          <span className="text-purple-600 block text-[10px]">Experience Depth</span>
-                          <span className="font-bold">{Math.round(viewingApp.fit_breakdown.experience)}%</span>
-                        </div>
-                      )}
-                      {viewingApp.fit_breakdown.relevance != null && (
-                        <div className="bg-white/80 p-2 rounded-lg border border-purple-100">
-                          <span className="text-purple-600 block text-[10px]">Role Relevance</span>
-                          <span className="font-bold">{Math.round(viewingApp.fit_breakdown.relevance)}%</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {/* Feedback Message Card in Details Modal */}
               <CandidateFeedbackMessageCard feedback={getFeedbackForApp(viewingApp, user)} appStatus={viewingApp.status} />

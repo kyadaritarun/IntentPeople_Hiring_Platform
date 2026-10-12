@@ -184,8 +184,35 @@ export const api = {
     return handleResponse(res);
   },
 
+  async uploadCompanyComplianceDoc(file, docType) {
+    const formData = new FormData();
+    if (file) {
+      formData.append('file', file);
+    }
+    if (docType) {
+      formData.append('doc_type', docType);
+    }
+    const token = localStorage.getItem('uptrix_token');
+    const res = await fetch(`${API_BASE}/companies/documents/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+    return handleResponse(res);
+  },
+
   async verifyCompany() {
     const res = await fetch(`${API_BASE}/companies/verify`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async requestCompanyVerification() {
+    const res = await fetch(`${API_BASE}/companies/request-verification`, {
       method: 'POST',
       headers: { ...getAuthHeaders() }
     });
@@ -626,6 +653,19 @@ export const api = {
     return handleResponse(res);
   },
 
+  async uploadMessageAttachment(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers = getAuthHeaders();
+    delete headers['Content-Type'];
+    const res = await fetch(`${API_BASE}/messages/upload`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    return handleResponse(res);
+  },
+
   // ── Candidate Community Posts ───────────────────────────────────
   async getMyPosts() {
     const res = await fetch(`${API_BASE}/posts/my`, {
@@ -898,6 +938,34 @@ export const api = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ is_verified, verification_status })
+    });
+    return handleResponse(res);
+  },
+
+  async getSuperadminVerificationRequests(params = {}) {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.q) query.append('q', params.q);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE}/superadmin/verification-requests${qs}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async approveCompanyVerification(companyId) {
+    const res = await fetch(`${API_BASE}/superadmin/companies/${companyId}/approve-verification`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    return handleResponse(res);
+  },
+
+  async rejectCompanyVerification(companyId, reason = '') {
+    const res = await fetch(`${API_BASE}/superadmin/companies/${companyId}/reject-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ reason })
     });
     return handleResponse(res);
   },

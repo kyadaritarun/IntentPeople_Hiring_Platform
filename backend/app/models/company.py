@@ -36,8 +36,17 @@ class Company(Base):
     monthly_budget_range = Column(String, nullable=True)
     decision_authority = Column(String, nullable=True)
     success_horizon = Column(String, nullable=True)
+    business_model_data = Column(JSON, nullable=True)
+    target_audience_data = Column(JSON, nullable=True)
+    growth_stage_data = Column(JSON, nullable=True)
+    marketing_team_data = Column(JSON, nullable=True)
+    hiring_defaults_data = Column(JSON, nullable=True)
+    compliance_documents_data = Column(JSON, nullable=True)
     is_verified = Column(Boolean, default=False)
-    verification_status = Column(String, default="PENDING")  # PENDING, VERIFIED, REJECTED
+    verification_status = Column(String, default="PENDING_PROFILE")  # PENDING_PROFILE, UNDER_REVIEW, VERIFIED, REJECTED
+    verification_requested_at = Column(DateTime, nullable=True)
+    verification_reviewed_at = Column(DateTime, nullable=True)
+    verification_rejection_reason = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     subdomain = Column(String, unique=True, nullable=True, index=True)
     

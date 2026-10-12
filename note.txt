@@ -8,6 +8,5 @@ python deploy_portal.py
 only backend
 .\venv\Scripts\python.exe deploy_portal.py --skip-build
 
-
 only landing site
 .\venv\Scripts\python.exe deploy_portal.py --only-landing

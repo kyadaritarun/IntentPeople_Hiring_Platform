@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -10,6 +11,50 @@ from app.services.s3 import upload_file_to_s3
 from app.api.endpoints.payment import get_plan_config
 
 router = APIRouter(prefix="/companies", tags=["Company & Recruiter"])
+
+
+def check_company_profile_completion(company: models.Company) -> tuple[bool, list[str]]:
+    missing = []
+    # Step 1: Overview
+    if not (company.company_name and (company.website or getattr(company, "no_website", False)) and (company.organisation_type or getattr(company, "organization_type", None)) and (company.industry or company.primary_industry) and (company.location or company.headquarters_location) and company.about):
+        missing.append("Profile Overview")
+    
+    # Step 2: Business Model
+    bm = company.business_model_data or {}
+    if not (bm.get("customer_model") and bm.get("revenue_model") and bm.get("offering_description")):
+        missing.append("Products & Business Model")
+        
+    # Step 3: Target Audience
+    ta = company.target_audience_data or {}
+    if not (ta.get("target_markets") and ta.get("customer_segment") and ta.get("buyer_roles") and ta.get("customer_problem")):
+        missing.append("Target Audience")
+        
+    # Step 4: Growth Stage
+    gs = company.growth_stage_data or {}
+    if not (gs.get("business_stage") and gs.get("marketing_challenge") and (gs.get("business_priorities") and len(gs.get("business_priorities", [])) > 0)):
+        missing.append("Growth Stage & Priorities")
+        
+    # Step 5: Team Structure
+    mt = company.marketing_team_data or {}
+    if not (mt.get("team_size") and mt.get("leadership_structure")):
+        missing.append("Team Structure & Tools")
+        
+    # Step 6: Hiring Defaults
+    hd = company.hiring_defaults_data or {}
+    if not (hd.get("workplace_model") and (hd.get("employment_types") and len(hd.get("employment_types", [])) > 0)):
+        missing.append("Hiring Defaults & Showcase")
+        
+    # Step 7: Compliance Documents (Requires at least 2 out of 5 statutory documents)
+    cd = company.compliance_documents_data or {}
+    valid_docs_count = sum(
+        1 for k in ["pan_card", "labour_license", "trade_license", "coi", "registration_doc"]
+        if cd.get(k) and (cd.get(k).get("file_url") or cd.get(k).get("doc_number"))
+    )
+    if valid_docs_count < 2:
+        missing.append("Compliance & Statutory Documents (At least 2 required)")
+
+    return len(missing) == 0, missing
+
 
 @router.put("/me")
 def update_company(data: schemas.CompanyProfileUpdate, user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -34,6 +79,7 @@ def update_company(data: schemas.CompanyProfileUpdate, user: models.User = Depen
     return company
 
 @router.post("/verify")
+@router.post("/request-verification")
 def submit_verification(user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     if user.role not in ["ADMIN", "RECRUITER"]:
         raise HTTPException(status_code=403, detail="Only administrators and recruiters can request verification")
@@ -41,10 +87,33 @@ def submit_verification(user: models.User = Depends(get_current_user), db: Sessi
     if not company:
         raise HTTPException(status_code=404, detail="Company profile not found")
 
-    company.is_verified = True
-    company.verification_status = "VERIFIED"
+    if company.is_verified:
+        return {
+            "message": "Company is already verified and active.",
+            "verification_status": "VERIFIED",
+            "is_verified": True
+        }
+
+    is_complete, missing_steps = check_company_profile_completion(company)
+    if not is_complete:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Please complete all 7 profile steps before requesting Superadmin verification. Incomplete steps: {', '.join(missing_steps)}"
+        )
+
+    company.is_verified = False
+    company.verification_status = "UNDER_REVIEW"
+    company.verification_requested_at = datetime.utcnow()
+    company.verification_rejection_reason = None
     db.commit()
-    return {"message": "Company verification approved successfully!", "verification_status": "VERIFIED"}
+    db.refresh(company)
+
+    return {
+        "message": "Company profile submitted for inspect review! Our compliance desk will review your statutory documents to unlock your Free Trial.",
+        "verification_status": "UNDER_REVIEW",
+        "verification_requested_at": company.verification_requested_at.isoformat(),
+        "is_verified": False
+    }
 
 @router.get("/team")
 def get_team_members(
@@ -252,6 +321,31 @@ def upload_company_logo(
     return {
         "message": "Company logo uploaded successfully to AWS S3!",
         "logo_url": file_url
+    }
+
+@router.post("/documents/upload")
+def upload_compliance_document(
+    file: UploadFile = File(...),
+    doc_type: str = Form(None),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if user.role not in ["ADMIN", "RECRUITER"]:
+        raise HTTPException(status_code=403, detail="Only administrators and recruiters can upload company documents")
+
+    company = get_user_company(user, db)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No document or photo file provided")
+
+    file_url, orig_name = upload_file_to_s3(file=file, folder="compliance", entity_id=company.id)
+    return {
+        "message": "Document uploaded successfully",
+        "file_url": file_url,
+        "file_name": orig_name,
+        "doc_type": doc_type
     }
 
 @router.post("/team", status_code=201)

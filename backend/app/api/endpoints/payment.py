@@ -17,6 +17,12 @@ from app.api.deps import get_current_user, get_user_company
 router = APIRouter(prefix="/payments", tags=["Payments & Subscription Plans"])
 
 DEFAULT_SIDEBAR_ACCESS = {
+    "NONE": {
+        "ADMIN": ["company_profile", "support"],
+        "RECRUITER": ["company_profile", "support"],
+        "HIRING_MANAGER": ["company_profile", "support"],
+        "MANAGER": ["company_profile", "support"]
+    },
     "FREE": {
         "ADMIN": ["dashboard", "admin_dashboard", "add_staff", "hiring_groups", "applicants", "company_profile", "support"],
         "RECRUITER": ["recruiter_dashboard", "dashboard", "manage_jobs", "post_job", "applicants", "company_profile", "support"],
@@ -34,10 +40,58 @@ DEFAULT_SIDEBAR_ACCESS = {
         "RECRUITER": ["recruiter_dashboard", "dashboard", "post_job", "manage_jobs", "applicants", "search_candidates", "application_status", "interviews", "messages", "documents", "company_profile", "support"],
         "HIRING_MANAGER": ["hiring_manager_dashboard", "dashboard", "applicants", "manage_jobs", "interviews", "messages", "company_profile", "support"],
         "MANAGER": ["hiring_manager_dashboard", "dashboard", "applicants", "manage_jobs", "interviews", "messages", "company_profile", "support"]
+    },
+    "CUSTOM_VENDOR": {
+        "ADMIN": ["dashboard", "admin_dashboard", "add_staff", "hiring_groups", "manage_jobs", "applicants", "interviews", "messages", "staff_documents", "company_profile", "support"],
+        "RECRUITER": ["recruiter_dashboard", "dashboard", "post_job", "manage_jobs", "applicants", "search_candidates", "application_status", "interviews", "messages", "documents", "company_profile", "support"],
+        "HIRING_MANAGER": ["hiring_manager_dashboard", "dashboard", "applicants", "manage_jobs", "interviews", "messages", "company_profile", "support"],
+        "MANAGER": ["hiring_manager_dashboard", "dashboard", "applicants", "manage_jobs", "interviews", "messages", "company_profile", "support"]
     }
 }
 
 PLAN_CONFIGS = {
+    "NONE": {
+        "id": "NONE",
+        "name": "Pending Verification",
+        "price": 0,
+        "price_display": "₹0",
+        "billing": "Verification Required",
+        "duration_days": 0,
+        "max_roles": 0,
+        "max_jobs": 0,
+        "max_candidates_per_job": 0,
+        "badge": "Pending Verification",
+        "is_popular": False,
+        "description": "Complete your company profile to 100% to request Superadmin verification and unlock your Free Trial.",
+        "features": [
+            "Complete 7-step Organization Blueprint",
+            "Upload Statutory Compliance Documents",
+            "Superadmin Verification Review",
+            "Upgrade to Paid Plan anytime for instant access"
+        ],
+        "sidebar_access": DEFAULT_SIDEBAR_ACCESS["NONE"]
+    },
+    "CUSTOM_VENDOR": {
+        "id": "CUSTOM_VENDOR",
+        "name": "Custom Dedicated Partner Portal",
+        "price": 0,
+        "price_display": "Custom Agreement",
+        "billing": "Dedicated Contract",
+        "duration_days": 365,
+        "max_roles": 999,
+        "max_jobs": 999,
+        "max_candidates_per_job": 999,
+        "badge": "Dedicated Enterprise",
+        "is_popular": False,
+        "description": "Dedicated custom organization package provisioned by IntentPeople Superadmin.",
+        "features": [
+            "Private dedicated subdomain portal",
+            "Custom recruiter & hiring manager quotas",
+            "Dedicated applicant pipeline & management",
+            "Bespoke contract agreement"
+        ],
+        "sidebar_access": DEFAULT_SIDEBAR_ACCESS["CUSTOM_VENDOR"]
+    },
     "FREE": {
         "id": "FREE",
         "name": "Free Starter",
@@ -121,6 +175,8 @@ class VerifyPaymentRequest(BaseModel):
 
 def get_plan_config(plan_id: str, db: Optional[Session] = None) -> dict:
     """Helper to fetch plan config from DB or fallback to PLAN_CONFIGS."""
+    if plan_id == "CUSTOM_VENDOR":
+        return PLAN_CONFIGS["CUSTOM_VENDOR"]
     if db:
         try:
             pc = db.query(models.PlanConfig).filter(models.PlanConfig.id == plan_id).first()
@@ -143,7 +199,7 @@ def get_plan_config(plan_id: str, db: Optional[Session] = None) -> dict:
                 }
         except Exception:
             pass
-    return PLAN_CONFIGS.get(plan_id, PLAN_CONFIGS["FREE"])
+    return PLAN_CONFIGS.get(plan_id, PLAN_CONFIGS.get("NONE" if plan_id == "NONE" else "FREE"))
 
 
 @router.get("/plans")
@@ -192,37 +248,50 @@ def get_current_subscription(
     roles_count = db.query(models.CompanyMember).filter(models.CompanyMember.company_id == company.id).count()
     jobs_count = db.query(models.Job).filter(models.Job.company_id == company.id).count()
 
-    plan_type = company.plan_type or "FREE"
+    is_verified = bool(company.is_verified) or company.verification_status == "VERIFIED"
+    is_unlocked = is_verified or (company.plan_type in ["PLAN_4999", "PLAN_14999", "CUSTOM_VENDOR"])
+    plan_type = company.plan_type if is_unlocked else "NONE"
     cfg = get_plan_config(plan_type, db)
 
-    max_roles = company.max_roles or cfg["max_roles"]
-    max_jobs = company.max_jobs or cfg["max_jobs"]
-    max_cands = company.max_candidates_per_job or cfg["max_candidates_per_job"]
+    max_roles = (company.max_roles or cfg["max_roles"]) if is_unlocked else 0
+    max_jobs = (company.max_jobs or cfg["max_jobs"]) if is_unlocked else 0
+    max_cands = (company.max_candidates_per_job or cfg["max_candidates_per_job"]) if is_unlocked else 0
 
     days_remaining = None
-    if company.plan_expires_at:
+    if is_unlocked and company.plan_expires_at:
         delta = company.plan_expires_at - datetime.utcnow()
         days_remaining = max(0, delta.days)
 
-    sidebar_access = company.sidebar_access or cfg.get("sidebar_access") or DEFAULT_SIDEBAR_ACCESS.get(plan_type, {})
+    is_custom = (plan_type == "CUSTOM_VENDOR")
+    plan_name = "Dedicated Partner Portal" if is_custom else (cfg["name"] if is_unlocked else "Profile Verification Pending")
+    price_display = "Custom Agreement" if is_custom else (cfg["price_display"] if is_unlocked else "Free Trial (Locked)")
+    billing = "Dedicated Contract" if is_custom else (cfg["billing"] if is_unlocked else "Complete Profile to Unlock")
+
+    sidebar_access = (company.sidebar_access if (company.sidebar_access and is_unlocked) else cfg.get("sidebar_access")) or DEFAULT_SIDEBAR_ACCESS.get(plan_type, DEFAULT_SIDEBAR_ACCESS["NONE"])
 
     return {
         "company_id": company.id,
         "company_name": company.company_name,
+        "subdomain": company.subdomain,
+        "portal_domain": f"{company.subdomain}.intentpeople.com" if company.subdomain else None,
         "plan_type": plan_type,
-        "plan_status": company.plan_status or "ACTIVE",
-        "plan_name": cfg["name"],
-        "price_display": cfg["price_display"],
-        "billing": cfg["billing"],
-        "plan_activated_at": company.plan_activated_at.isoformat() if company.plan_activated_at else None,
-        "plan_expires_at": company.plan_expires_at.isoformat() if company.plan_expires_at else None,
+        "plan_status": company.plan_status if is_unlocked else "PENDING",
+        "plan_name": plan_name,
+        "price_display": price_display,
+        "billing": billing,
+        "is_custom_vendor": is_custom,
+        "can_upgrade": is_unlocked and not is_custom,
+        "is_verified": is_verified,
+        "verification_status": company.verification_status or ("VERIFIED" if is_verified else "PENDING_PROFILE"),
+        "plan_activated_at": company.plan_activated_at.isoformat() if (is_unlocked and company.plan_activated_at) else None,
+        "plan_expires_at": company.plan_expires_at.isoformat() if (is_unlocked and company.plan_expires_at) else None,
         "days_remaining": days_remaining,
         "roles_used": roles_count,
         "max_roles": max_roles,
-        "can_add_role": roles_count < max_roles,
+        "can_add_role": is_unlocked and (roles_count < max_roles),
         "jobs_used": jobs_count,
         "max_jobs": max_jobs,
-        "can_post_job": jobs_count < max_jobs,
+        "can_post_job": is_unlocked and (jobs_count < max_jobs),
         "max_candidates_per_job": max_cands,
         "sidebar_access": sidebar_access,
         "razorpay_key_id": settings.RAZORPAY_KEY_ID
@@ -238,6 +307,15 @@ def activate_free_plan(
     company = get_user_company(user, db)
     if not company:
         raise HTTPException(status_code=404, detail="Company profile not found")
+
+    if not (company.is_verified or company.verification_status == "VERIFIED"):
+        raise HTTPException(
+            status_code=403,
+            detail="Superadmin verification required. Please complete your company profile to 100% and wait for Superadmin approval before activating your Free Trial."
+        )
+
+    if company.plan_type == "CUSTOM_VENDOR":
+        raise HTTPException(status_code=400, detail="Custom vendor portals operate on dedicated contract agreements and cannot switch to free starter.")
 
     if user.role != "ADMIN" or (company.user_id and company.user_id != user.id):
         raise HTTPException(status_code=403, detail="Only the originating company administrator can select or activate subscription plans.")
@@ -290,6 +368,9 @@ def create_razorpay_order(
     company = get_user_company(user, db)
     if not company:
         raise HTTPException(status_code=404, detail="Company profile not found")
+
+    if company.plan_type == "CUSTOM_VENDOR":
+        raise HTTPException(status_code=400, detail="Custom vendor portals operate on dedicated contract agreements. Standard self-serve plan checkout is disabled.")
 
     if user.role != "ADMIN" or (company.user_id and company.user_id != user.id):
         raise HTTPException(status_code=403, detail="Only the originating company administrator can initiate plan upgrades or payments.")

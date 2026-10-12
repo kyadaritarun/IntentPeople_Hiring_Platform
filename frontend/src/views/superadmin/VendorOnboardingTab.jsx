@@ -533,13 +533,44 @@ export default function VendorOnboardingTab({ triggerToast, onCountChange }) {
 
                           {/* View Details / Credentials Modal */}
                           {isPaid && (
-                            <button
-                              onClick={() => handleViewDetails(inv)}
-                              className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[10px] transition-colors"
-                              title="View Credentials & Portal Link"
-                            >
-                              Credentials
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setFormData({
+                                    vendor_name: inv.vendor_name || '',
+                                    vendor_email: inv.vendor_email || '',
+                                    vendor_phone: inv.vendor_phone || '',
+                                    company_name: inv.company_name || '',
+                                    subdomain: inv.subdomain || '',
+                                    price: inv.price || 9999,
+                                    currency: inv.currency || 'INR',
+                                    validity_days: 30,
+                                    billing_note: 'Contract Renewal & Quota Upgrade',
+                                    max_roles: inv.max_roles || 3,
+                                    max_jobs: inv.max_jobs || 6,
+                                    max_candidates_per_job: inv.max_candidates_per_job || 150,
+                                    send_email_now: true,
+                                    sidebar_access: inv.sidebar_access || {
+                                      ADMIN: SIDEBAR_FEATURE_OPTIONS.ADMIN.map(item => item.key),
+                                      RECRUITER: SIDEBAR_FEATURE_OPTIONS.RECRUITER.map(item => item.key),
+                                      MANAGER: SIDEBAR_FEATURE_OPTIONS.MANAGER.map(item => item.key)
+                                    }
+                                  });
+                                  setModalOpen(true);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-[10px] transition-colors"
+                                title="Issue Renewal & Quota Upgrade Link for this Vendor"
+                              >
+                                Renew / Upgrade
+                              </button>
+                              <button
+                                onClick={() => handleViewDetails(inv)}
+                                className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[10px] transition-colors"
+                                title="View Credentials & Portal Link"
+                              >
+                                Credentials
+                              </button>
+                            </>
                           )}
 
                           {/* Revoke Invitation */}

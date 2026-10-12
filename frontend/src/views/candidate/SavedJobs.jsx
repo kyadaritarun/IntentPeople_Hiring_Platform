@@ -4,12 +4,15 @@ import {
   Trash2, Send, CheckCircle2, DollarSign, Clock, Search, 
   Filter, ShieldCheck, ChevronRight, ArrowUpRight, Sparkles, 
   Eye, X, Check, RefreshCw, Layers, Zap, AlertCircle, Compass, HelpCircle, Share2,
-  LayoutGrid, LayoutList
+  LayoutGrid, LayoutList, Target
 } from 'lucide-react';
 import { api } from '../../api';
+import { useAuth } from '../../context/AuthContext';
+import { computeUnifiedJobMatch } from '../../utils/aiMatchScorer';
 import ShareJobModal from '../../components/ShareJobModal';
 
 export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
+  const { user } = useAuth();
   const [savedList, setSavedList] = useState(() => {
     try {
       const saved = localStorage.getItem('uptrix_saved_job_ids');
@@ -38,6 +41,19 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
   const [viewDetailsJob, setViewDetailsJob] = useState(null);
   const [sharingJob, setSharingJob] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([fetchSavedJobs(), fetchApplications()]);
+      showToast('Saved jobs refreshed!');
+    } catch (err) {
+      console.error('Error refreshing saved jobs:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     fetchApplications();
@@ -65,8 +81,9 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
       if (Array.isArray(apps)) {
         const map = {};
         apps.forEach(a => {
-          if (a.job_id || a.job?.id) {
-            map[a.job_id || a.job.id] = a.status || 'APPLIED';
+          const jId = a.job_id || a.job?.id;
+          if (jId) {
+            map[jId] = a;
           }
         });
         setAppliedJobsMap(map);
@@ -220,6 +237,16 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="px-3.5 py-2.5 rounded-lg border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
+            title="Refresh saved jobs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${refreshing ? 'animate-spin text-[#FF7043]' : ''}`} />
+            <span>Refresh</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab?.('job_search')}
@@ -381,6 +408,16 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
 
             <button
               type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs cursor-pointer flex items-center justify-center disabled:opacity-50"
+              title="Refresh saved jobs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#FF7043]' : ''}`} />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab?.('my_applications')}
               className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors border-none cursor-pointer shrink-0"
             >
@@ -432,7 +469,16 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
               Save digital marketing and tech roles while exploring to keep track of top openings and apply when you are ready.
             </p>
           </div>
-          <div className="pt-2">
+          <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#FF7043]' : ''}`} />
+              <span>Refresh</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab?.('job_search')}
@@ -470,8 +516,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {filteredList.map((job) => {
-                  const isApplied = !!appliedJobsMap[job.id];
-                  const matchPct = 90 + ((job.id * 7) % 8);
+                  const appliedApp = appliedJobsMap[job.id];
+                  const isApplied = !!appliedApp;
+                  const match = computeUnifiedJobMatch(job, user, appliedApp);
+                  const matchPct = match.score;
+                  const domainPct = match.domainAlignment;
 
                   return (
                     <tr
@@ -542,10 +591,16 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
 
                       {/* Match Fit */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80">
-                          <Sparkles size={11} className="text-purple-600" />
-                          {matchPct}% Match
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80">
+                            <Sparkles size={11} className="text-indigo-600" />
+                            {matchPct}% Role-Fit
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80">
+                            <Target size={10} className="text-emerald-600" />
+                            {domainPct}% Domain
+                          </span>
+                        </div>
                       </td>
 
                       {/* Saved On */}
@@ -627,8 +682,11 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredList.map((job) => {
-            const isApplied = !!appliedJobsMap[job.id];
-            const matchPct = 90 + ((job.id * 7) % 8);
+            const appliedApp = appliedJobsMap[job.id];
+            const isApplied = !!appliedApp;
+            const match = computeUnifiedJobMatch(job, user, appliedApp);
+            const matchPct = match.score;
+            const domainPct = match.domainAlignment;
 
             return (
               <div
@@ -698,9 +756,13 @@ export default function SavedJobs({ setActiveTab, setSelectedJobId }) {
                         {job.salary}
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80 flex items-center gap-1">
-                      <Sparkles size={11} className="text-purple-600" />
-                      {matchPct}% Match
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 flex items-center gap-1">
+                      <Sparkles size={11} className="text-indigo-600" />
+                      {matchPct}% Role-Fit
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 flex items-center gap-1">
+                      <Target size={11} className="text-emerald-600" />
+                      {domainPct}% Domain
                     </span>
                   </div>
 

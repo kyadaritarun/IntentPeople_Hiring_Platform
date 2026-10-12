@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -35,7 +36,90 @@ def format_candidate_profile(c: models.Candidate) -> dict:
         "portfolio_url": c.portfolio_url,
         "linkedin_url": getattr(c, "linkedin_url", None) or "",
         "views_count": getattr(c, "views_count", 0) or 0,
-        "top_search_count": getattr(c, "top_search_count", 0) or 0
+        "top_search_count": getattr(c, "top_search_count", 0) or 0,
+        "career_stage": getattr(c, "career_stage", "") or "",
+        "career_interests": getattr(c, "career_interests", {}) or {},
+        "specialisations_data": getattr(c, "specialisations_data", []) or [],
+        "gtm_experience": getattr(c, "gtm_experience", {}) or {},
+        "case_studies": getattr(c, "case_studies", []) or [],
+        "execution_environment": getattr(c, "execution_environment", {}) or {},
+        "tools_proficiency": getattr(c, "tools_proficiency", []) or [],
+        "onboarding_completed": bool(getattr(c, "onboarding_completed", False)),
+        "onboarding_step": getattr(c, "onboarding_step", 1) or 1
+    }
+
+def format_company_profile(comp: models.Company, member: Optional[models.CompanyMember], user: models.User, db: Session) -> dict:
+    if not comp:
+        return {}
+
+    is_verified = bool(comp.is_verified) or comp.verification_status == "VERIFIED"
+    # Plan is unlocked ONLY if organization is verified by superadmin, or has an active paid subscription / custom vendor agreement
+    is_plan_unlocked = is_verified or (comp.plan_type in ["PLAN_4999", "PLAN_14999", "CUSTOM_VENDOR"])
+    active_plan_id = comp.plan_type if is_plan_unlocked else "NONE"
+    cfg = get_plan_config(active_plan_id, db)
+
+    plan_max_roles = cfg.get("max_roles", 1 if is_plan_unlocked else 0)
+    plan_max_jobs = cfg.get("max_jobs", 1 if is_plan_unlocked else 0)
+    plan_max_cands = cfg.get("max_candidates_per_job", 5 if is_plan_unlocked else 0)
+
+    effective_max_roles = (comp.max_roles if comp.max_roles is not None else plan_max_roles) if is_plan_unlocked else 0
+    effective_max_jobs = (comp.max_jobs if comp.max_jobs is not None else plan_max_jobs) if is_plan_unlocked else 0
+    effective_max_cands = (comp.max_candidates_per_job if comp.max_candidates_per_job is not None else plan_max_cands) if is_plan_unlocked else 0
+
+    return {
+        "id": comp.id,
+        "company_name": comp.company_name,
+        "full_name": member.name if member else (getattr(comp, "contact_person", None) or comp.company_name),
+        "name": member.name if member else (getattr(comp, "contact_person", None) or comp.company_name),
+        "email": user.email,
+        "role": user.role,
+        "title": member.title if member else ("Administrator" if user.role == "ADMIN" else "Staff"),
+        "phone": (member.phone if (member and member.phone) else (comp.phone if comp else "")),
+        "place": (member.place if (member and member.place) else (comp.location if comp else "")),
+        "website": comp.website,
+        "linkedin_url": getattr(comp, "linkedin_url", None) or "",
+        "industry": comp.industry,
+        "primary_industry": getattr(comp, "primary_industry", None) or comp.industry or "",
+        "sub_industry": getattr(comp, "sub_industry", None) or "",
+        "organisation_type": getattr(comp, "organisation_type", None) or "",
+        "location": comp.location or "",
+        "headquarters_location": getattr(comp, "headquarters_location", None) or comp.location or "",
+        "other_locations": getattr(comp, "other_locations", None) or "",
+        "company_size": getattr(comp, "company_size", None) or "",
+        "year_founded": getattr(comp, "year_founded", None) or "",
+        "about": comp.about,
+        "logo_url": comp.logo_url,
+        "avatar_url": member.avatar_url if member else comp.logo_url,
+        "contact_person": getattr(comp, "contact_person", None) or "",
+        "product_service": comp.product_service,
+        "business_model": comp.business_model,
+        "growth_stage": comp.growth_stage,
+        "target_audience": comp.target_audience,
+        "ideal_customer_profile": comp.ideal_customer_profile,
+        "business_problem": comp.business_problem,
+        "expected_outcome": comp.expected_outcome,
+        "team_support": comp.team_support,
+        "monthly_budget_range": comp.monthly_budget_range,
+        "decision_authority": comp.decision_authority,
+        "success_horizon": comp.success_horizon,
+        "business_model_data": getattr(comp, "business_model_data", None) or {},
+        "target_audience_data": getattr(comp, "target_audience_data", None) or {},
+        "growth_stage_data": getattr(comp, "growth_stage_data", None) or {},
+        "marketing_team_data": getattr(comp, "marketing_team_data", None) or {},
+        "hiring_defaults_data": getattr(comp, "hiring_defaults_data", None) or {},
+        "compliance_documents_data": getattr(comp, "compliance_documents_data", None) or {},
+        "is_verified": is_verified,
+        "verification_status": comp.verification_status or ("VERIFIED" if is_verified else "PENDING_PROFILE"),
+        "verification_requested_at": comp.verification_requested_at.isoformat() if comp.verification_requested_at else None,
+        "verification_reviewed_at": comp.verification_reviewed_at.isoformat() if comp.verification_reviewed_at else None,
+        "verification_rejection_reason": comp.verification_rejection_reason,
+        "plan_type": active_plan_id,
+        "plan_status": comp.plan_status if is_plan_unlocked else "PENDING",
+        "plan_expires_at": comp.plan_expires_at.isoformat() if comp.plan_expires_at else None,
+        "max_roles": effective_max_roles,
+        "max_jobs": effective_max_jobs,
+        "max_candidates_per_job": effective_max_cands,
+        "sidebar_access": comp.sidebar_access if (comp.sidebar_access and is_plan_unlocked) else cfg.get("sidebar_access") or DEFAULT_SIDEBAR_ACCESS.get(active_plan_id, DEFAULT_SIDEBAR_ACCESS["NONE"])
     }
 
 @router.post("/register/candidate", status_code=201)
@@ -156,7 +240,7 @@ def register_company(
         company.contact_person = data.full_name
         company.about = data.company_details or ""
         company.is_verified = False
-        company.verification_status = "PENDING"
+        company.verification_status = "PENDING_PROFILE"
         company.plan_type = "NONE"
         company.plan_status = "PENDING"
     else:
@@ -173,7 +257,7 @@ def register_company(
             contact_person=data.full_name,
             about=data.company_details or "",
             is_verified=False,
-            verification_status="PENDING",
+            verification_status="PENDING_PROFILE",
             plan_type="NONE",
             plan_status="PENDING"
         )
@@ -276,33 +360,7 @@ def verify_otp(data: schemas.OTPVerify, db: Session = Depends(get_db)):
         comp = get_user_company(user, db)
         member = db.query(models.CompanyMember).filter(models.CompanyMember.user_id == user.id).first() if user.role in ["RECRUITER", "HIRING_MANAGER"] else None
         if comp:
-            cfg = get_plan_config(comp.plan_type or "FREE", db)
-            plan_max_roles = cfg.get("max_roles", 1)
-            plan_max_jobs = cfg.get("max_jobs", 1)
-            plan_max_cands = cfg.get("max_candidates_per_job", 999999)
-
-            effective_max_roles = comp.max_roles if comp.max_roles is not None else plan_max_roles
-            effective_max_jobs = comp.max_jobs if comp.max_jobs is not None else plan_max_jobs
-            effective_max_cands = comp.max_candidates_per_job if comp.max_candidates_per_job is not None else plan_max_cands
-
-            profile_data = {
-                "id": comp.id,
-                "company_name": comp.company_name,
-                "full_name": member.name if member else (getattr(comp, "contact_person", None) or comp.company_name),
-                "title": member.title if member else ("Administrator" if user.role == "ADMIN" else "Staff"),
-                "is_verified": comp.is_verified,
-                "verification_status": comp.verification_status,
-                "plan_type": comp.plan_type or "FREE",
-                "plan_status": comp.plan_status or "ACTIVE",
-                "plan_expires_at": comp.plan_expires_at.isoformat() if comp.plan_expires_at else None,
-                "max_roles": effective_max_roles,
-                "max_jobs": effective_max_jobs,
-                "max_candidates_per_job": effective_max_cands,
-                "location": comp.location or "",
-                "headquarters_location": getattr(comp, "headquarters_location", None) or comp.location or "",
-                "company_size": getattr(comp, "company_size", None) or "",
-                "contact_person": getattr(comp, "contact_person", None) or ""
-            }
+            profile_data = format_company_profile(comp, member, user, db)
 
     return {
         "message": "Email verified successfully!",
@@ -431,36 +489,7 @@ def login(data: schemas.UserLogin, db: Session = Depends(get_db)):
         comp = get_user_company(user, db)
         member = db.query(models.CompanyMember).filter(models.CompanyMember.user_id == user.id).first() if user.role in ["RECRUITER", "HIRING_MANAGER"] else None
         if comp:
-            cfg = get_plan_config(comp.plan_type or "FREE", db)
-            plan_max_roles = cfg.get("max_roles", 1)
-            plan_max_jobs = cfg.get("max_jobs", 1)
-            plan_max_cands = cfg.get("max_candidates_per_job", 999999)
-
-            effective_max_roles = comp.max_roles if comp.max_roles is not None else plan_max_roles
-            effective_max_jobs = comp.max_jobs if comp.max_jobs is not None else plan_max_jobs
-            effective_max_cands = comp.max_candidates_per_job if comp.max_candidates_per_job is not None else plan_max_cands
-
-            profile_data = {
-                "id": comp.id, 
-                "company_name": comp.company_name,
-                "full_name": member.name if member else (getattr(comp, "contact_person", None) or comp.company_name),
-                "title": member.title if member else ("Administrator" if user.role == "ADMIN" else "Staff"),
-                "website": comp.website,
-                "location": comp.location or "",
-                "headquarters_location": getattr(comp, "headquarters_location", None) or comp.location or "",
-                "company_size": getattr(comp, "company_size", None) or "",
-                "contact_person": getattr(comp, "contact_person", None) or "",
-                "avatar_url": member.avatar_url if member else comp.logo_url,
-                "is_verified": comp.is_verified,
-                "verification_status": comp.verification_status,
-                "plan_type": comp.plan_type or "FREE",
-                "plan_status": comp.plan_status or "ACTIVE",
-                "plan_expires_at": comp.plan_expires_at.isoformat() if comp.plan_expires_at else None,
-                "max_roles": effective_max_roles,
-                "max_jobs": effective_max_jobs,
-                "max_candidates_per_job": effective_max_cands,
-                "sidebar_access": comp.sidebar_access if comp.sidebar_access else cfg.get("sidebar_access") or DEFAULT_SIDEBAR_ACCESS.get(comp.plan_type or "FREE", {})
-            }
+            profile_data = format_company_profile(comp, member, user, db)
 
     return {
         "access_token": token,
@@ -511,61 +540,7 @@ def get_me(user: models.User = Depends(get_current_user), db: Session = Depends(
         staff_title = member.title if member else ("Administrator" if user.role == "ADMIN" else ("Technical Recruiter" if user.role == "RECRUITER" else "Hiring Manager"))
 
         if comp:
-            cfg = get_plan_config(comp.plan_type or "FREE", db)
-            plan_max_roles = cfg.get("max_roles", 1)
-            plan_max_jobs = cfg.get("max_jobs", 1)
-            plan_max_cands = cfg.get("max_candidates_per_job", 999999)
-
-            effective_max_roles = comp.max_roles if comp.max_roles is not None else plan_max_roles
-            effective_max_jobs = comp.max_jobs if comp.max_jobs is not None else plan_max_jobs
-            effective_max_cands = comp.max_candidates_per_job if comp.max_candidates_per_job is not None else plan_max_cands
-
-            profile_data = {
-                "id": comp.id,
-                "company_name": comp.company_name,
-                "full_name": staff_name,
-                "name": staff_name,
-                "email": user.email,
-                "role": user.role,
-                "title": staff_title,
-                "phone": staff_phone,
-                "place": staff_place,
-                "contact_person": getattr(comp, "contact_person", None) or "",
-                "location": comp.location,
-                "headquarters_location": getattr(comp, "headquarters_location", None) or comp.location or "",
-                "other_locations": getattr(comp, "other_locations", None) or "",
-                "website": comp.website,
-                "linkedin_url": getattr(comp, "linkedin_url", None) or "",
-                "industry": comp.industry,
-                "primary_industry": getattr(comp, "primary_industry", None) or comp.industry or "",
-                "sub_industry": getattr(comp, "sub_industry", None) or "",
-                "organisation_type": getattr(comp, "organisation_type", None) or "",
-                "company_size": getattr(comp, "company_size", None) or "",
-                "year_founded": getattr(comp, "year_founded", None) or "",
-                "about": comp.about,
-                "logo_url": comp.logo_url,
-                "avatar_url": member.avatar_url if member else comp.logo_url,
-                "product_service": comp.product_service,
-                "business_model": comp.business_model,
-                "growth_stage": comp.growth_stage,
-                "target_audience": comp.target_audience,
-                "ideal_customer_profile": comp.ideal_customer_profile,
-                "business_problem": comp.business_problem,
-                "expected_outcome": comp.expected_outcome,
-                "team_support": comp.team_support,
-                "monthly_budget_range": comp.monthly_budget_range,
-                "decision_authority": comp.decision_authority,
-                "success_horizon": comp.success_horizon,
-                "is_verified": comp.is_verified,
-                "verification_status": comp.verification_status,
-                "plan_type": comp.plan_type or "FREE",
-                "plan_status": comp.plan_status or "ACTIVE",
-                "plan_expires_at": comp.plan_expires_at.isoformat() if comp.plan_expires_at else None,
-                "max_roles": effective_max_roles,
-                "max_jobs": effective_max_jobs,
-                "max_candidates_per_job": effective_max_cands,
-                "sidebar_access": comp.sidebar_access if comp.sidebar_access else cfg.get("sidebar_access") or DEFAULT_SIDEBAR_ACCESS.get(comp.plan_type or "FREE", {})
-            }
+            profile_data = format_company_profile(comp, member, user, db)
         else:
             profile_data = {
                 "full_name": staff_name,

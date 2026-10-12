@@ -16,7 +16,14 @@ from app.core.job_hash import encode_job_id, decode_job_id
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 @router.get("")
-def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, location: Optional[str] = None, db: Session = Depends(get_db)):
+def get_jobs(
+    search: Optional[str] = None,
+    work_mode: Optional[str] = None,
+    location: Optional[str] = None,
+    specialization: Optional[str] = None,
+    business_model: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     query = db.query(models.Job).filter(models.Job.status == "PUBLISHED")
 
     if search:
@@ -26,6 +33,13 @@ def get_jobs(search: Optional[str] = None, work_mode: Optional[str] = None, loca
         query = query.filter(models.Job.work_mode == work_mode)
     if location:
         query = query.filter(models.Job.location.ilike(f"%{location}%"))
+    if specialization:
+        query = query.filter(models.Job.specialization.ilike(f"%{specialization}%"))
+    if business_model:
+        query = query.filter(
+            (models.Job.business_model.ilike(f"%{business_model}%")) |
+            (models.Job.company.has(models.Company.business_model.ilike(f"%{business_model}%")))
+        )
 
     jobs = query.order_by(models.Job.id.desc()).all()
 
@@ -337,12 +351,25 @@ def apply_to_job(job_id: int, data: schemas.ApplicationCreate, user: models.User
     if existing:
         raise HTTPException(status_code=400, detail="You have already applied for this job position")
 
+    # Auto-compute fit score and 8-dimension match dossier
+    try:
+        from app.services.scoring import score_candidate_for_job
+        from app.api.endpoints.application import _job_to_dict, _candidate_to_dict
+        score_result = score_candidate_for_job(_job_to_dict(job), _candidate_to_dict(candidate))
+        fit_score = score_result.get("total")
+        fit_breakdown = score_result
+    except Exception:
+        fit_score = None
+        fit_breakdown = None
+
     app = models.Application(
         job_id=job_id,
         candidate_id=candidate.id,
         status="APPLIED",
         cover_letter=data.cover_letter,
-        screening_answers=data.screening_answers or []
+        screening_answers=data.screening_answers or [],
+        fit_score=fit_score,
+        fit_breakdown=fit_breakdown
     )
     db.add(app)
 

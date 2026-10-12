@@ -10,6 +10,7 @@ import OTPModal from '../../components/OTPModal';
 import PlanSelectionModal from '../../components/PlanSelectionModal';
 import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 import { getDetectedTenantSubdomain } from '../../utils/navigation';
+import { INDIA_STATES_AND_CITIES, INDIAN_STATES } from '../../utils/indiaLocations';
 
 const DISALLOWED_COMPANY_DOMAINS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
 
@@ -155,8 +156,37 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     return () => clearInterval(timer);
   }, []);
 
+  const [isCustomState, setIsCustomState] = useState(false);
+  const [isCustomCity, setIsCustomCity] = useState(false);
+
+  const availableCities = (candData.state && INDIA_STATES_AND_CITIES[candData.state]) || [];
+
   const handleCandChange = (e) => {
     setCandData({ ...candData, [e.target.name]: e.target.value });
+  };
+
+  const handleStateSelect = (e) => {
+    const val = e.target.value;
+    if (val === '__OTHER__') {
+      setIsCustomState(true);
+      setIsCustomCity(true);
+      setCandData((prev) => ({ ...prev, state: '', city: '' }));
+    } else {
+      setIsCustomState(false);
+      setIsCustomCity(false);
+      setCandData((prev) => ({ ...prev, state: val, city: '' }));
+    }
+  };
+
+  const handleCitySelect = (e) => {
+    const val = e.target.value;
+    if (val === '__OTHER__') {
+      setIsCustomCity(true);
+      setCandData((prev) => ({ ...prev, city: '' }));
+    } else {
+      setIsCustomCity(false);
+      setCandData((prev) => ({ ...prev, city: val }));
+    }
   };
 
   const handleCompChange = (e) => {
@@ -185,12 +215,12 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
       setError('Email address is required.');
       return;
     }
-    if (!candData.city?.trim()) {
-      setError('City is required.');
-      return;
-    }
     if (!candData.state?.trim()) {
       setError('State is required.');
+      return;
+    }
+    if (!candData.city?.trim()) {
+      setError('City is required.');
       return;
     }
     if (!candData.password) {
@@ -212,7 +242,11 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
 
     setLoading(true);
     try {
-      const res = await api.registerCandidate(candData);
+      const payload = {
+        ...candData,
+        place: candData.place?.trim() || `${candData.city}, ${candData.state}`
+      };
+      const res = await api.registerCandidate(payload);
       setOtpModalData({
         email: res.email,
         role: 'CANDIDATE'
@@ -300,7 +334,8 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
     try {
       const res = await api.login(loginEmail, loginPassword);
       loginUser(res.access_token, res.user);
-      if (res.user?.role === 'ADMIN' && (res.user?.profile?.plan_type === 'NONE' || res.user?.profile?.plan_status === 'PENDING')) {
+      const isCustomVendor = res.user?.profile?.plan_type === 'CUSTOM_VENDOR' || Boolean(tenantInfo) || Boolean(tenant) || Boolean(getDetectedTenantSubdomain());
+      if (!isCustomVendor && res.user?.role === 'ADMIN' && (res.user?.profile?.plan_type === 'NONE' || res.user?.profile?.plan_status === 'PENDING')) {
         setOnboardingUser(res.user);
       } else {
         if (onAuthSuccess) onAuthSuccess(res.user);
@@ -674,22 +709,104 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
                   </div>
 
                   <div>
-                    <label htmlFor="cand-city" className={FIELD_LABEL}>
-                      City <span className="text-rose-500">*</span>
-                    </label>
-                    <Field icon={MapPin}>
-                      <input id="cand-city" type="text" name="city" autoComplete="address-level2" className={FIELD_INPUT}
-                        placeholder="Austin" value={candData.city} onChange={handleCandChange} required />
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="cand-state" className={`${FIELD_LABEL} mb-0`}>
+                        State <span className="text-rose-500">*</span>
+                      </label>
+                      {isCustomState && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomState(false);
+                            setIsCustomCity(false);
+                            setCandData(prev => ({ ...prev, state: '', city: '' }));
+                          }}
+                          className="text-[11px] text-[#1E3155] font-semibold hover:underline shrink-0 border-none bg-transparent cursor-pointer p-0"
+                        >
+                          Select from list
+                        </button>
+                      )}
+                    </div>
+                    <Field icon={Globe}>
+                      {isCustomState ? (
+                        <input
+                          id="cand-state"
+                          type="text"
+                          name="state"
+                          autoComplete="address-level1"
+                          className={FIELD_INPUT}
+                          placeholder="e.g. Telangana / State name"
+                          value={candData.state}
+                          onChange={handleCandChange}
+                          required
+                        />
+                      ) : (
+                        <select
+                          id="cand-state"
+                          name="state"
+                          className={`${FIELD_INPUT} cursor-pointer bg-transparent`}
+                          value={candData.state}
+                          onChange={handleStateSelect}
+                          required
+                        >
+                          <option value="">Select State</option>
+                          {INDIAN_STATES.map((st) => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                          <option value="__OTHER__">Other / Outside India</option>
+                        </select>
+                      )}
                     </Field>
                   </div>
 
                   <div>
-                    <label htmlFor="cand-state" className={FIELD_LABEL}>
-                      State <span className="text-rose-500">*</span>
-                    </label>
-                    <Field>
-                      <input id="cand-state" type="text" name="state" autoComplete="address-level1" className={FIELD_INPUT}
-                        placeholder="Texas" value={candData.state} onChange={handleCandChange} required />
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="cand-city" className={`${FIELD_LABEL} mb-0`}>
+                        City <span className="text-rose-500">*</span>
+                      </label>
+                      {!isCustomState && isCustomCity && candData.state && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomCity(false);
+                            setCandData(prev => ({ ...prev, city: '' }));
+                          }}
+                          className="text-[11px] text-[#1E3155] font-semibold hover:underline shrink-0 border-none bg-transparent cursor-pointer p-0"
+                        >
+                          Select from list
+                        </button>
+                      )}
+                    </div>
+                    <Field icon={MapPin}>
+                      {(isCustomCity || isCustomState) ? (
+                        <input
+                          id="cand-city"
+                          type="text"
+                          name="city"
+                          autoComplete="address-level2"
+                          className={FIELD_INPUT}
+                          placeholder={isCustomState ? "e.g. Dubai / City name" : "e.g. Enter your city"}
+                          value={candData.city}
+                          onChange={handleCandChange}
+                          required
+                        />
+                      ) : (
+                        <select
+                          id="cand-city"
+                          name="city"
+                          className={`${FIELD_INPUT} cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-not-allowed`}
+                          value={candData.city}
+                          onChange={handleCitySelect}
+                          disabled={!candData.state}
+                          required
+                        >
+                          <option value="">{candData.state ? 'Select City' : 'Select State first'}</option>
+                          {availableCities.map((ct) => (
+                            <option key={ct} value={ct}>{ct}</option>
+                          ))}
+                          {candData.state && <option value="__OTHER__">Other (Enter manually)</option>}
+                        </select>
+                      )}
                     </Field>
                   </div>
 
@@ -926,7 +1043,8 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
           email={otpModalData.email}
           onSuccess={(verifiedUser) => {
             setOtpModalData(null);
-            if (verifiedUser?.role === 'ADMIN') {
+            const isVendor = verifiedUser?.profile?.plan_type === 'CUSTOM_VENDOR' || Boolean(tenantInfo) || Boolean(tenant) || Boolean(getDetectedTenantSubdomain());
+            if (!isVendor && verifiedUser?.role === 'ADMIN' && (verifiedUser?.profile?.plan_type === 'NONE' || verifiedUser?.profile?.plan_status === 'PENDING')) {
               setOnboardingUser(verifiedUser);
             } else {
               if (onAuthSuccess) onAuthSuccess(verifiedUser);
@@ -948,7 +1066,7 @@ export default function AuthPage({ onAuthSuccess, initialMode = 'login', onBackT
         />
       )}
 
-      {onboardingUser && (
+      {onboardingUser && onboardingUser?.profile?.plan_type !== 'CUSTOM_VENDOR' && !tenant && !tenantInfo && (
         <PlanSelectionModal
           isOpen={true}
           isInitialOnboarding={true}

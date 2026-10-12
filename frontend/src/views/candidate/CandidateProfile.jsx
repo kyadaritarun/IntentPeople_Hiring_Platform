@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  User, FileText, Upload, Save, CheckCircle2, Globe, MapPin, 
-  Phone, Briefcase, GraduationCap, Eye, TrendingUp, Search, 
-  Edit3, Plus, ExternalLink, ShieldCheck, Camera, Share2, 
-  Sparkles, Building2, X, Check, Download, Award, Zap, 
-  Code2, Rocket, Mail, ChevronRight, Calendar, Layers, Clock, ArrowUpRight, Trash2
+import {
+  User, FileText, Upload, Save, CheckCircle2, Globe, MapPin,
+  Phone, Briefcase, GraduationCap, Eye, TrendingUp, Search,
+  Edit3, Plus, ExternalLink, ShieldCheck, Camera, Share2,
+  Sparkles, Building2, X, Check, Download, Award, Zap,
+  Code2, Rocket, Mail, ChevronRight, Calendar, Layers, Clock, ArrowUpRight, Trash2,
+  Target, ArrowRight, ArrowLeft, AlertCircle
 } from 'lucide-react';
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { CAREER_STAGES } from '../../utils/marketingTaxonomy';
 
 export default function CandidateProfile({ onNavigateTab } = {}) {
   const { user, refreshUser } = useAuth();
@@ -42,7 +44,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       'uptrix_candidate_preferences',
       'uptrix_candidate_resume'
     ].forEach(k => {
-      try { localStorage.removeItem(k); } catch (e) {}
+      try { localStorage.removeItem(k); } catch (e) { }
     });
   }, []);
 
@@ -88,6 +90,12 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       } else {
         setResumeData(null);
       }
+      if (c.privacy_settings) {
+        setPrivacySettings({
+          hide_mobile_from_unapproved: c.privacy_settings.hide_mobile_from_unapproved ?? true,
+          open_to_matching: c.privacy_settings.open_to_matching ?? true
+        });
+      }
     }
   }, [user]);
 
@@ -108,6 +116,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
   };
 
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'experience' | 'skills' | 'education'
+
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
@@ -873,8 +882,8 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
   const expertiseList = (typeof formData.expertise === 'string' ? formData.expertise : (Array.isArray(formData.expertise) ? formData.expertise.join(', ') : '')).split(',').map(s => s.trim()).filter(Boolean);
 
   return (
-    <div className="bg-[#F0F2F5] min-h-screen pb-16 pt-4 text-slate-800 font-sans selection:bg-[#F2A93B] selection:text-[#1E3155]">
-      
+    <div className="text-slate-800 font-sans">
+
       {/* Toast Notification */}
       {showShareToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs font-medium border border-slate-700 animate-in slide-in-from-bottom-2">
@@ -884,13 +893,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       )}
 
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
         {/* Success Alert */}
         {success && (
-          <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl p-4 mb-5 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+          <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl p-4 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
             <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               Your Uptrix profile was updated successfully and changes are live!
             </span>
             <button type="button" onClick={() => setSuccess(false)} className="text-emerald-700 hover:text-emerald-900 border-none bg-transparent cursor-pointer">
@@ -900,26 +909,23 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
         )}
 
         {/* ========================================================================= */}
-        {/* 1. HERO IDENTITY CARD (Executive Studio Perfection)                       */}
+        {/* 1. HERO IDENTITY CARD                                                     */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] p-6 sm:p-8 mb-6 relative overflow-hidden">
-          
-          {/* Subtle Top Brand Accent Line */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1E3155] via-[#2a4070] to-[#F2A93B]" />
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] p-6 sm:p-7 relative">
 
           {/* Main Identity Flex: Avatar + Details + Actions */}
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 pt-1">
-            
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+
             {/* Left Block: Avatar + Name + Headline + Metadata */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6 flex-1 min-w-0">
-              
+
               {/* Avatar with Camera Overlay */}
               <div className="relative inline-block shrink-0 group">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-[#1E3155] to-[#2d4a7a] text-white font-black text-3xl sm:text-4xl flex items-center justify-center ring-2 ring-[#F2A93B]/40 overflow-hidden relative transition-transform group-hover:scale-[1.02]">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-slate-200 shadow-xs bg-slate-100 text-slate-800 font-extrabold text-2xl sm:text-3xl flex items-center justify-center overflow-hidden relative">
                   {avatarUrl || candidate.avatar_url ? (
-                    <img 
-                      src={avatarUrl || candidate.avatar_url} 
-                      alt={formData.full_name} 
+                    <img
+                      src={avatarUrl || candidate.avatar_url}
+                      alt={formData.full_name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -933,11 +939,11 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 </div>
 
                 {/* Camera icon button */}
-                <label 
-                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#1E3155] hover:bg-[#152340] text-[#F2A93B] flex items-center justify-center border-2 border-white shadow-md cursor-pointer transition-all hover:scale-110 active:scale-95"
-                  title="Upload profile photo (Saved to AWS S3)"
+                <label
+                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white hover:bg-slate-50 text-slate-600 hover:text-[#FF7043] border border-slate-200 shadow-xs flex items-center justify-center cursor-pointer transition-all hover:scale-110 active:scale-95"
+                  title="Upload profile photo"
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-3.5 h-3.5" />
                   <input
                     type="file"
                     accept="image/*"
@@ -949,34 +955,34 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </div>
 
               {/* Identity & Headline Text Column */}
-              <div className="space-y-2 flex-1 min-w-0">
+              <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight m-0">
                     {formData.full_name || user?.full_name || 'Your Name'}
                   </h1>
-                  <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-bold text-[#1E3155] bg-[#F2A93B]/15 border border-[#F2A93B]/30 px-2.5 py-0.5 rounded-full shadow-xs">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#F2A93B]" /> Verified Talent
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Talent
                   </span>
-                  <span className="text-xs font-medium text-slate-400">
+                  <span className="text-xs text-slate-400 font-normal">
                     (he/him)
                   </span>
                 </div>
 
-                <p className="text-sm sm:text-base font-semibold text-slate-700 leading-snug">
+                <p className="text-xs sm:text-sm font-semibold text-slate-600 leading-snug m-0">
                   {formData.title || 'Digital Marketing & Technology Professional'}
                 </p>
 
                 {/* Meta Chips: Location, Contact Details, Portfolio */}
-                <div className="flex items-center gap-3 sm:gap-4 text-xs text-slate-500 flex-wrap pt-0.5">
+                <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
                   <span className="flex items-center gap-1 text-slate-600 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#F2A93B]" />
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     {(formData.city || formData.state) ? `${formData.city ? formData.city + ', ' : ''}${formData.state ? formData.state + ', ' : ''}India` : 'Hyderabad, India'}
                   </span>
                   <span className="text-slate-300">•</span>
                   <button
                     type="button"
                     onClick={() => setShowContactInfo(true)}
-                    className="text-[#1E3155] hover:text-[#F2A93B] font-semibold hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer p-0 transition-colors"
+                    className="text-slate-600 hover:text-[#FF7043] font-medium hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer p-0 transition-colors"
                   >
                     <Mail className="w-3.5 h-3.5 text-slate-400" />
                     Contact Details
@@ -988,7 +994,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                         href={formData.portfolio_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-slate-600 hover:text-slate-900 flex items-center gap-1 hover:underline font-medium"
+                        className="text-slate-600 hover:text-[#FF7043] flex items-center gap-1 hover:underline font-medium"
                       >
                         <Globe className="w-3.5 h-3.5 text-slate-400" />
                         Portfolio
@@ -1002,29 +1008,29 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
             </div>
 
             {/* Right Block: Action Buttons Cluster */}
-            <div className="flex items-center gap-2.5 flex-wrap lg:self-start shrink-0 pt-2 lg:pt-0">
+            <div className="flex items-center gap-2 flex-wrap lg:self-start shrink-0">
               <button
                 type="button"
                 onClick={handleShareProfile}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                className="px-3.5 py-2 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300"
                 title="Share profile link"
               >
                 <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Share</span>
+                <span>Share</span>
               </button>
 
               {resumeData && (
                 <button
                   type="button"
                   onClick={() => setShowResumeModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                  className="px-3.5 py-2 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300"
                 >
-                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                  View CV
+                  <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  <span>View CV</span>
                 </button>
               )}
 
-              <label className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95">
+              <label className="px-3.5 py-2 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:border-slate-300">
                 <Upload className="w-3.5 h-3.5 text-slate-500" />
                 <span>{uploadingResume ? 'Uploading...' : (resumeData ? 'Replace CV' : 'Upload CV')}</span>
                 <input
@@ -1038,10 +1044,20 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
               <button
                 type="button"
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer active:scale-95"
+                onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 border border-indigo-200/80 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                title="Launch 7-Step Marketing Talent Dossier Wizard"
               >
-                <Edit3 className="w-3.5 h-3.5 text-[#F2A93B]" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Marketing Dossier</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-all cursor-pointer border-none"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Profile</span>
               </button>
             </div>
@@ -1049,35 +1065,35 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
           </div>
 
           {/* Quick Preference Tags & Highlights Bar */}
-          <div className="flex items-center gap-2.5 mt-5 pt-4 border-t border-slate-100 flex-wrap">
-            <span className="text-[0.68rem] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+          <div className="flex items-center gap-2 mt-4 pt-3.5 border-t border-slate-100 flex-wrap">
+            <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
               Preferences:
             </span>
             {preferences.work_setup ? (
-              <span className="text-xs font-semibold bg-slate-100/80 text-slate-700 border border-slate-200/60 px-3 py-1 rounded-xl">
+              <span className="text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200/80 px-2.5 py-0.5 rounded-lg">
                 {preferences.work_setup}
               </span>
             ) : (
-              <span className="text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200/50 px-2.5 py-1 rounded-xl">
+              <span className="text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200/60 px-2.5 py-0.5 rounded-lg">
                 Work Mode: Open to Remote / Hybrid
               </span>
             )}
             {preferences.availability ? (
-              <span className="text-xs font-semibold bg-[#F2A93B]/10 text-[#1E3155] border border-[#F2A93B]/25 px-3 py-1 rounded-xl flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#F2A93B]" /> Notice Period: {preferences.availability}
+              <span className="text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/70 px-2.5 py-0.5 rounded-lg flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-amber-600" /> Notice Period: {preferences.availability}
               </span>
             ) : (
-              <span className="text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-xl flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Immediate / Available
+              <span className="text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Immediate / Available
               </span>
             )}
             {preferences.target_role ? (
-              <span className="text-xs font-semibold bg-indigo-50/80 text-indigo-800 border border-indigo-200/60 px-3 py-1 rounded-xl">
+              <span className="text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200/70 px-2.5 py-0.5 rounded-lg">
                 Target: {preferences.target_role}
               </span>
             ) : null}
             {preferences.expected_ctc ? (
-              <span className="text-xs font-semibold bg-amber-50/80 text-amber-800 border border-amber-200/60 px-3 py-1 rounded-xl">
+              <span className="text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-lg">
                 CTC: {preferences.expected_ctc}
               </span>
             ) : null}
@@ -1086,127 +1102,120 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. PERFORMANCE METRIC HUD (4 Sleek Studio Cards)                           */}
+        {/* 2. PERFORMANCE METRIC HUD (4 Sleek Matching Cards)                         */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-6">
-          
-          {/* Metric 1: Profile Strength (Dynamic based on 4 Core Sections) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition-colors">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+          {/* Metric 1: Profile Strength */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Profile Strength</span>
-              <span className="p-1.5 rounded-xl bg-emerald-50 text-emerald-600">
-                <Zap className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5" />
               </span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">{profileStrength.score}%</span>
-              <span className={`text-[0.7rem] font-bold px-2 py-0.5 rounded-md ${profileStrength.tierColor}`}>
-                {profileStrength.tier}
-              </span>
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-slate-900">{profileStrength.score}%</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${profileStrength.tierColor}`}>
+                  {profileStrength.tier}
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div
+                  className={`${profileStrength.barColor} h-full rounded-full transition-all duration-500`}
+                  style={{ width: `${profileStrength.score}%` }}
+                />
+              </div>
             </div>
-            {/* Dynamic Progress line */}
-            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
-              <div 
-                className={`${profileStrength.barColor} h-full rounded-full transition-all duration-500`}
-                style={{ width: `${profileStrength.score}%` }}
-              />
-            </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">Calculated across profile sections</p>
+            <p className="text-[11px] text-slate-400 mt-2 m-0 truncate">Calculated across profile sections</p>
           </div>
 
-          {/* Metric 2: Recruiter Views (Counted strictly when recruiter sees profile) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-colors">
+          {/* Metric 2: Recruiter Views */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Recruiter Views</span>
-              <span className="p-1.5 rounded-xl bg-blue-50 text-blue-600">
-                <Eye className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Eye className="w-3.5 h-3.5" />
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">{liveAnalytics.recruiterViews}</span>
-              <span className={`text-[0.7rem] font-semibold flex items-center ${liveAnalytics.recruiterViews > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {liveAnalytics.recruiterViews > 0 ? (
-                  <>
-                    <TrendingUp className="w-3 h-3 mr-0.5" /> {liveAnalytics.viewsTrend}
-                  </>
-                ) : (
-                  <span>0 views</span>
-                )}
+              <span className="text-xl sm:text-2xl font-black text-slate-900">{liveAnalytics.recruiterViews}</span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${liveAnalytics.recruiterViews > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                {liveAnalytics.recruiterViews > 0 ? liveAnalytics.viewsTrend : '0 views'}
               </span>
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">
+            <p className="text-[11px] text-slate-400 mt-2 m-0 truncate">
               {liveAnalytics.recruiterViews === 0
-                ? '0 recruiter views • counted when a recruiter views your profile'
-                : `${liveAnalytics.recruiterViews} recruiter${liveAnalytics.recruiterViews > 1 ? 's have' : ' has'} viewed your profile dossier`}
+                ? 'Counted when recruiters view your profile'
+                : `${liveAnalytics.recruiterViews} recruiter${liveAnalytics.recruiterViews > 1 ? 's viewed' : ' viewed'}`}
             </p>
           </div>
 
-          {/* Metric 3: Search Appearances (Counted when this candidate came top) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-indigo-300 transition-colors">
+          {/* Metric 3: Search Appearances */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Search Appearances</span>
-              <span className="p-1.5 rounded-xl bg-indigo-50 text-indigo-600">
-                <Search className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Search className="w-3.5 h-3.5" />
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">{liveAnalytics.searchAppearances}</span>
-              <span className={`text-[0.7rem] font-semibold ${liveAnalytics.searchAppearances > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <span className="text-xl sm:text-2xl font-black text-slate-900">{liveAnalytics.searchAppearances}</span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${liveAnalytics.searchAppearances > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
                 {liveAnalytics.searchAppearances > 0 ? 'Top Result' : 'Top Result: 0'}
               </span>
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5 truncate">
+            <p className="text-[11px] text-slate-400 mt-2 m-0 truncate">
               {liveAnalytics.searchAppearances === 0
-                ? '0 times ranked top in searches'
-                : `Ranked top match in ${liveAnalytics.searchAppearances} recruiter search${liveAnalytics.searchAppearances > 1 ? 'es' : ''}`}
+                ? 'Ranked top in recruiter searches'
+                : `Ranked top match in ${liveAnalytics.searchAppearances} search${liveAnalytics.searchAppearances > 1 ? 'es' : ''}`}
             </p>
           </div>
 
-          {/* Metric 4: Direct Inquiries (Live Applications & Scheduled Interviews) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs relative overflow-hidden group hover:border-teal-300 transition-colors">
+          {/* Metric 4: Recruiter Inquiries */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-slate-500">Recruiter Inquiries</span>
-              <span className="p-1.5 rounded-xl bg-teal-50 text-teal-600">
-                <Rocket className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-lg bg-[#FF7043]/10 text-[#FF7043] flex items-center justify-center">
+                <Rocket className="w-3.5 h-3.5" />
               </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900">{liveAnalytics.recruiterInquiries}</span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900">{liveAnalytics.recruiterInquiries}</span>
               {liveAnalytics.interviewsScheduled > 0 ? (
-                <span className="text-[0.7rem] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
                   {liveAnalytics.interviewsScheduled} Interview{liveAnalytics.interviewsScheduled > 1 ? 's' : ''}
                 </span>
               ) : liveAnalytics.shortlistedCount > 0 ? (
-                <span className="text-[0.7rem] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                   Shortlisted
                 </span>
               ) : (
-                <span className="text-[0.7rem] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                   Active
                 </span>
               )}
             </div>
-            <p className="text-[0.68rem] text-slate-400 mt-1.5">
+            <p className="text-[11px] text-slate-400 mt-2 m-0 truncate">
               {liveAnalytics.interviewsScheduled > 0
-                ? `${liveAnalytics.interviewsScheduled} live interview${liveAnalytics.interviewsScheduled > 1 ? 's' : ''} scheduled`
-                : liveAnalytics.recruiterInquiries > 0
-                  ? `${liveAnalytics.recruiterInquiries} active recruiter submission${liveAnalytics.recruiterInquiries > 1 ? 's' : ''}`
-                  : 'Apply to jobs to receive recruiter inquiries'}
+                ? `${liveAnalytics.interviewsScheduled} interview${liveAnalytics.interviewsScheduled > 1 ? 's' : ''} scheduled`
+                : 'Apply to jobs to receive recruiter inquiries'}
             </p>
           </div>
 
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. MAIN SECTION: TABBED CONTENT & RIGHT SIDEBAR                           */}
+        {/* 3. MAIN SECTION: TABBED CONTENT & HIRING PREFERENCES                      */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Main Content Area (8 Cols) */}
-          <div className="lg:col-span-8 space-y-5">
-            
+        <div className="space-y-6">
+
+          {/* Main Content Area (Full Width) */}
+          <div className="space-y-5">
+
             {/* Navigation Tabs Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-1.5 shadow-xs flex items-center gap-1 overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex items-center gap-1.5 overflow-x-auto">
               {[
                 { id: 'overview', label: 'Overview & Bio', icon: User },
                 { id: 'experience', label: 'Experience & Impact', icon: Briefcase },
@@ -1220,13 +1229,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border-none ${
+                    className={`flex-1 min-w-[130px] py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border-none ${
                       isActive 
-                        ? 'bg-[#1E3155] text-white shadow-sm' 
-                        : 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        ? 'bg-slate-900 text-white shadow-2xs font-bold' 
+                        : 'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#F2A93B]' : 'text-slate-400'}`} />
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#FF7043]' : 'text-slate-400'}`} />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -1236,56 +1245,56 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
             {/* TAB 1: OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-5 animate-in fade-in duration-200">
-                
+
                 {/* About & Executive Bio */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#F2A93B]" />
-                      Executive Summary & Background
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
+                      <Sparkles className="w-4 h-4 text-[#FF7043]" />
+                      Executive Summary &amp; Background
                     </h2>
                     <button
                       type="button"
                       onClick={handleOpenEditBio}
-                      className="text-xs text-[#1E3155] hover:text-[#F2A93B] font-semibold flex items-center gap-1 border-none bg-transparent cursor-pointer transition-colors"
+                      className="text-xs text-[#FF7043] hover:underline font-semibold flex items-center gap-1 border-none bg-transparent cursor-pointer transition-colors"
                     >
                       <Edit3 className="w-3.5 h-3.5" /> Edit Bio
                     </button>
                   </div>
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line m-0">
                     {formData.summary || 'No executive summary added yet. Click "Edit Profile" above to introduce yourself and describe your professional journey.'}
                   </p>
                 </div>
 
                 {/* Featured Resume & Document Card */}
-                <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
                       <FileText className="w-4 h-4 text-emerald-600" />
-                      Attached Resume & Credentials
+                      Attached Resume &amp; Credentials
                     </h2>
                     {resumeData ? (
-                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#1E3155] bg-[#F2A93B]/10 px-2 py-0.5 rounded-full border border-[#F2A93B]/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-[#F2A93B]" /> Resume Attached
+                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Resume Attached
                       </span>
                     ) : (
-                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
                         Not Attached
                       </span>
                     )}
                   </div>
 
                   {resumeData ? (
-                    <div className="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0 shadow-xs">
+                        <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-200/80 flex items-center justify-center text-red-600 shrink-0 shadow-2xs">
                           <FileText className="w-6 h-6" />
                         </div>
                         <div>
                           <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                             {resumeData.filename}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5 m-0">
                             PDF • {resumeData.size || 'Document'} • Updated {resumeData.uploaded_at || 'Recently'}
                           </p>
                         </div>
@@ -1295,12 +1304,12 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                         <button
                           type="button"
                           onClick={() => setShowResumeModal(true)}
-                          className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border-none shadow-2xs"
                         >
                           <Eye className="w-3.5 h-3.5 text-emerald-400" />
                           Preview
                         </button>
-                        <label className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                        <label className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs">
                           <Upload className="w-3.5 h-3.5 text-slate-500" />
                           <span>{uploadingResume ? 'Uploading...' : 'Replace'}</span>
                           <input
@@ -1314,7 +1323,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                         <button
                           type="button"
                           onClick={handleRemoveResume}
-                          className="p-2 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-200 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-200 text-slate-400 hover:text-red-600 transition-colors cursor-pointer shadow-2xs"
                           title="Remove resume"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1322,7 +1331,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                    <div className="p-6 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
                           <FileText className="w-6 h-6" />
@@ -1331,13 +1340,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                           <div className="text-sm font-bold text-slate-700">
                             No Resume Attached
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5 m-0">
                             Upload your official resume PDF or CV to showcase your credentials to recruiters.
                           </p>
                         </div>
                       </div>
 
-                      <label className="px-4 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0">
+                      <label className="px-4 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 border-none">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{uploadingResume ? 'Uploading...' : 'Upload Resume PDF'}</span>
                         <input
@@ -1354,13 +1363,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   {/* Connected Credentials summary */}
                   <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                     <span className="flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-[#F2A93B]" />
+                      <Award className="w-3.5 h-3.5 text-[#FF7043]" />
                       Linked Credentials: <strong className="text-slate-800">{certifications.length} Industry Certification{certifications.length === 1 ? '' : 's'}</strong>
                     </span>
                     <button
                       type="button"
                       onClick={() => setActiveTab('education')}
-                      className="text-[#1E3155] hover:underline font-semibold bg-transparent border-none p-0 cursor-pointer text-xs transition-colors"
+                      className="text-[#FF7043] hover:underline font-semibold bg-transparent border-none p-0 cursor-pointer text-xs transition-colors"
                     >
                       Manage in Credentials &gt;
                     </button>
@@ -1369,25 +1378,25 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
                 {/* Highlighted Portfolio Work (Rendered only if candidate provided a portfolio) */}
                 {formData.portfolio_url && (
-                  <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
                         <Rocket className="w-4 h-4 text-emerald-600" />
-                        Featured Portfolio & Work
+                        Featured Portfolio &amp; Work
                       </h2>
                     </div>
-                    <div className="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/70 flex items-center justify-between gap-4">
+                    <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/70 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center shrink-0">
                           <Globe className="w-5 h-5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900">Online Portfolio / Showcase</div>
-                          <a 
+                          <a
                             href={formData.portfolio_url.startsWith('http') ? formData.portfolio_url : `https://${formData.portfolio_url}`}
-                            target="_blank" 
+                            target="_blank"
                             rel="noreferrer"
-                            className="text-xs text-[#1E3155] hover:underline flex items-center gap-1 font-medium mt-0.5 hover:text-[#F2A93B] transition-colors"
+                            className="text-xs text-[#FF7043] hover:underline flex items-center gap-1 font-medium mt-0.5 transition-colors"
                           >
                             {formData.portfolio_url} <ExternalLink className="w-3 h-3" />
                           </a>
@@ -1400,41 +1409,297 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </div>
             )}
 
+            {/* TAB: MARKETING CAPABILITIES MATRIX */}
+            {activeTab === 'specialisations' && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
+                      <Award className="w-5 h-5 text-indigo-600" />
+                      Marketing Capabilities &amp; Ownership Matrix
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5 m-0">
+                      14 Digital Marketing Specialisations vetted across proficiency, ownership, recency, and interest.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all border-none cursor-pointer self-start sm:self-auto"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF7043]" />
+                    <span>Manage in Wizard</span>
+                  </button>
+                </div>
+
+                {/* Primary Anchor & Scope Card */}
+                <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-950 block">Primary Specialisation Anchor</span>
+                    <div className="text-sm font-black text-indigo-900">
+                      {String(candidate.career_interests?.primary_specialisation || 'Performance Marketing & Paid Search').replace(/_/g, ' ').toUpperCase()}
+                    </div>
+                  </div>
+                  {candidate.career_interests?.responsibility_level && (
+                    <span className="px-3 py-1 rounded-xl bg-white border border-indigo-200 text-xs font-bold text-indigo-800 shadow-2xs self-start sm:self-auto">
+                      Level: {candidate.career_interests.responsibility_level}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tagged Capabilities List */}
+                {Array.isArray(candidate.specialisations_data) && candidate.specialisations_data.length > 0 ? (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">
+                      Tagged Capabilities ({candidate.specialisations_data.length})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {candidate.specialisations_data.map((cap, i) => (
+                        <div
+                          key={i}
+                          className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-slate-300 transition-all space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-900">{cap.capability}</span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                              {cap.interest ? `Interest: ${cap.interest}` : 'Active'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                            <span className="px-2 py-0.5 rounded-md font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                              ✓ {cap.proficiency || 'Works independently'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md font-semibold bg-slate-200/70 text-slate-700">
+                              {cap.ownership || 'Personally executed'}
+                            </span>
+                            {cap.last_used && (
+                              <span className="text-[10px] text-slate-400">
+                                • {cap.last_used}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                      <Award className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 m-0">No Structured Marketing Capabilities Tagged</h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto m-0">
+                        Tag your capabilities across SEO, Paid Ads, CRO, ABM, and CRM to achieve top rank in recruiter searches.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                      className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4 text-white" /> Launch Capability Tagging
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: CAMPAIGN CASE STUDIES & PROOF OF WORK */}
+            {activeTab === 'case_studies' && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
+                      <Sparkles className="w-5 h-5 text-[#FF7043]" />
+                      Campaign Proof of Work &amp; Case Studies
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5 m-0">
+                      Quantified campaign impact, ad spend ownership, and verified marketing metrics.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                    className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all border-none cursor-pointer self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add / Edit Case Study</span>
+                  </button>
+                </div>
+
+                {Array.isArray(candidate.case_studies) && candidate.case_studies.length > 0 ? (
+                  <div className="space-y-4">
+                    {candidate.case_studies.map((cs, idx) => (
+                      <div
+                        key={idx}
+                        className="p-5 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-4 hover:border-slate-300 transition-colors"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-2 py-0.5 rounded-md mb-1 inline-block">
+                              {cs.project_type || 'Professional Campaign'}
+                            </span>
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 m-0">
+                              {cs.title}
+                            </h3>
+                          </div>
+                          <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-full self-start sm:self-auto">
+                            Visibility: {cs.visibility || 'Registered employers'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          {cs.objective && (
+                            <div className="p-3 rounded-xl bg-white border border-slate-200/80">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Objective</span>
+                              <span className="text-slate-700 font-medium">{cs.objective}</span>
+                            </div>
+                          )}
+                          {cs.ad_spend && (
+                            <div className="p-3 rounded-xl bg-white border border-slate-200/80">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Spend / Budget Managed</span>
+                              <span className="text-slate-800 font-bold">{cs.ad_spend}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {cs.strategy && (
+                          <div className="text-xs text-slate-600 leading-relaxed bg-white p-3.5 rounded-xl border border-slate-200/70">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Strategy &amp; Execution</span>
+                            {cs.strategy}
+                          </div>
+                        )}
+
+                        {/* Quantified Results Box */}
+                        {cs.results_metrics && (
+                          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <div className="text-xs">
+                              <span className="font-bold text-emerald-950 block mb-0.5">Verified Results &amp; Measurable Metrics:</span>
+                              <span className="text-emerald-800 font-semibold">{cs.results_metrics}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {cs.evidence_url && (
+                          <div className="pt-1">
+                            <a
+                              href={cs.evidence_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-3 py-1.5 rounded-xl no-underline transition-colors"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>View Campaign Proof / Live Work Sample</span>
+                            </a>
+                          </div>
+                        )}
+
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center mx-auto">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 m-0">No Campaign Case Studies Added Yet</h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto m-0">
+                        Add at least 1 campaign case study with quantifiable baseline, strategy, and results to attract verified hiring managers.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                      className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> Add Campaign Case Study
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* TAB 2: EXPERIENCE & IMPACT */}
             {activeTab === 'experience' && (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
                       <Briefcase className="w-4 h-4 text-emerald-600" />
-                      Professional Experience & Impact Timeline
+                      Professional Experience &amp; Impact Timeline
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Verified track record across high-growth engineering & marketing teams</p>
+                    <p className="text-xs text-slate-500 mt-0.5 m-0">Verified track record across high-growth engineering &amp; marketing teams</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleOpenAddRole}
-                    className="px-3.5 py-2 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer border-none"
+                    className="px-3.5 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border-none"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Role</span>
                   </button>
                 </div>
 
+                {/* Target Customer & Go-To-Market Context Card */}
+                {candidate.gtm_experience && (candidate.gtm_experience.customer_model || candidate.gtm_experience.route_to_market) && (
+                  <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                        <Target className="w-3.5 h-3.5 text-indigo-600" />
+                        GTM &amp; Customer Model Experience
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onNavigateTab ? onNavigateTab('onboarding') : null}
+                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 border-none bg-transparent cursor-pointer"
+                      >
+                        Edit in Wizard
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block">Customer Model</span>
+                        <span className="font-bold text-slate-900">{candidate.gtm_experience.customer_model || 'B2B'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block">Revenue Model</span>
+                        <span className="font-bold text-slate-900">{candidate.gtm_experience.revenue_model || 'Subscription'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block">Route to Market</span>
+                        <span className="font-bold text-slate-900">{candidate.gtm_experience.route_to_market || 'Sales-led'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block">Buying Cycle</span>
+                        <span className="font-bold text-slate-900">{candidate.gtm_experience.buying_cycle || 'Weeks'}</span>
+                      </div>
+                    </div>
+                    {candidate.gtm_experience.buyer_roles && (
+                      <p className="text-xs text-slate-600 pt-1 border-t border-slate-200/60 m-0">
+                        <strong className="text-slate-800">Personas Reached:</strong> {candidate.gtm_experience.buyer_roles}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Timeline Items */}
                 {experiences.length === 0 ? (
-                  <div className="p-8 text-center rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center mx-auto">
+                  <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center mx-auto">
                       <Briefcase className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">No Experience Roles Added Yet</h3>
-                      <p className="text-xs text-slate-500 mt-1">Showcase your past accomplishments, companies, and tech stack.</p>
+                      <h3 className="text-sm font-bold text-slate-900 m-0">No Experience Roles Added Yet</h3>
+                      <p className="text-xs text-slate-500 mt-1 m-0">Showcase your past accomplishments, companies, and tech stack.</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleOpenAddRole}
-                      className="px-4 py-2 rounded-xl bg-[#1E3155] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:bg-[#152340] transition-colors"
+                      className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
                     >
                       <Plus className="w-4 h-4" /> Add Your First Role
                     </button>
@@ -1447,17 +1712,16 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                       return (
                         <div key={exp.id || idx} className="relative flex items-start gap-4 group">
                           {/* Company Avatar Badge with Logo Support */}
-                          <div className={`w-10 h-10 rounded-2xl text-white font-bold flex items-center justify-center text-sm ring-4 ring-white shrink-0 z-10 shadow-sm overflow-hidden ${
-                            exp.company_logo ? 'bg-white border border-slate-200 p-1' : (idx % 2 === 0 ? 'bg-indigo-600' : 'bg-slate-800')
-                          }`}>
+                          <div className={`w-10 h-10 rounded-xl text-white font-bold flex items-center justify-center text-sm ring-4 ring-white shrink-0 z-10 shadow-2xs overflow-hidden ${exp.company_logo ? 'bg-white border border-slate-200 p-1' : (idx % 2 === 0 ? 'bg-indigo-600' : 'bg-slate-800')
+                            }`}>
                             {exp.company_logo ? (
-                              <img 
-                                src={exp.company_logo} 
-                                alt={exp.company} 
-                                className="w-full h-full object-contain rounded-xl"
+                              <img
+                                src={exp.company_logo}
+                                alt={exp.company}
+                                className="w-full h-full object-contain rounded-lg"
                                 onError={(e) => {
                                   e.target.style.display = 'none';
-                                }} 
+                                }}
                               />
                             ) : (
                               companyInitial
@@ -1465,20 +1729,19 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                           </div>
 
                           {/* Role Card */}
-                          <div className="flex-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 hover:border-slate-300 transition-all relative">
-                            
+                          <div className="flex-1 bg-white p-5 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-2xs transition-all relative">
+
                             {/* Card Header */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
-                              <h3 className="text-sm font-bold text-slate-900">
+                              <h3 className="text-sm font-bold text-slate-900 m-0">
                                 {exp.title}
                               </h3>
-                              
+
                               <div className="flex items-center gap-2 self-start sm:self-auto">
-                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
-                                  isCurrent
-                                    ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
-                                    : 'text-slate-600 bg-slate-100 border border-slate-200'
-                                }`}>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${isCurrent
+                                  ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                                  : 'text-slate-600 bg-slate-100 border border-slate-200'
+                                  }`}>
                                   {exp.duration} • {exp.employment_type || 'Full-time'}
                                 </span>
 
@@ -1487,7 +1750,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditRole(idx)}
-                                    className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors border-none bg-transparent cursor-pointer"
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
                                     title="Edit role"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -1505,7 +1768,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                             </div>
 
                             {/* Company & Location */}
-                            <div className="text-xs font-semibold text-indigo-600 mb-2.5">
+                            <div className="text-xs font-semibold text-[#FF7043] mb-2.5">
                               {exp.company} • {exp.location}
                             </div>
 
@@ -1526,7 +1789,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                             {Array.isArray(exp.technologies) && exp.technologies.length > 0 && (
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {exp.technologies.map((tech, techIdx) => (
-                                  <span key={techIdx} className="text-[0.68rem] font-medium bg-white text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                  <span key={techIdx} className="text-[0.68rem] font-medium bg-slate-50 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200/80">
                                     {tech}
                                   </span>
                                 ))}
@@ -1544,39 +1807,39 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
             {/* TAB 3: SKILLS & TECH STACK */}
             {activeTab === 'skills' && (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <Code2 className="w-4 h-4 text-[#F2A93B]" />
-                      Core Tech Stack & Verified Skills
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
+                      <Code2 className="w-4 h-4 text-[#FF7043]" />
+                      Core Tech Stack &amp; Verified Skills
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Core technical proficiencies, frameworks, and growth tools</p>
+                    <p className="text-xs text-slate-500 mt-0.5 m-0">Core technical proficiencies, frameworks, and growth tools</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleOpenSkillsModal}
-                    className="p-2 px-3 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
+                    className="p-2 px-3.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Manage Skills & Tech Stack</span>
+                    <span>Manage Skills &amp; Tech Stack</span>
                   </button>
                 </div>
 
                 {/* Skills Display (Clean tags) */}
                 {skillsList.length === 0 ? (
-                  <div className="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-500 w-full">
-                    No skills added yet. Click <span className="font-semibold text-[#1E3155] cursor-pointer hover:underline" onClick={handleOpenSkillsModal}>Manage Skills & Tech Stack</span> above to showcase your technologies and proficiencies.
+                  <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-500 w-full">
+                    No skills added yet. Click <span className="font-semibold text-[#FF7043] cursor-pointer hover:underline" onClick={handleOpenSkillsModal}>Manage Skills &amp; Tech Stack</span> above to showcase your technologies and proficiencies.
                   </div>
                 ) : (
                   <div className="flex items-center gap-2.5 flex-wrap">
                     {skillsList.map(skill => (
-                      <div 
+                      <div
                         key={skill}
-                        className="px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/70 hover:bg-white hover:border-[#F2A93B]/40 hover:shadow-xs transition-all flex items-center gap-2.5 group"
+                        className="px-3.5 py-2 rounded-xl border border-slate-200/90 bg-slate-50/70 hover:bg-white hover:border-slate-300 hover:shadow-2xs transition-all flex items-center gap-2 group"
                       >
-                        <span className="w-2 h-2 rounded-full bg-[#F2A93B] group-hover:scale-125 transition-transform" />
-                        <span className="text-xs font-bold text-slate-800 group-hover:text-[#1E3155] transition-colors">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF7043] group-hover:scale-125 transition-transform" />
+                        <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
                           {skill}
                         </span>
                       </div>
@@ -1587,15 +1850,15 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 {/* Candidate Core Expertise (Dynamic from database) */}
                 {expertiseList.length > 0 && (
                   <div className="mt-6 pt-5 border-t border-slate-100">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-[#00a884]" />
-                      <span>Candidate Core Expertise & Competencies</span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2 m-0">
+                      <Sparkles className="w-3.5 h-3.5 text-[#FF7043]" />
+                      <span>Candidate Core Expertise &amp; Competencies</span>
                     </h3>
                     <div className="flex items-center gap-2 flex-wrap">
                       {expertiseList.map((exp, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-[#00a884] text-xs font-bold"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50/70 border border-orange-200/80 text-[#FF7043] text-xs font-bold"
                         >
                           <span>★</span>
                           <span>{exp}</span>
@@ -1610,19 +1873,19 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
             {/* TAB 4: EDUCATION & CREDENTIALS */}
             {activeTab === 'education' && (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs space-y-6 animate-in fade-in duration-200">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-6 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-[#F2A93B]" />
-                      Academic Qualifications & Certifications
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 m-0">
+                      <GraduationCap className="w-4 h-4 text-[#FF7043]" />
+                      Academic Qualifications &amp; Certifications
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Verified educational history and recognized industry accreditations</p>
+                    <p className="text-xs text-slate-500 mt-0.5 m-0">Verified educational history and recognized industry accreditations</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleOpenAddEducation}
-                    className="px-3.5 py-2 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer border-none"
+                    className="px-3.5 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border-none"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Qualification</span>
@@ -1631,18 +1894,18 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
                 {/* Academic Qualifications List */}
                 {educations.length === 0 ? (
-                  <div className="p-8 text-center rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center mx-auto">
+                  <div className="p-8 text-center rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center mx-auto">
                       <GraduationCap className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">No Academic Qualifications Added Yet</h3>
-                      <p className="text-xs text-slate-500 mt-1">Add your degrees, universities, graduation years, and academic distinctions.</p>
+                      <h3 className="text-sm font-bold text-slate-900 m-0">No Academic Qualifications Added Yet</h3>
+                      <p className="text-xs text-slate-500 mt-1 m-0">Add your degrees, universities, graduation years, and academic distinctions.</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleOpenAddEducation}
-                      className="px-4 py-2 rounded-xl bg-[#1E3155] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-sm hover:bg-[#152340] transition-colors"
+                      className="px-4 py-2 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer border-none shadow-xs transition-colors"
                     >
                       <Plus className="w-4 h-4" /> Add Academic Degree
                     </button>
@@ -1650,23 +1913,23 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 ) : (
                   <div className="space-y-4">
                     {educations.map((edu, idx) => (
-                      <div 
+                      <div
                         key={edu.id || idx}
-                        className="flex items-start gap-4 p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 hover:border-slate-300 transition-all group relative"
+                        className="flex items-start gap-4 p-5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 hover:shadow-2xs transition-all group relative"
                       >
-                        <div className="w-12 h-12 rounded-2xl bg-[#1E3155] text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
-                          <GraduationCap className="w-6 h-6 text-[#F2A93B]" />
+                        <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-2xs">
+                          <GraduationCap className="w-6 h-6 text-[#FF7043]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
-                            <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                            <h3 className="text-sm font-bold text-slate-900 leading-snug m-0">
                               {edu.degree}
                             </h3>
                             <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity self-start sm:self-auto">
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditEducation(idx)}
-                                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors border-none bg-transparent cursor-pointer"
+                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors border-none bg-transparent cursor-pointer"
                                 title="Edit qualification"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
@@ -1681,14 +1944,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                               </button>
                             </div>
                           </div>
-                          <p className="text-xs font-semibold text-[#1E3155] mt-0.5">
+                          <p className="text-xs font-semibold text-[#FF7043] mt-0.5 m-0">
                             {edu.institution}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5 m-0">
                             {edu.duration}{edu.grade ? ` • ${edu.grade}` : ''}
                           </p>
                           {edu.description && (
-                            <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line">
+                            <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line m-0">
                               {edu.description}
                             </p>
                           )}
@@ -1707,23 +1970,23 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     <button
                       type="button"
                       onClick={handleOpenAddCert}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 cursor-pointer border-none transition-colors"
+                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold flex items-center gap-1 cursor-pointer border-none transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5 text-slate-500" />
                       <span>Add Certification</span>
                     </button>
                   </div>
-                  
+
                   {certifications.length === 0 ? (
-                    <div className="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200/70 text-xs text-slate-500">
+                    <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200/70 text-xs text-slate-500">
                       No certifications listed. Add certifications like Meta Blueprint, Google Skillshop, AWS, etc.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       {certifications.map((cert, idx) => (
-                        <div 
+                        <div
                           key={cert.id || idx}
-                          className="p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-xs transition-all flex items-center justify-between gap-3 group"
+                          className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 hover:shadow-2xs transition-all flex items-center justify-between gap-3 group"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center shrink-0">
@@ -1733,7 +1996,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                               <span className="text-xs font-bold text-slate-900 block truncate">
                                 {cert.name}
                               </span>
-                              <p className="text-[0.68rem] text-slate-400 truncate">
+                              <p className="text-[0.68rem] text-slate-400 truncate m-0">
                                 {cert.issuer} • Issued {cert.year}
                               </p>
                             </div>
@@ -1780,134 +2043,84 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
           </div>
 
           {/* ========================================================================= */}
-          {/* RIGHT SIDEBAR: CANDIDATE PREFERENCES & HIRING INTELLIGENCE (4 Cols)       */}
+          {/* 3.5 HIRING PREFERENCES & WORK PARAMETERS (FULL WIDTH, DOWN BELOW)         */}
           {/* ========================================================================= */}
-          <aside className="lg:col-span-4 space-y-5">
-            
-            {/* Card 1: Hiring Intelligence & Job Search Readiness */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Hiring Preferences
-                </span>
-                <span className="w-2 h-2 rounded-full bg-[#F2A93B] animate-pulse" />
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <span className="text-slate-500">Availability</span>
-                  {preferences.availability ? (
-                    <span className="font-bold text-[#1E3155] bg-[#F2A93B]/10 px-2 py-0.5 rounded-md">
-                      {preferences.availability}
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 font-normal italic">Not specified</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <span className="text-slate-500">Work Setup</span>
-                  <span className={preferences.work_setup ? "font-semibold text-slate-800" : "text-slate-400 font-normal italic"}>
-                    {preferences.work_setup || 'Not specified'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <span className="text-slate-500">Target Role</span>
-                  <span className={preferences.target_role ? "font-semibold text-slate-800" : "text-slate-400 font-normal italic"}>
-                    {preferences.target_role || 'Not specified'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <span className="text-slate-500">Preferred City</span>
-                  <span className={preferences.preferred_city ? "font-semibold text-slate-800" : "text-slate-400 font-normal italic"}>
-                    {preferences.preferred_city || 'Not specified'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Expected CTC</span>
-                  <span className={preferences.expected_ctc ? "font-bold text-slate-900" : "text-slate-400 font-normal italic"}>
-                    {preferences.expected_ctc || 'Not specified'}
-                  </span>
-                </div>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 m-0 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#FF7043] animate-pulse" />
+                  <span>Hiring &amp; Work Preferences</span>
+                </h3>
+                <p className="text-xs text-slate-500 m-0 mt-0.5">
+                  Your availability, work setup, target role, and compensation expectations.
+                </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleOpenPreferences}
-                className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
               >
                 <Edit3 className="w-3.5 h-3.5 text-slate-400" />
-                Update Preferences
+                <span>Update Preferences</span>
               </button>
             </div>
 
-            {/* Card 2: AI Job Match Score */}
-            <div className="bg-gradient-to-br from-[#1E3155] to-[#2a4070] rounded-3xl p-5 sm:p-6 text-white shadow-xs relative overflow-hidden">
-              <div className="relative z-10 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#F2A93B]" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#F2A93B]/80">
-                    Uptrix Match Score
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">94%</span>
-                  <span className="text-xs text-[#F2A93B]/80 font-medium">Top Match in Hyderabad</span>
-                </div>
-                <p className="text-xs text-white/70 leading-relaxed">
-                  Your profile matches 94% of digital marketing & full stack engineer openings currently posted by verified recruiters.
-                </p>
-                <div className="pt-1">
-                  <a
-                    href="#jobs"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.hash = 'job_search';
-                    }}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#F2A93B] hover:text-white transition-colors"
-                  >
-                    View 28 Matching Openings <ChevronRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
+            {/* 5-Column Preference Metric Tiles */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Availability / Notice
+                </span>
+                <span className="font-bold text-slate-900">
+                  {preferences.availability ? (
+                    <span className="bg-amber-50 text-amber-700 border border-amber-200/80 px-2 py-0.5 rounded-md inline-block font-semibold">
+                      {preferences.availability}
+                    </span>
+                  ) : (
+                    'Immediate / Available'
+                  )}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Work Setup
+                </span>
+                <span className="font-bold text-slate-800">
+                  {preferences.work_setup || 'Remote / Hybrid'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Target Role
+                </span>
+                <span className="font-bold text-slate-800 truncate block">
+                  {preferences.target_role || formData.title || 'Digital Marketer'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Preferred City
+                </span>
+                <span className="font-bold text-slate-800 truncate block">
+                  {preferences.preferred_city || formData.city || 'Open to Relocation'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Expected CTC
+                </span>
+                <span className="font-bold text-emerald-700">
+                  {preferences.expected_ctc || 'Competitive / Open'}
+                </span>
               </div>
             </div>
-
-            {/* Card 3: Profile Verification Badges */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Verified Credentials
-              </span>
-
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5 text-xs">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${user?.email ? 'bg-[#F2A93B]/10 text-[#1E3155]' : 'bg-slate-100 text-slate-400'}`}>
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-slate-700 font-medium">
-                    {user?.email ? 'Email Verified' : 'Email Pending'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2.5 text-xs">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${resumeData ? 'bg-[#F2A93B]/10 text-[#1E3155]' : 'bg-slate-100 text-slate-400'}`}>
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-slate-700 font-medium">
-                    {resumeData ? 'ATS PDF Resume Attached' : 'No Resume Attached'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2.5 text-xs">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${certifications.length > 0 ? 'bg-[#F2A93B]/10 text-[#1E3155]' : 'bg-slate-100 text-slate-400'}`}>
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-slate-700 font-medium">
-                    {certifications.length > 0 ? `${certifications.length} Industry Certificate${certifications.length > 1 ? 's' : ''}` : 'No Certificates Linked'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </aside>
+          </div>
 
         </div>
 
@@ -1918,17 +2131,17 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200">
-            
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200">
+
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
                   <Edit3 className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">Edit Uptrix Profile</h3>
+                <h3 className="text-base font-bold text-slate-900 m-0">Edit Uptrix Profile</h3>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setIsEditing(false)}
                 className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 border-none bg-transparent cursor-pointer"
@@ -1939,7 +2152,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
             {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
@@ -1949,7 +2162,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     value={formData.full_name}
                     onChange={handleChange}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
                 <div>
@@ -1959,7 +2172,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
               </div>
@@ -1973,7 +2186,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   onChange={handleChange}
                   required
                   placeholder="e.g. Full Stack Developer & MarTech Specialist"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -1986,7 +2199,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     value={formData.city}
                     onChange={handleChange}
                     placeholder="Hyderabad"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
                 <div>
@@ -1997,7 +2210,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     value={formData.state}
                     onChange={handleChange}
                     placeholder="Telangana"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
               </div>
@@ -2010,7 +2223,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   value={formData.portfolio_url}
                   onChange={handleChange}
                   placeholder="https://github.com/yourhandle"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2021,7 +2234,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   rows="4"
                   value={formData.summary}
                   onChange={handleChange}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2033,7 +2246,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   value={formData.skills}
                   onChange={handleChange}
                   placeholder="React.js, Node.js, TailwindCSS, SEO, Meta Ads"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2045,7 +2258,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   value={formData.expertise || ''}
                   onChange={handleChange}
                   placeholder="Full Stack Web Development, RESTful API Engineering, Database Management"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2061,7 +2274,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {loading ? 'Saving Changes...' : 'Save Profile'}
@@ -2079,13 +2292,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showContactInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#F2A93B]" />
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 m-0">
+                <Mail className="w-4 h-4 text-[#FF7043]" />
                 Contact Information
               </h3>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowContactInfo(false)}
                 className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 border-none bg-transparent cursor-pointer"
@@ -2095,25 +2308,25 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[0.68rem] text-slate-400 uppercase font-bold">Email Address</span>
-                <p className="font-semibold text-slate-900 mt-0.5">{user?.email || 'Not provided'}</p>
+                <p className="font-semibold text-slate-900 mt-0.5 m-0">{user?.email || 'Not provided'}</p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[0.68rem] text-slate-400 uppercase font-bold">Phone</span>
-                <p className="font-semibold text-slate-900 mt-0.5">{formData.phone}</p>
+                <p className="font-semibold text-slate-900 mt-0.5 m-0">{formData.phone}</p>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-[0.68rem] text-slate-400 uppercase font-bold">Location</span>
-                <p className="font-semibold text-slate-900 mt-0.5">{formData.city ? `${formData.city}, ${formData.state}, India` : `${formData.state}, India`}</p>
+                <p className="font-semibold text-slate-900 mt-0.5 m-0">{formData.city ? `${formData.city}, ${formData.state}, India` : `${formData.state}, India`}</p>
               </div>
 
               {formData.portfolio_url && (
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[0.68rem] text-slate-400 uppercase font-bold">Portfolio & Code</span>
-                  <p className="font-semibold text-[#1E3155] mt-0.5 truncate">{formData.portfolio_url}</p>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[0.68rem] text-slate-400 uppercase font-bold">Portfolio &amp; Code</span>
+                  <p className="font-semibold text-[#FF7043] mt-0.5 truncate m-0">{formData.portfolio_url}</p>
                 </div>
               )}
             </div>
@@ -2134,15 +2347,15 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showResumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#F2A93B]" />
-                <h3 className="text-sm font-bold text-slate-900">
+                <FileText className="w-5 h-5 text-[#FF7043]" />
+                <h3 className="text-sm font-bold text-slate-900 m-0">
                   {formData.full_name}_Official_Resume.pdf
                 </h3>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowResumeModal(false)}
                 className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 border-none bg-transparent cursor-pointer"
@@ -2151,23 +2364,23 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               </button>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-                <FileText className="w-8 h-8" />
+            <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-4">
+              <div className="w-14 h-14 rounded-xl bg-red-50 border border-red-200/80 text-red-600 flex items-center justify-center mx-auto shadow-2xs">
+                <FileText className="w-7 h-7" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-slate-900">{formData.full_name}</h4>
-                <p className="text-xs text-slate-500 mt-1">{formData.title}</p>
-                <p className="text-[0.72rem] text-slate-400 mt-0.5">
+                <h4 className="text-base font-bold text-slate-900 m-0">{formData.full_name}</h4>
+                <p className="text-xs text-slate-500 mt-1 m-0">{formData.title}</p>
+                <p className="text-[0.72rem] text-slate-400 mt-0.5 m-0">
                   Verified ATS Format • Ready for Recruiter Evaluation
                 </p>
               </div>
 
               <div className="text-left bg-white p-4 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
-                <p className="font-semibold text-slate-900">Summary Snapshot:</p>
-                <p>{formData.summary}</p>
-                <p className="font-semibold text-slate-900 pt-1">Core Tech:</p>
-                <p>{formData.skills}</p>
+                <p className="font-semibold text-slate-900 m-0">Summary Snapshot:</p>
+                <p className="m-0">{formData.summary}</p>
+                <p className="font-semibold text-slate-900 pt-1 m-0">Core Tech:</p>
+                <p className="m-0">{formData.skills}</p>
               </div>
 
               <div className="flex items-center justify-center gap-3 pt-2">
@@ -2181,7 +2394,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                       alert('No resume PDF attached yet');
                     }
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 cursor-pointer border-none"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer border-none"
                 >
                   <Download className="w-3.5 h-3.5" /> Download / Open PDF
                 </button>
@@ -2203,19 +2416,19 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showRoleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200">
-            
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200">
+
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
                   <Briefcase className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 m-0">
                   {editingRoleIndex !== null ? 'Edit Experience Role' : 'Add Experience Role'}
                 </h3>
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowRoleModal(false)}
                 className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 border-none bg-transparent cursor-pointer"
@@ -2226,7 +2439,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
             {/* Modal Form */}
             <form onSubmit={handleSaveRole} className="p-6 space-y-4">
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Job Title / Position <span className="text-red-500">*</span>
@@ -2237,7 +2450,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Senior Frontend Developer"
                   value={roleForm.title}
                   onChange={(e) => setRoleForm({ ...roleForm, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2252,7 +2465,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. Uptrix "
                     value={roleForm.company}
                     onChange={(e) => setRoleForm({ ...roleForm, company: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
 
@@ -2261,7 +2474,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   <select
                     value={roleForm.employment_type}
                     onChange={(e) => setRoleForm({ ...roleForm, employment_type: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none bg-white"
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -2291,15 +2504,15 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
                 <div className="flex items-center gap-3">
                   {/* Logo Preview Box */}
-                  <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                  <div className="w-12 h-12 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                     {roleForm.company_logo ? (
-                      <img 
-                        src={roleForm.company_logo} 
-                        alt="Company logo preview" 
+                      <img
+                        src={roleForm.company_logo}
+                        alt="Company logo preview"
                         className="w-full h-full object-contain p-1"
                         onError={(e) => {
                           e.target.style.display = 'none';
-                        }} 
+                        }}
                       />
                     ) : (
                       <span className="text-sm font-bold text-slate-400">
@@ -2310,7 +2523,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
                   {/* Upload File Button + URL Input */}
                   <div className="flex-1 flex items-center gap-2">
-                    <label className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors shrink-0">
+                    <label className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors shrink-0">
                       <Camera className="w-3.5 h-3.5 text-slate-500" />
                       <span>Upload Logo</span>
                       <input
@@ -2339,7 +2552,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                       placeholder="or paste logo URL (https://...)"
                       value={roleForm.company_logo || ''}
                       onChange={(e) => setRoleForm({ ...roleForm, company_logo: e.target.value })}
-                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                     />
                   </div>
                 </div>
@@ -2353,7 +2566,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. India (Hybrid) or Remote"
                     value={roleForm.location}
                     onChange={(e) => setRoleForm({ ...roleForm, location: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
 
@@ -2364,21 +2577,21 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. Jan 2024 - Present or Jun 2022 - Dec 2023"
                     value={roleForm.duration}
                     onChange={(e) => setRoleForm({ ...roleForm, duration: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Key Responsibilities & Impact (One bullet per line)
+                  Key Responsibilities &amp; Impact (One bullet per line)
                 </label>
                 <textarea
                   rows="4"
                   placeholder="• Architected core web platforms and user acquisition funnels.&#10;• Optimized application response times and increased conversion metrics.&#10;• Collaborated with cross-functional product and growth teams."
                   value={roleForm.description}
                   onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
                 <span className="text-[0.68rem] text-slate-400">
                   Tip: Press Enter for each new bullet point you want to appear in your timeline.
@@ -2387,14 +2600,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Technologies & Tools Used (Comma-separated)
+                  Technologies &amp; Tools Used (Comma-separated)
                 </label>
                 <input
                   type="text"
                   placeholder="React.js, Node.js, TailwindCSS, REST APIs, Meta Ads"
                   value={roleForm.technologies}
                   onChange={(e) => setRoleForm({ ...roleForm, technologies: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2410,7 +2623,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingRole}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingRole ? 'Saving Role...' : (editingRoleIndex !== null ? 'Update Role' : 'Save Role')}
@@ -2428,14 +2641,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showEduModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
                   <GraduationCap className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 m-0">
                   {editingEduIndex !== null ? 'Edit Academic Qualification' : 'Add Academic Qualification'}
                 </h3>
               </div>
@@ -2459,7 +2672,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Bachelor of Technology (B.Tech) in Computer Science"
                   value={eduForm.degree}
                   onChange={(e) => setEduForm({ ...eduForm, degree: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2473,7 +2686,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Jawaharlal Nehru Technological University (JNTU)"
                   value={eduForm.institution}
                   onChange={(e) => setEduForm({ ...eduForm, institution: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2487,7 +2700,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. 2018 - 2022"
                     value={eduForm.duration}
                     onChange={(e) => setEduForm({ ...eduForm, duration: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
 
@@ -2500,7 +2713,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. First Class with Distinction (8.4 CGPA)"
                     value={eduForm.grade}
                     onChange={(e) => setEduForm({ ...eduForm, grade: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
               </div>
@@ -2514,7 +2727,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Specialized in Web Engineering, Distributed Systems, Database Management, and Algorithm Optimization."
                   value={eduForm.description}
                   onChange={(e) => setEduForm({ ...eduForm, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2529,7 +2742,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingEdu}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingEdu ? 'Saving...' : (editingEduIndex !== null ? 'Update Qualification' : 'Save Qualification')}
@@ -2546,14 +2759,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showCertModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center">
                   <Award className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 m-0">
                   {editingCertIndex !== null ? 'Edit Certification' : 'Add Certification'}
                 </h3>
               </div>
@@ -2577,7 +2790,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Meta Certified Digital Marketing Associate"
                   value={certForm.name}
                   onChange={(e) => setCertForm({ ...certForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2592,7 +2805,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. Meta Blueprint, Google"
                     value={certForm.issuer}
                     onChange={(e) => setCertForm({ ...certForm, issuer: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
 
@@ -2605,7 +2818,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     placeholder="e.g. 2024"
                     value={certForm.year}
                     onChange={(e) => setCertForm({ ...certForm, year: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                 </div>
               </div>
@@ -2619,7 +2832,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="https://www.credential.net/..."
                   value={certForm.url}
                   onChange={(e) => setCertForm({ ...certForm, url: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2634,7 +2847,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingCert}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingCert ? 'Saving...' : (editingCertIndex !== null ? 'Update Certification' : 'Save Certification')}
@@ -2651,14 +2864,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showPreferencesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
                   <Edit3 className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">Update Hiring Preferences</h3>
+                <h3 className="text-base font-bold text-slate-900 m-0">Update Hiring Preferences</h3>
               </div>
               <button
                 type="button"
@@ -2677,7 +2890,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <select
                   value={prefForm.availability}
                   onChange={(e) => setPrefForm({ ...prefForm, availability: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none bg-white"
                 >
                   <option value="">Select Notice Period / Availability</option>
                   <option value="Immediate (Available Now)">Immediate (Available Now)</option>
@@ -2696,7 +2909,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <select
                   value={prefForm.work_setup}
                   onChange={(e) => setPrefForm({ ...prefForm, work_setup: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none bg-white"
                 >
                   <option value="">Select Work Setup</option>
                   <option value="Remote / Hybrid / On-site">Remote / Hybrid / On-site (Flexible)</option>
@@ -2715,7 +2928,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Full Stack / Growth Eng, Frontend Developer"
                   value={prefForm.target_role}
                   onChange={(e) => setPrefForm({ ...prefForm, target_role: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2728,7 +2941,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. Hyderabad, Bengaluru, Remote"
                   value={prefForm.preferred_city}
                   onChange={(e) => setPrefForm({ ...prefForm, preferred_city: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2741,7 +2954,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="e.g. ₹12.0 - 18.0 LPA"
                   value={prefForm.expected_ctc}
                   onChange={(e) => setPrefForm({ ...prefForm, expected_ctc: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
               </div>
 
@@ -2756,7 +2969,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingPreferences}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingPreferences ? 'Saving to Database...' : 'Save Preferences to Database'}
@@ -2773,15 +2986,15 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showBioModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-[#F2A93B]" />
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-[#FF7043]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Edit Executive Summary & Bio</h3>
-                  <p className="text-[0.68rem] text-slate-400">Directly persisted to PostgreSQL candidate database</p>
+                  <h3 className="text-base font-bold text-slate-900 m-0">Edit Executive Summary &amp; Bio</h3>
+                  <p className="text-[0.68rem] text-slate-400 m-0">Directly persisted to PostgreSQL candidate database</p>
                 </div>
               </div>
               <button
@@ -2804,7 +3017,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                   placeholder="Introduce yourself, your key achievements, strengths, growth areas, and the value you bring to prospective teams..."
                   value={bioSummary}
                   onChange={(e) => setBioSummary(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none leading-relaxed"
                 />
                 <div className="flex items-center justify-between mt-1 text-[0.68rem] text-slate-400">
                   <span>Aim for 40-150 words for optimal recruiter engagement</span>
@@ -2823,7 +3036,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingBio}
-                  className="px-5 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingBio ? 'Saving to Database...' : 'Save Bio to Database'}
@@ -2839,15 +3052,15 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
       {/* ========================================================================= */}
       {showSkillsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#F2A93B]/10 text-[#1E3155] flex items-center justify-center">
-                  <Code2 className="w-4 h-4 text-[#F2A93B]" />
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF7043] border border-orange-100 flex items-center justify-center">
+                  <Code2 className="w-4 h-4 text-[#FF7043]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Manage Skills & Tech Stack</h3>
-                  <p className="text-[0.68rem] text-slate-400">Directly persisted to PostgreSQL candidate database</p>
+                  <h3 className="text-base font-bold text-slate-900 m-0">Manage Skills &amp; Tech Stack</h3>
+                  <p className="text-[0.68rem] text-slate-400 m-0">Directly persisted to PostgreSQL candidate database</p>
                 </div>
               </div>
               <button
@@ -2877,12 +3090,12 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                         handleAddSkillChip();
                       }
                     }}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleAddSkillChip}
-                    className="px-4 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold cursor-pointer border-none shadow-xs transition-colors shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer border-none shadow-2xs transition-colors shrink-0"
                   >
                     Add Skill
                   </button>
@@ -2914,13 +3127,13 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                     No skills in list. Add skills using the input above.
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 flex-wrap p-3 rounded-2xl bg-slate-50 border border-slate-200/80 max-h-48 overflow-y-auto">
+                  <div className="flex items-center gap-2 flex-wrap p-3 rounded-xl bg-slate-50 border border-slate-200/80 max-h-48 overflow-y-auto">
                     {editSkillsList.map(skill => (
                       <span
                         key={skill}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-xs group"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-2xs group"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#F2A93B]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF7043]" />
                         <span>{skill}</span>
                         <button
                           type="button"
@@ -2939,14 +3152,14 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
               {/* Core Expertise / Specialization Domains */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Core Expertise & Tech Domains (Comma-separated)
+                  Core Expertise &amp; Tech Domains (Comma-separated)
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Full Stack Engineering, RESTful API Design, Cloud DevOps, MarTech Systems"
                   value={editExpertiseText}
                   onChange={(e) => setEditExpertiseText(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#F2A93B] outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#FF7043]/20 focus:border-[#FF7043] outline-none"
                 />
                 <span className="text-[0.68rem] text-slate-400 mt-1 block">
                   High-level focus domains to highlight on your profile and ATS candidate card.
@@ -2965,7 +3178,7 @@ export default function CandidateProfile({ onNavigateTab } = {}) {
                 <button
                   type="submit"
                   disabled={savingSkills}
-                  className="px-5 py-2.5 rounded-xl bg-[#1E3155] hover:bg-[#152340] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-[#1E3155]/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   <Save className="w-3.5 h-3.5" />
                   {savingSkills ? 'Saving to Database...' : 'Save Skills to Database'}

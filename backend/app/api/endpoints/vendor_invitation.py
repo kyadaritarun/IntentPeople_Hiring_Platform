@@ -94,8 +94,10 @@ def provision_vendor_account(
 
     # 2. Check if user already exists or create new user
     user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
+    is_renewal_account = bool(user and user.password_hash)
     if user:
-        user.password_hash = pass_hash
+        if not user.password_hash:
+            user.password_hash = pass_hash
         user.role = "ADMIN"
         user.is_verified = True
     else:
@@ -123,14 +125,17 @@ def provision_vendor_account(
     expires_at = activated_at + timedelta(days=invitation.validity_days)
 
     if company:
+        company.user_id = user.id
         company.company_name = invitation.company_name
         company.subdomain = subdomain_slug
         company.business_email = clean_email
         company.phone = invitation.vendor_phone or company.phone
         company.plan_type = "CUSTOM_VENDOR"
         company.plan_status = "ACTIVE"
+        # If renewal: extend from existing expiration if still active, otherwise from now
+        base_date = company.plan_expires_at if (company.plan_expires_at and company.plan_expires_at > activated_at) else activated_at
         company.plan_activated_at = activated_at
-        company.plan_expires_at = expires_at
+        company.plan_expires_at = base_date + timedelta(days=invitation.validity_days)
         company.max_roles = invitation.max_roles
         company.max_jobs = invitation.max_jobs
         company.max_candidates_per_job = invitation.max_candidates_per_job
@@ -219,7 +224,8 @@ def provision_vendor_account(
             temporary_password=temp_password,
             portal_url=dedicated_portal_url,
             quotas=quotas_summary,
-            validity_days=invitation.validity_days
+            validity_days=invitation.validity_days,
+            is_renewal=is_renewal_account
         )
     else:
         send_vendor_credentials_email(
@@ -231,7 +237,8 @@ def provision_vendor_account(
             temporary_password=temp_password,
             portal_url=dedicated_portal_url,
             quotas=quotas_summary,
-            validity_days=invitation.validity_days
+            validity_days=invitation.validity_days,
+            is_renewal=is_renewal_account
         )
 
     return {
@@ -243,7 +250,7 @@ def provision_vendor_account(
         "public_domain_url": public_domain_url,
         "credentials": {
             "email": clean_email,
-            "password": temp_password
+            "password": "(Existing Account Password)" if is_renewal_account else temp_password
         }
     }
 
@@ -341,11 +348,13 @@ def create_vendor_invitation(
     """
     subdomain_slug = data.subdomain.strip().lower()
 
-    # 1. Verify subdomain isn't already taken by an active company
+    # 1. Verify subdomain isn't already taken by a different company
+    clean_email = data.vendor_email.strip().lower()
     existing_comp = db.query(models.Company).filter(
         func.lower(models.Company.subdomain) == subdomain_slug
     ).first()
-    if existing_comp:
+    is_renewal = bool(existing_comp and existing_comp.business_email.strip().lower() == clean_email)
+    if existing_comp and not is_renewal:
         raise HTTPException(
             status_code=400,
             detail=f"The subdomain '{subdomain_slug}' is already registered by '{existing_comp.company_name}'. Please choose a different subdomain slug."
@@ -357,10 +366,9 @@ def create_vendor_invitation(
         models.VendorInvitation.status == "PENDING"
     ).first()
     if pending_inv:
-        raise HTTPException(
-            status_code=400,
-            detail=f"An active pending invitation for subdomain '{subdomain_slug}' already exists for {pending_inv.vendor_email}. Please revoke or edit the existing invitation."
-        )
+        # Automatically cancel previous pending invitation to allow a new renewal/upgrade link
+        pending_inv.status = "CANCELLED"
+        db.flush()
 
     # 3. Generate unique secure token for payment link
     token = secrets.token_urlsafe(32)
@@ -420,11 +428,12 @@ def create_vendor_invitation(
             billing_note=invitation.billing_note or f"{invitation.validity_days} Days Plan",
             quotas=quotas_dict,
             sidebar_modules=invitation.sidebar_access or {},
-            payment_url=payment_url
+            payment_url=payment_url,
+            is_renewal=is_renewal
         )
 
     return {
-        "message": f"Vendor onboarding invitation created successfully for {invitation.company_name}.",
+        "message": f"Vendor {'renewal & upgrade' if is_renewal else 'onboarding'} invitation created successfully for {invitation.company_name}.",
         "id": invitation.id,
         "token": invitation.token,
         "payment_url": payment_url,
@@ -432,6 +441,7 @@ def create_vendor_invitation(
         "subdomain": invitation.subdomain,
         "price": invitation.price,
         "validity_days": invitation.validity_days,
+        "is_renewal": is_renewal,
         "status": invitation.status
     }
 
@@ -450,6 +460,11 @@ def resend_vendor_invitation(
     inv = db.query(models.VendorInvitation).filter(models.VendorInvitation.id == invitation_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Vendor invitation not found")
+
+    existing_comp = db.query(models.Company).filter(
+        func.lower(models.Company.subdomain) == inv.subdomain.strip().lower()
+    ).first()
+    is_renewal = bool(existing_comp and existing_comp.business_email.strip().lower() == inv.vendor_email.strip().lower())
 
     origin = request.headers.get("origin") or settings.FRONTEND_URL
     payment_url = f"{origin}/vendor-pay/{inv.token}"
@@ -472,7 +487,8 @@ def resend_vendor_invitation(
         billing_note=inv.billing_note or f"{inv.validity_days} Days Plan",
         quotas=quotas_dict,
         sidebar_modules=inv.sidebar_access or {},
-        payment_url=payment_url
+        payment_url=payment_url,
+        is_renewal=is_renewal
     )
 
     inv.invitation_sent_at = datetime.utcnow()

@@ -38,6 +38,9 @@ class ToggleCompanyVerificationRequest(BaseModel):
     is_verified: bool
     verification_status: Optional[str] = None  # VERIFIED, PENDING, REJECTED
 
+class RejectCompanyVerificationRequest(BaseModel):
+    reason: Optional[str] = None
+
 class ToggleCompanyStatusRequest(BaseModel):
     is_active: bool
     reason: Optional[str] = None
@@ -466,6 +469,10 @@ def list_companies(
             "logo_url": c.logo_url,
             "is_verified": c.is_verified,
             "verification_status": c.verification_status or "PENDING",
+            "verification_requested_at": c.verification_requested_at.isoformat() if getattr(c, "verification_requested_at", None) else None,
+            "verification_reviewed_at": c.verification_reviewed_at.isoformat() if getattr(c, "verification_reviewed_at", None) else None,
+            "verification_rejection_reason": getattr(c, "verification_rejection_reason", None),
+            "compliance_documents_data": getattr(c, "compliance_documents_data", None) or {},
             "is_active": c.is_active if (hasattr(c, "is_active") and c.is_active is not None) else (c.plan_status != "DEACTIVATED"),
             "plan_type": c.plan_type or "FREE",
             "plan_name": plan_cfg["name"],
@@ -483,6 +490,31 @@ def list_companies(
             "jobs_count": jobs_count,
             "members": members_list,
             "sidebar_access": c.sidebar_access if c.sidebar_access else plan_cfg.get("sidebar_access") or DEFAULT_SIDEBAR_ACCESS.get(c.plan_type or "FREE", {}),
+            "about": c.about,
+            "organisation_type": getattr(c, "organisation_type", None),
+            "primary_industry": getattr(c, "primary_industry", None) or c.industry,
+            "sub_industry": getattr(c, "sub_industry", None),
+            "company_size": c.company_size,
+            "headquarters_location": getattr(c, "headquarters_location", None) or c.location,
+            "other_locations": getattr(c, "other_locations", None),
+            "year_founded": getattr(c, "year_founded", None),
+            "linkedin_url": getattr(c, "linkedin_url", None),
+            "business_model_data": getattr(c, "business_model_data", None) or {},
+            "target_audience_data": getattr(c, "target_audience_data", None) or {},
+            "growth_stage_data": getattr(c, "growth_stage_data", None) or {},
+            "marketing_team_data": getattr(c, "marketing_team_data", None) or {},
+            "hiring_defaults_data": getattr(c, "hiring_defaults_data", None) or {},
+            "product_service": getattr(c, "product_service", None),
+            "business_model": getattr(c, "business_model", None),
+            "growth_stage": getattr(c, "growth_stage", None),
+            "target_audience": getattr(c, "target_audience", None),
+            "ideal_customer_profile": getattr(c, "ideal_customer_profile", None),
+            "business_problem": getattr(c, "business_problem", None),
+            "expected_outcome": getattr(c, "expected_outcome", None),
+            "team_support": getattr(c, "team_support", None),
+            "monthly_budget_range": getattr(c, "monthly_budget_range", None),
+            "decision_authority": getattr(c, "decision_authority", None),
+            "success_horizon": getattr(c, "success_horizon", None),
             "created_at": c.created_at.isoformat() if c.created_at else None
         })
 
@@ -607,6 +639,19 @@ def toggle_company_verification(
 
     company.is_verified = data.is_verified
     company.verification_status = data.verification_status or ("VERIFIED" if data.is_verified else "REJECTED")
+    if data.is_verified:
+        company.verification_reviewed_at = datetime.utcnow()
+        company.verification_rejection_reason = None
+        if not company.plan_type or company.plan_type in ["NONE", "FREE"]:
+            free_cfg = PLAN_CONFIGS.get("FREE", {})
+            company.plan_type = "FREE"
+            company.plan_status = "ACTIVE"
+            company.plan_activated_at = datetime.utcnow()
+            company.plan_expires_at = datetime.utcnow() + timedelta(days=free_cfg.get("duration_days", 30))
+            company.max_roles = free_cfg.get("max_roles", 1)
+            company.max_jobs = free_cfg.get("max_jobs", 1)
+            company.max_candidates_per_job = free_cfg.get("max_candidates_per_job", 5)
+            company.sidebar_access = DEFAULT_SIDEBAR_ACCESS.get("FREE", {})
 
     # Also update associated user account verification
     user = db.query(models.User).filter(models.User.id == company.user_id).first()
@@ -619,6 +664,180 @@ def toggle_company_verification(
         "company_id": company.id,
         "is_verified": company.is_verified,
         "verification_status": company.verification_status
+    }
+
+
+@router.get("/verification-requests")
+def list_verification_requests(
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter: UNDER_REVIEW, PENDING_PROFILE, REJECTED, VERIFIED, ALL"),
+    q: Optional[str] = Query(None, description="Search company name, email, or industry"),
+    superadmin: models.User = Depends(get_current_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Superadmin verification queue: lists companies that have requested verification or are in verification states.
+    Includes full compliance documents photos (PAN, Labour, Trade, COI, Registration doc) and profile completion data.
+    """
+    query = db.query(models.Company)
+
+    if status_filter and status_filter.upper() != "ALL":
+        query = query.filter(models.Company.verification_status == status_filter.upper())
+
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        query = query.filter(
+            or_(
+                models.Company.company_name.ilike(search_pattern),
+                models.Company.business_email.ilike(search_pattern),
+                models.Company.industry.ilike(search_pattern)
+            )
+        )
+
+    companies = query.order_by(
+        desc(models.Company.verification_requested_at),
+        desc(models.Company.created_at)
+    ).all()
+
+    requests_list = []
+    for c in companies:
+        admin_user = db.query(models.User).filter(models.User.id == c.user_id).first() if c.user_id else None
+        requests_list.append({
+            "id": c.id,
+            "user_id": c.user_id,
+            "company_name": c.company_name,
+            "business_email": c.business_email or (admin_user.email if admin_user else ""),
+            "phone": c.phone,
+            "website": c.website,
+            "location": c.location or c.headquarters_location,
+            "headquarters_location": getattr(c, "headquarters_location", None) or c.location,
+            "other_locations": getattr(c, "other_locations", None),
+            "industry": c.industry or c.primary_industry,
+            "primary_industry": getattr(c, "primary_industry", None) or c.industry,
+            "sub_industry": getattr(c, "sub_industry", None),
+            "organisation_type": getattr(c, "organisation_type", None),
+            "year_founded": getattr(c, "year_founded", None),
+            "linkedin_url": getattr(c, "linkedin_url", None),
+            "company_size": c.company_size,
+            "logo_url": c.logo_url,
+            "about": c.about,
+            "is_verified": bool(c.is_verified),
+            "verification_status": c.verification_status or "PENDING_PROFILE",
+            "verification_requested_at": c.verification_requested_at.isoformat() if getattr(c, "verification_requested_at", None) else None,
+            "verification_reviewed_at": c.verification_reviewed_at.isoformat() if getattr(c, "verification_reviewed_at", None) else None,
+            "verification_rejection_reason": getattr(c, "verification_rejection_reason", None),
+            "plan_type": c.plan_type or "NONE",
+            "plan_status": c.plan_status or "PENDING",
+            "compliance_documents_data": getattr(c, "compliance_documents_data", None) or {},
+            "business_model_data": getattr(c, "business_model_data", None) or {},
+            "target_audience_data": getattr(c, "target_audience_data", None) or {},
+            "growth_stage_data": getattr(c, "growth_stage_data", None) or {},
+            "marketing_team_data": getattr(c, "marketing_team_data", None) or {},
+            "hiring_defaults_data": getattr(c, "hiring_defaults_data", None) or {},
+            "product_service": getattr(c, "product_service", None),
+            "business_model": getattr(c, "business_model", None),
+            "growth_stage": getattr(c, "growth_stage", None),
+            "target_audience": getattr(c, "target_audience", None),
+            "ideal_customer_profile": getattr(c, "ideal_customer_profile", None),
+            "business_problem": getattr(c, "business_problem", None),
+            "expected_outcome": getattr(c, "expected_outcome", None),
+            "team_support": getattr(c, "team_support", None),
+            "monthly_budget_range": getattr(c, "monthly_budget_range", None),
+            "decision_authority": getattr(c, "decision_authority", None),
+            "success_horizon": getattr(c, "success_horizon", None),
+            "created_at": c.created_at.isoformat() if c.created_at else None
+        })
+
+    return requests_list
+
+
+@router.post("/companies/{company_id}/approve-verification")
+def approve_company_verification(
+    company_id: int,
+    superadmin: models.User = Depends(get_current_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Superadmin action: Approve company verification request and unlock Free Trial access.
+    """
+    company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    now = datetime.utcnow()
+    company.is_verified = True
+    company.verification_status = "VERIFIED"
+    company.verification_reviewed_at = now
+    company.verification_rejection_reason = None
+
+    # If the company has no paid plan, activate Free Trial plan
+    if not company.plan_type or company.plan_type in ["NONE", "FREE"]:
+        free_cfg = PLAN_CONFIGS.get("FREE", {})
+        company.plan_type = "FREE"
+        company.plan_status = "ACTIVE"
+        company.plan_activated_at = now
+        duration = free_cfg.get("duration_days", 30)
+        company.plan_expires_at = now + timedelta(days=duration)
+        company.max_roles = free_cfg.get("max_roles", 1)
+        company.max_jobs = free_cfg.get("max_jobs", 1)
+        company.max_candidates_per_job = free_cfg.get("max_candidates_per_job", 5)
+        company.sidebar_access = DEFAULT_SIDEBAR_ACCESS.get("FREE", {})
+
+    # Mark user account verified
+    if company.user_id:
+        user = db.query(models.User).filter(models.User.id == company.user_id).first()
+        if user:
+            user.is_verified = True
+
+    db.commit()
+    db.refresh(company)
+
+    return {
+        "message": f"Company '{company.company_name}' successfully verified and Free Trial unlocked!",
+        "company_id": company.id,
+        "is_verified": company.is_verified,
+        "verification_status": company.verification_status,
+        "plan_type": company.plan_type,
+        "plan_status": company.plan_status,
+        "verification_reviewed_at": company.verification_reviewed_at.isoformat() if company.verification_reviewed_at else None
+    }
+
+
+@router.post("/companies/{company_id}/reject-verification")
+def reject_company_verification(
+    company_id: int,
+    data: RejectCompanyVerificationRequest,
+    superadmin: models.User = Depends(get_current_superadmin),
+    db: Session = Depends(get_db)
+):
+    """
+    Superadmin action: Reject company verification request with feedback reason.
+    """
+    company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    now = datetime.utcnow()
+    company.is_verified = False
+    company.verification_status = "REJECTED"
+    company.verification_reviewed_at = now
+    company.verification_rejection_reason = data.reason or "Compliance documents or profile details could not be validated. Please check and re-upload clear photos."
+
+    # Mark user account unverified
+    if company.user_id:
+        user = db.query(models.User).filter(models.User.id == company.user_id).first()
+        if user:
+            user.is_verified = False
+
+    db.commit()
+    db.refresh(company)
+
+    return {
+        "message": f"Company '{company.company_name}' verification request rejected.",
+        "company_id": company.id,
+        "is_verified": company.is_verified,
+        "verification_status": company.verification_status,
+        "rejection_reason": company.verification_rejection_reason,
+        "verification_reviewed_at": company.verification_reviewed_at.isoformat() if company.verification_reviewed_at else None
     }
 
 

@@ -3,7 +3,8 @@ import {
   MessageSquare, Search, Send,
   CheckCheck, ShieldCheck, Sparkles, Building2,
   Users, Lock, RefreshCw, AlertCircle, Hash,
-  User, Mail, ArrowUpRight, Check
+  User, Mail, ArrowUpRight, Check,
+  Paperclip, Image as ImageIcon, FileText, Download, X, Loader2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api';
@@ -33,11 +34,40 @@ export default function MessagesView() {
   const [sending, setSending] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCounts, setUnreadCounts] = useState({});
+
+  // ── Attachments State ──────────────────────────────────────────────────
+  const [attachment, setAttachment] = useState(null); // { file_url, file_name, file_type, file_size }
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+
   const messagesEndRef = useRef(null);
   const [isWsConnected, setIsWsConnected] = useState(false);
   const activeChannelRef = useRef(activeChannel);
   activeChannelRef.current = activeChannel;
   const wsRef = useRef(null);
+
+  // ── Helper: Format file size in KB / MB ────────────────────────────────
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // ── Helper: Symmetric Direct Message Channel Key ────────────────────────
+  // Both parties (e.g. Administrator and Hiring Manager) generate the IDENTICAL channel: dm-{min_id}-{max_id}
+  const getDirectChannelKey = (member) => {
+    const currentUserId = Number(user?.id);
+    const otherUserId = Number(member?.user_id);
+    if (currentUserId && otherUserId) {
+      const minId = Math.min(currentUserId, otherUserId);
+      const maxId = Math.max(currentUserId, otherUserId);
+      return `dm-${minId}-${maxId}`;
+    }
+    return `direct-member-${member.id}`;
+  };
 
   // ── Load Real Team Members from current company (include Admin for internal staff chat) ──
   useEffect(() => {
@@ -93,6 +123,11 @@ export default function MessagesView() {
                   if (prev.some(m => m.id === incoming.id)) return prev;
                   return [...prev, incoming];
                 });
+              } else {
+                setUnreadCounts(prev => ({
+                  ...prev,
+                  [incoming.channel]: (prev[incoming.channel] || 0) + 1
+                }));
               }
             }
           } catch (err) {
@@ -162,7 +197,7 @@ export default function MessagesView() {
             });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }, pollInterval);
 
     return () => clearInterval(interval);
@@ -172,19 +207,59 @@ export default function MessagesView() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── File & Image Upload Handlers ─────────────────────────────────────
+  const handleFileSelect = async (e, isImage = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File size exceeds the 25MB limit.');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingAttachment(true);
+    try {
+      const res = await api.uploadMessageAttachment(file);
+      setAttachment({
+        file_url: res.file_url,
+        file_name: res.file_name || file.name,
+        file_type: res.file_type || file.type,
+        file_size: res.file_size || file.size
+      });
+    } catch (err) {
+      console.error('Attachment upload failed:', err);
+      alert('Failed to upload file: ' + (err.message || 'Please check your connection and retry.'));
+    } finally {
+      setUploadingAttachment(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
+  };
+
   // ── Send Internal Message ─────────────────────────────────────────────
   const handleSendMessage = async (e) => {
     e?.preventDefault();
-    if (!inputMessage.trim() || sending) return;
-
     const content = inputMessage.trim();
+    if ((!content && !attachment) || sending || uploadingAttachment) return;
+
     setInputMessage('');
+    const pendingAttachment = attachment;
+    setAttachment(null);
     setSending(true);
 
     try {
       const newMsg = await api.sendInternalMessage({
         channel: activeChannel,
-        content
+        content: content,
+        file_url: pendingAttachment?.file_url || null,
+        file_name: pendingAttachment?.file_name || null,
+        file_type: pendingAttachment?.file_type || null,
+        file_size: pendingAttachment?.file_size || null
       });
       setMessages(prev => {
         if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -193,6 +268,7 @@ export default function MessagesView() {
     } catch (err) {
       console.error('Failed to send message:', err);
       alert('Error sending internal message: ' + (err.message || 'Please retry'));
+      if (pendingAttachment) setAttachment(pendingAttachment);
     } finally {
       setSending(false);
     }
@@ -202,6 +278,10 @@ export default function MessagesView() {
   const handleSelectChannel = (channelId, meta) => {
     setActiveChannel(channelId);
     setActiveChannelMeta(meta);
+    setUnreadCounts(prev => ({
+      ...prev,
+      [channelId]: 0
+    }));
   };
 
   // Quick replies tailored for internal recruitment coordination
@@ -247,6 +327,8 @@ export default function MessagesView() {
     return (m.name || '').toLowerCase().includes(q) || (m.role || '').toLowerCase().includes(q);
   });
 
+  const teamSyncUnread = unreadCounts['team-sync'] || 0;
+
   return (
     <div
       className="p-4 sm:p-7 max-w-7xl mx-auto space-y-5 bg-[#F7F8FB] min-h-full antialiased text-slate-800 select-text"
@@ -255,13 +337,7 @@ export default function MessagesView() {
       {/* ── Top Header Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1">
-            <span>Workspace</span>
-            <span>/</span>
-            <span>Communications</span>
-            <span>/</span>
-            <span className="text-slate-600 font-semibold">Internal Messages</span>
-          </div>
+
           <h1 className="text-2xl sm:text-[28px] font-semibold text-slate-900 leading-tight tracking-tight flex items-center gap-2.5">
             <span className="w-8 h-8 rounded-lg bg-indigo-50 text-[#5C59E8] flex items-center justify-center font-bold">
               <MessageSquare className="w-4 h-4" />
@@ -269,7 +345,7 @@ export default function MessagesView() {
             Internal Messages
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1">
-            Secure hiring coordination and candidate review discussions for {companyName} staff.
+            Secure hiring coordination, direct messages, and candidate file sharing for {companyName} staff.
           </p>
         </div>
 
@@ -324,7 +400,7 @@ export default function MessagesView() {
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 no-scrollbar">
-            
+
             {/* Team Channel Section Header */}
             <div className="px-4 py-2 bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Workspace Channels
@@ -338,11 +414,10 @@ export default function MessagesView() {
                 type: 'CHANNEL',
                 subtitle: 'All internal staff (Admin, Recruiters, Hiring Managers)'
               })}
-              className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${
-                activeChannel === 'team-sync'
+              className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${activeChannel === 'team-sync'
                   ? 'bg-indigo-50/70 border-l-4 border-l-[#5C59E8]'
                   : 'hover:bg-slate-50/80'
-              }`}
+                }`}
             >
               <div className="w-9 h-9 rounded-xl bg-indigo-50 text-[#5C59E8] font-bold text-sm flex items-center justify-center shrink-0 border border-indigo-100/80">
                 <Hash className="w-4 h-4" />
@@ -350,7 +425,14 @@ export default function MessagesView() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
                   <h4 className="text-xs font-bold text-slate-900 truncate">#hiring-team-sync</h4>
-                  <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded">Channel</span>
+                  <div className="flex items-center gap-1">
+                    {teamSyncUnread > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#5C59E8] text-white">
+                        {teamSyncUnread}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded">Channel</span>
+                  </div>
                 </div>
                 <p className="text-[11px] text-slate-500 truncate">
                   General internal alignment & requisition reviews
@@ -379,8 +461,10 @@ export default function MessagesView() {
 
             {/* Other Staff Members */}
             {filteredColleagues.map(member => {
-              const channelKey = `direct-member-${member.id}`;
+              // Symmetric DM channel: dm-{min_id}-{max_id}
+              const channelKey = getDirectChannelKey(member);
               const isActive = activeChannel === channelKey;
+              const unread = unreadCounts[channelKey] || 0;
 
               return (
                 <div
@@ -392,11 +476,10 @@ export default function MessagesView() {
                     subtitle: `${member.role?.replace('_', ' ')} • ${companyName}`,
                     role: member.role
                   })}
-                  className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${
-                    isActive
+                  className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${isActive
                       ? 'bg-indigo-50/70 border-l-4 border-l-[#5C59E8]'
                       : 'hover:bg-slate-50/80'
-                  }`}
+                    }`}
                 >
                   <div className="relative shrink-0">
                     <div className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">
@@ -408,19 +491,25 @@ export default function MessagesView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <h4 className="text-xs font-bold text-slate-900 truncate">{member.name}</h4>
-                      <span className="text-[10px] text-slate-400 font-medium">Internal</span>
+                      <div className="flex items-center gap-1.5">
+                        {unread > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#FF7043] text-white animate-pulse">
+                            {unread}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 font-medium">Direct</span>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 mb-1">
-                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold border ${
-                        member.role === 'ADMIN'
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold border ${member.role === 'ADMIN'
                           ? 'bg-indigo-50 text-indigo-700 border-indigo-200/80'
                           : member.role === 'RECRUITER'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200/80'
-                          : member.role === 'HIRING_MANAGER'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200/80'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                      }`}>
+                            ? 'bg-blue-50 text-blue-700 border-blue-200/80'
+                            : member.role === 'HIRING_MANAGER'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200/80'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                        }`}>
                         {member.role?.replace('_', ' ')}
                       </span>
                       <span className="text-[11px] text-slate-400 truncate">{member.title || 'Staff'}</span>
@@ -486,12 +575,12 @@ export default function MessagesView() {
 
           {/* Messages Stream */}
           <div className="flex-1 p-5 overflow-y-auto space-y-4">
-            
+
             {/* Encryption & Isolation notice */}
             <div className="text-center py-1">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-white text-slate-500 border border-slate-200/80 shadow-2xs">
                 <Lock className="w-3 h-3 text-emerald-600" />
-                Staff discussion isolated for {companyName}. Never accessible to candidates.
+                Staff discussion isolated for {companyName}. Private and encrypted.
               </span>
             </div>
 
@@ -500,6 +589,11 @@ export default function MessagesView() {
               const timeFormatted = msg.created_at
                 ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 : '';
+
+              const isImage = msg.file_url && (
+                msg.file_type?.startsWith('image/') ||
+                msg.file_name?.match(/\.(png|jpe?g|gif|webp|svg|bmp)$/i)
+              );
 
               return (
                 <div
@@ -512,13 +606,12 @@ export default function MessagesView() {
                     </div>
                   )}
 
-                  <div className={`max-w-md sm:max-w-lg rounded-2xl px-4 py-2.5 text-xs shadow-xs ${
-                    isMe
+                  <div className={`max-w-md sm:max-w-lg rounded-2xl px-4 py-2.5 text-xs shadow-xs ${isMe
                       ? 'bg-[#1E293B] text-white rounded-br-xs'
                       : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-xs'
-                  }`}>
+                    }`}>
                     {!isMe && (
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <div className="flex items-center gap-1.5 mb-1.5">
                         <span className="font-bold text-slate-900 text-xs">{msg.sender_name}</span>
                         <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/80">
                           {msg.sender_role?.replace('_', ' ')}
@@ -526,11 +619,73 @@ export default function MessagesView() {
                       </div>
                     )}
 
-                    <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    {/* ── Attachment Rendering ── */}
+                    {msg.file_url && (
+                      <div className="mb-2">
+                        {isImage ? (
+                          <div className="relative group rounded-xl overflow-hidden border border-slate-200/60 bg-black/5 max-w-xs sm:max-w-sm">
+                            <img
+                              src={msg.file_url}
+                              alt={msg.file_name || 'Image Attachment'}
+                              className="max-h-64 w-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                              onClick={() => window.open(msg.file_url, '_blank')}
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-[10px] truncate max-w-[180px] font-medium">
+                                {msg.file_name}
+                              </span>
+                              <a
+                                href={msg.file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={msg.file_name || true}
+                                className="px-2 py-1 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-medium flex items-center gap-1 backdrop-blur-xs no-underline"
+                              >
+                                <Download className="w-3 h-3" /> Save
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          <a
+                            href={msg.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            download={msg.file_name || true}
+                            className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all max-w-xs sm:max-w-sm no-underline ${isMe
+                                ? 'bg-white/10 hover:bg-white/15 border-white/20 text-white'
+                                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                              }`}
+                          >
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20 text-white' : 'bg-indigo-50 text-[#5C59E8]'
+                              }`}>
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="text-xs font-semibold truncate leading-tight">
+                                {msg.file_name || 'Attachment File'}
+                              </div>
+                              <div className={`text-[10px] flex items-center gap-2 mt-0.5 ${isMe ? 'text-slate-300' : 'text-slate-400'
+                                }`}>
+                                <span>{formatFileSize(msg.file_size)}</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-0.5 font-medium hover:underline">
+                                  <Download className="w-2.5 h-2.5" /> Download
+                                </span>
+                              </div>
+                            </div>
+                          </a>
+                        )}
+                      </div>
+                    )}
 
-                    <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${
-                      isMe ? 'text-slate-400' : 'text-slate-400'
-                    }`}>
+                    {/* ── Text Content ── */}
+                    {msg.content && (
+                      <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    )}
+
+                    <div className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isMe ? 'text-slate-400' : 'text-slate-400'
+                      }`}>
                       <span>{timeFormatted}</span>
                       {isMe && <CheckCheck className="w-3 h-3 text-emerald-400" />}
                     </div>
@@ -544,9 +699,9 @@ export default function MessagesView() {
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-2.5">
                   <MessageSquare className="w-5 h-5" />
                 </div>
-                <p className="font-bold text-slate-700">No messages in this channel yet</p>
+                <p className="font-bold text-slate-700">No messages in this conversation yet</p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Start the discussion with your hiring team below.
+                  Start direct discussion or share files and candidate updates below.
                 </p>
               </div>
             )}
@@ -571,24 +726,106 @@ export default function MessagesView() {
             ))}
           </div>
 
-          {/* Chat Input Box */}
+          {/* ── Attachment Preview / Upload State ── */}
+          {uploadingAttachment && (
+            <div className="px-5 py-2 bg-indigo-50/70 border-t border-indigo-100 flex items-center gap-2.5 text-xs text-indigo-700 shrink-0">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 shrink-0" />
+              <span>Uploading attachment to secure cloud storage...</span>
+            </div>
+          )}
+
+          {attachment && !uploadingAttachment && (
+            <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {attachment.file_type?.startsWith('image/') ? (
+                  <div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-200 bg-white shrink-0">
+                    <img src={attachment.file_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 text-[#5C59E8] flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-800 truncate max-w-xs sm:max-w-md">
+                    {attachment.file_name}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    {formatFileSize(attachment.file_size)} • Ready to send
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveAttachment}
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border-none bg-transparent"
+                title="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ── Chat Input Box ── */}
           <form
             onSubmit={handleSendMessage}
-            className="p-3.5 sm:p-4 bg-white border-t border-slate-100 flex items-center gap-2.5 shrink-0"
+            className="p-3.5 sm:p-4 bg-white border-t border-slate-100 flex items-center gap-2 shrink-0"
           >
+            {/* Hidden native file inputs */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={e => handleFileSelect(e, false)}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+            />
+            <input
+              type="file"
+              ref={imageInputRef}
+              onChange={e => handleFileSelect(e, true)}
+              className="hidden"
+              accept="image/*"
+            />
+
+            {/* Image attachment button */}
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={uploadingAttachment || sending}
+              className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-slate-200/80 bg-slate-50/50 disabled:opacity-40 shrink-0"
+              title="Attach image (PNG, JPG, SVG, GIF)"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+
+            {/* Document attachment button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAttachment || sending}
+              className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer border border-slate-200/80 bg-slate-50/50 disabled:opacity-40 shrink-0"
+              title="Attach document (PDF, Word, Excel, ZIP)"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
+            {/* Text input */}
             <input
               type="text"
               placeholder={`Post internal message to ${activeChannelMeta.name}...`}
               value={inputMessage}
               onChange={e => setInputMessage(e.target.value)}
+              disabled={sending}
               className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50/80 border border-slate-200/90 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
             />
+
+            {/* Send button */}
             <button
               type="submit"
-              disabled={!inputMessage.trim() || sending}
-              className="px-4 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-all border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)]"
+              disabled={(!inputMessage.trim() && !attachment) || sending || uploadingAttachment}
+              className="px-4 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-all border-none cursor-pointer shadow-[0_1px_2px_rgba(255,112,67,0.3)] shrink-0"
             >
-              <Send className="w-3.5 h-3.5" />
+              {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               <span>Send</span>
             </button>
           </form>

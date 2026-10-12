@@ -25,6 +25,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+input,
+select,
+textarea,
+button,
+option {
+  font-family: inherit;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

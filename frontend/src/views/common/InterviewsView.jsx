@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Calendar, Clock, Video, Users, CheckCircle2, AlertCircle,
-  ExternalLink, Building2, User, ChevronRight, Plus, Copy,
+  ExternalLink, Building2, User, ChevronRight, ChevronLeft, Plus, Copy,
   Check, Sparkles, X, ShieldCheck, ArrowUpRight, MessageSquare,
   HelpCircle, RefreshCw, FileText, CheckCheck, Mic, Camera,
   Loader2, Trash2, Phone, MapPin, Search, Award, XCircle, Star,
@@ -135,6 +135,19 @@ export default function InterviewsView({ setActiveTab }) {
   // ── Interviews State (server-persisted) ──
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadInterviews();
+      triggerToast('Interviews updated successfully');
+    } catch (err) {
+      console.error('Error refreshing interviews:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // ── Filters & Search ────────────────────────────────────────────────
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'confirmed', 'scheduled', 'completed'
@@ -142,6 +155,8 @@ export default function InterviewsView({ setActiveTab }) {
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [activeReminderToast, setActiveReminderToast] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // ── Modal State ─────────────────────────────────────────────────────
   const [selectedInterviewDetails, setSelectedInterviewDetails] = useState(null);
@@ -605,6 +620,29 @@ export default function InterviewsView({ setActiveTab }) {
     return true;
   });
 
+  // Reset pagination when active filter, search query, or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchQuery, pageSize]);
+
+  const totalPages = Math.ceil(filteredInterviews.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedInterviews = filteredInterviews.slice(startIndex, startIndex + pageSize);
+
+  const getPageNumbers = (current, total) => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
   const inputClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-medium text-slate-800 bg-white placeholder:text-slate-400 focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]';
   const selectClass = 'w-full px-3 py-2 rounded-xl border border-slate-200/90 text-xs font-semibold text-slate-700 bg-white focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 outline-none transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)] cursor-pointer';
 
@@ -651,8 +689,19 @@ export default function InterviewsView({ setActiveTab }) {
           </p>
         </div>
 
-        {isRecruiter && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="px-3.5 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
+            title="Refresh scheduled interviews"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${(refreshing || loading) ? 'animate-spin text-[#FF7043]' : ''}`} />
+            <span>Refresh</span>
+          </button>
+
+          {isRecruiter && (
             <button
               type="button"
               onClick={handleOpenScheduleModal}
@@ -661,8 +710,8 @@ export default function InterviewsView({ setActiveTab }) {
               <Plus className="w-4 h-4" />
               <span>Schedule Interview</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Toast Notification */}
@@ -859,6 +908,16 @@ export default function InterviewsView({ setActiveTab }) {
             )}
           </div>
 
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs cursor-pointer flex items-center justify-center disabled:opacity-50 shrink-0"
+            title="Refresh interviews"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${(refreshing || loading) ? 'animate-spin text-[#FF7043]' : ''}`} />
+          </button>
+
           <div className="hidden lg:block text-[11px] text-slate-400 font-medium whitespace-nowrap px-1">
             Times displayed in <span className="font-semibold text-slate-700">IST</span>
           </div>
@@ -913,8 +972,17 @@ export default function InterviewsView({ setActiveTab }) {
                   )}
                 </div>
               ) : !isStaff ? (
-                typeof setActiveTab === 'function' && (
-                  <div className="flex items-center justify-center gap-2.5 mt-4 flex-wrap">
+                <div className="flex items-center justify-center gap-2.5 mt-4 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={refreshing || loading}
+                    className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${(refreshing || loading) ? 'animate-spin text-[#FF7043]' : ''}`} />
+                    <span>Refresh</span>
+                  </button>
+                  {typeof setActiveTab === 'function' && (
                     <button
                       type="button"
                       onClick={() => setActiveTab('my_applications')}
@@ -923,8 +991,8 @@ export default function InterviewsView({ setActiveTab }) {
                       <span>View My Applications</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-                )
+                  )}
+                </div>
               ) : null}
             </>
           ) : (
@@ -949,6 +1017,7 @@ export default function InterviewsView({ setActiveTab }) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200/80 bg-slate-50/75 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 text-center w-12 text-slate-400 font-bold">#</th>
                   <th className="py-3.5 px-5">{isStaff ? 'Candidate & Target Role' : 'Interviewer & Role'}</th>
                   <th className="py-3.5 px-5">Round of Interview</th>
                   <th className="py-3.5 px-5">Date & Slot (IST)</th>
@@ -958,9 +1027,15 @@ export default function InterviewsView({ setActiveTab }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-normal">
-                {filteredInterviews.map((item) => {
+                {paginatedInterviews.map((item, idx) => {
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* Row Number */}
+                      <td className="py-3.5 px-4 text-center align-middle">
+                        <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs inline-flex items-center justify-center border border-slate-200/80 shadow-2xs">
+                          {startIndex + idx + 1}
+                        </span>
+                      </td>
                       {/* Candidate & Role */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
@@ -1300,6 +1375,73 @@ export default function InterviewsView({ setActiveTab }) {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* ── Pagination Controls Bar ── */}
+          <div className="border-t border-slate-200/80 px-5 py-3.5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 text-slate-500 font-medium flex-wrap">
+              <span>
+                Showing <strong className="text-slate-900">{filteredInterviews.length === 0 ? 0 : startIndex + 1}</strong> to{' '}
+                <strong className="text-slate-900">{Math.min(startIndex + pageSize, filteredInterviews.length)}</strong> of{' '}
+                <strong className="text-slate-900">{filteredInterviews.length}</strong> interviews
+              </span>
+              <span className="hidden sm:inline-block text-slate-300">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 text-[11px]">Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-[#5C59E8] cursor-pointer shadow-2xs"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {getPageNumbers(safePage, totalPages).map((p, idx) => (
+                  p === '...' ? (
+                    <span key={`dots-${idx}`} className="px-1 text-slate-400 font-bold">...</span>
+                  ) : (
+                    <button
+                      key={`page-${p}`}
+                      type="button"
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer border transition-colors ${safePage === p
+                        ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}

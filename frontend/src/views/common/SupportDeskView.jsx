@@ -1,249 +1,313 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  HelpCircle, ShieldCheck, Mail, Phone, Clock,
-  CheckCircle2, Copy, Check, Sparkles, MessageSquare,
-  ArrowUpRight, HeartHandshake
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+  ArrowUpRight,
+  Check,
+  Clock3,
+  Copy,
+  Headphones,
+  Mail,
+  MessageCircle,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
+
+import { useAuth } from "../../context/AuthContext";
 
 export default function SupportDeskView() {
   const { user } = useAuth();
-  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copied, setCopied] = useState("");
 
-  const handleCopyEmail = (email) => {
-    navigator.clipboard?.writeText(email);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2500);
+  const copyToClipboard = async (value) => {
+    await navigator.clipboard?.writeText(value);
+    setCopied(value);
+
+    setTimeout(() => {
+      setCopied("");
+    }, 2000);
   };
+
+  const channels = [
+    {
+      label: "Email support",
+      value: "support@IntentPeople.in",
+      description: "Account, verification and general platform support.",
+      icon: Mail,
+      action: "Send email",
+      href: "mailto:support@IntentPeople.in",
+      copy: true,
+    },
+    {
+      label: "Priority support",
+      value: "escalations@IntentPeople.in",
+      description: "Urgent hiring, compliance or unresolved requests.",
+      icon: ShieldCheck,
+      action: "Escalate issue",
+      href: "mailto:escalations@IntentPeople.in",
+      copy: true,
+    },
+    {
+      label: "WhatsApp",
+      value: "+91 98765 43210",
+      description: "Quick assistance during our business hours.",
+      icon: MessageCircle,
+      action: "Start chat",
+      href: "https://wa.me/919876543210",
+      external: true,
+    },
+    {
+      label: "Phone support",
+      value: "+91 98765 43210",
+      description: "Speak directly with our support team.",
+      icon: Phone,
+      action: "Call now",
+      href: "tel:+919876543210",
+    },
+  ];
 
   return (
     <div
-      className="p-4 sm:p-7 max-w-4xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased text-slate-800 select-text"
-      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
+      className="min-h-full bg-[#F8FAFC]"
+      style={{
+        fontFamily:
+          "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
     >
-      {/* ── Top Header ── */}
-      <div className="pb-1">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200/60 text-[#FF7043] flex items-center justify-center font-bold shadow-2xs">
-            <HelpCircle className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-[26px] font-semibold text-slate-900 leading-tight tracking-tight m-0">
-                Uptrix Support & Concierge Desk
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Concierge Online
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 m-0">
-              Direct assistance, account support, and enterprise SLA guarantee for all Uptrix members.
-            </p>
-          </div>
-        </div>
-      </div>
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
 
-      {/* ── 1. Uptrix Help Guarantee ── */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+
             <div>
-              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-wider mb-1">
-                <Sparkles className="w-3 h-3 text-emerald-600" /> Uptrix Help Guarantee
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm">
+                  <Headphones className="h-4 w-4 text-[#FF7043]" />
+                </div>
+
+                <span className="text-sm font-medium text-slate-500">
+                  Support Center
+                </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 m-0">
-                100% Dedicated Concierge & Resolution Guarantee
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 m-0 leading-relaxed max-w-xl">
-                Every inquiry received during operational business hours is handled directly by a dedicated concierge engineer with a guaranteed initial response.
+
+              <h1 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-[30px]">
+                How can we help?
+              </h1>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                Get help with your IntentPeople account, verification,
+                recruitment activity, or platform questions.
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* 3 Metric Pills */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Response SLA
-            </span>
-            <div className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
-              <span>&lt; 2 Hours</span>
-              <Clock className="w-4 h-4 text-amber-500" />
+            <div className="flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+              <span className="text-xs font-medium text-slate-700">
+                Support online
+              </span>
             </div>
-            <p className="text-[11px] text-slate-500 m-0">Priority inquiry turnaround</p>
+
           </div>
+        </header>
 
-          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Satisfaction Rate
-            </span>
-            <div className="text-lg font-bold text-emerald-700 flex items-center gap-1.5">
-              <span>99.4% CSAT</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            </div>
-            <p className="text-[11px] text-slate-500 m-0">Verified member feedback</p>
-          </div>
+        {/* SLA */}
+        <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Operating Hours
-            </span>
-            <div className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
-              <span>Mon – Sat</span>
-              <HeartHandshake className="w-4 h-4 text-[#FF7043]" />
-            </div>
-            <p className="text-[11px] text-slate-500 m-0">9:00 AM – 8:00 PM IST</p>
-          </div>
-        </div>
-      </div>
+          <div className="grid divide-y divide-slate-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
 
-      {/* ── 2. Help Contact & Email Channels ── */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 m-0">
-          <Mail className="w-3.5 h-3.5 text-[#FF7043]" /> Direct Help Contacts
-        </h3>
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-slate-400">
+                Response time
+              </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Official Support Email */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200/60 text-[#FF7043] flex items-center justify-center font-bold">
-                <Mail className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">General Support</span>
-                <h4 className="text-base font-bold text-slate-900 mt-0.5 m-0">support@uptrix.in</h4>
-                <p className="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
-                  For profile assistance, KYC verification, application questions, or general platform help.
+              <div className="mt-1 flex items-center gap-2">
+                <Clock3 className="h-4 w-4 text-slate-400" />
+
+                <p className="text-sm font-semibold text-slate-900">
+                  Within 2 hours
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center gap-2">
-              <a
-                href="mailto:support@uptrix.in?subject=Help%20Request%20-%20Uptrix%20Portal"
-                className="px-3.5 py-2 bg-[#FF7043] hover:bg-[#E65B30] text-white text-xs font-semibold rounded-xl transition-all shadow-[0_1px_2px_rgba(255,112,67,0.3)] inline-flex items-center gap-1.5 no-underline cursor-pointer"
-              >
-                <span>Email Support</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
-              <button
-                type="button"
-                onClick={() => handleCopyEmail('support@uptrix.in')}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors border border-slate-200 inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                {copiedEmail ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
-                <span>{copiedEmail ? 'Copied!' : 'Copy'}</span>
-              </button>
-            </div>
-          </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-slate-400">
+                Availability
+              </p>
 
-          {/* Priority Escalations Desk */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-600 flex items-center justify-center font-bold">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Priority Escalations</span>
-                <h4 className="text-base font-bold text-slate-900 mt-0.5 m-0">escalations@uptrix.in</h4>
-                <p className="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
-                  For urgent requisition reviews, compliance flags, or enterprise hiring escalations.
+              <p className="mt-1 text-sm font-semibold text-slate-900">
+                Mon – Sat · 9 AM – 8 PM
+              </p>
+            </div>
+
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-slate-400">
+                Current status
+              </p>
+
+              <div className="mt-1 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                <p className="text-sm font-semibold text-slate-900">
+                  All systems operational
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center gap-2">
-              <a
-                href="mailto:escalations@uptrix.in?subject=Priority%20Escalation%20-%20Uptrix%20Portal"
-                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5 no-underline cursor-pointer"
-              >
-                <span>Contact Escalations</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
-              <button
-                type="button"
-                onClick={() => handleCopyEmail('escalations@uptrix.in')}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors border border-slate-200 inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5 text-slate-500" />
-                <span>Copy</span>
-              </button>
-            </div>
+          </div>
+        </section>
+
+        {/* Main Support Panel */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+          {/* Panel Header */}
+          <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+
+            <h2 className="text-base font-semibold text-slate-950">
+              Contact support
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Choose the best way to reach our team.
+            </p>
+
           </div>
 
-          {/* WhatsApp & Phone Concierge */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center font-bold">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">WhatsApp & Chat</span>
-                <h4 className="text-base font-bold text-slate-900 mt-0.5 m-0">+91 98765 43210</h4>
-                <p className="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
-                  Chat directly with our verified concierge team for instant answers during office hours.
-                </p>
-              </div>
-            </div>
+          {/* Contact Rows */}
+          <div>
+            {channels.map((channel, index) => {
+              const Icon = channel.icon;
 
-            <div className="pt-2 flex items-center gap-2">
-              <a
-                href="https://wa.me/919876543210?text=Hello%20Uptrix%20Support,%20I%20need%20help%20with%20my%20portal%20account."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5 no-underline cursor-pointer"
-              >
-                <span>WhatsApp Concierge</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
+              return (
+                <div
+                  key={channel.label}
+                  className={`group px-5 py-5 transition-colors hover:bg-slate-50/70 sm:px-6 ${
+                    index !== channels.length - 1
+                      ? "border-b border-slate-100"
+                      : ""
+                  }`}
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                    {/* Left */}
+                    <div className="flex items-start gap-4">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm">
+                        <Icon className="h-[18px] w-[18px]" />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-slate-400">
+                          {channel.label}
+                        </p>
+
+                        <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-[15px]">
+                          {channel.value}
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {channel.description}
+                        </p>
+                      </div>
+
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-2 pl-14 sm:pl-0">
+
+                      {channel.copy && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            copyToClipboard(channel.value)
+                          }
+                          aria-label={`Copy ${channel.value}`}
+                          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                        >
+                          {copied === channel.value ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+
+                      <a
+                        href={channel.href}
+                        target={
+                          channel.external ? "_blank" : undefined
+                        }
+                        rel={
+                          channel.external
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 no-underline transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+                      >
+                        {channel.action}
+
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </a>
+
+                    </div>
+
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Phone Call Support */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-3 flex flex-col justify-between hover:border-slate-300 transition-colors">
-            <div className="space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200/60 text-sky-600 flex items-center justify-center font-bold">
-                <Phone className="w-4 h-4" />
+        </section>
+
+        {/* Bottom CTA */}
+        <section className="mt-5 rounded-2xl bg-slate-950 px-5 py-5 sm:px-6">
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+
+                <h3 className="text-sm font-semibold text-white">
+                  Need urgent assistance?
+                </h3>
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Direct Call Support</span>
-                <h4 className="text-base font-bold text-slate-900 mt-0.5 m-0">+91 98765 43210</h4>
-                <p className="text-xs text-slate-500 mt-1 m-0 leading-relaxed">
-                  Speak directly with an enterprise support representative (Monday to Saturday, 9am - 8pm).
-                </p>
-              </div>
+
+              <p className="mt-1.5 text-xs leading-5 text-slate-400">
+                Priority issues are routed directly to our escalation team.
+              </p>
             </div>
 
-            <div className="pt-2 flex items-center gap-2">
-              <a
-                href="tel:+919876543210"
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl transition-colors border border-slate-200 inline-flex items-center gap-1.5 no-underline cursor-pointer"
-              >
-                <Phone className="w-3.5 h-3.5 text-slate-600" />
-                <span>Call Concierge</span>
-              </a>
-            </div>
+            <a
+              href="mailto:escalations@IntentPeople.in?subject=Priority%20Support%20Request"
+              className="inline-flex h-9 w-fit items-center gap-2 rounded-lg bg-white px-4 text-xs font-semibold text-slate-900 no-underline transition hover:bg-slate-100"
+            >
+              Contact priority support
+
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
+
           </div>
-        </div>
-      </div>
 
-      {/* ── Footer Reassurance ── */}
-      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-6 flex flex-col gap-2 px-1 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+
           <span>
-            Logged in as: <strong className="text-slate-800 font-semibold">{user?.email || 'Authenticated User'}</strong> ({user?.role || 'Member'})
+            Signed in as{" "}
+            <strong className="font-medium text-slate-600">
+              {user?.email || "Authenticated User"}
+            </strong>
           </span>
-        </div>
-        <span className="text-slate-400 text-[11px]">
-          Uptrix Concierge Desk · ISO 27001 Certified Security
-        </span>
-      </div>
+
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Secure IntentPeople Support
+          </div>
+
+        </footer>
+
+      </main>
     </div>
   );
 }

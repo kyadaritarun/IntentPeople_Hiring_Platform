@@ -49,7 +49,11 @@ def update_candidate(data: schemas.CandidateProfileUpdate, user: models.User = D
         db.add(candidate)
         db.flush()
 
-    json_fields = {"skills", "expertise", "experience", "education", "certifications", "hiring_preferences"}
+    json_fields = {
+        "skills", "expertise", "experience", "education", "certifications", 
+        "hiring_preferences", "career_interests", "specialisations_data", 
+        "gtm_experience", "case_studies", "execution_environment", "tools_proficiency"
+    }
     for field, val in data.model_dump(exclude_unset=True).items():
         setattr(candidate, field, val)
         if field in json_fields:

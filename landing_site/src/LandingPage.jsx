@@ -2,11 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Landing from './Landing';
 import TermsAndConditions from './TermsAndConditions';
 import PrivacyPolicy from './PrivacyPolicy';
+import RecruitersPage from './RecruitersPage';
+import CandidatesPage from './CandidatesPage';
 
 /**
  * Unified Landing Controller:
- * Hosts the primary Uptrix Landing Page, Terms & Conditions, and Privacy Policy
- * with synchronized URL routing (/terms, /privacy, /) and seamless browser back/forward support.
+ * Hosts the primary Uptrix Landing Page, dedicated Recruiters & Candidates pages,
+ * Terms & Conditions, and Privacy Policy with synchronized URL routing
+ * (/recruiters, /candidates, /terms, /privacy, /) and seamless browser back/forward support.
  */
 export default function LandingPage({ onNavigateToAuth }) {
   // Determine initial view from current URL pathname
@@ -17,6 +20,12 @@ export default function LandingPage({ onNavigateToAuth }) {
     }
     if (path === '/privacy' || path === '/privacy-policy') {
       return 'privacy';
+    }
+    if (path === '/recruiters' || path === '/for-recruiters') {
+      return 'recruiters';
+    }
+    if (path === '/candidates' || path === '/for-candidates') {
+      return 'candidates';
     }
     return 'landing';
   };
@@ -38,17 +47,27 @@ export default function LandingPage({ onNavigateToAuth }) {
       if (shouldPushState && window.location.pathname !== '/privacy') {
         window.history.pushState({ legalView: 'privacy' }, '', '/privacy');
       }
+    } else if (view === 'recruiters') {
+      document.title = 'Hire Top 1% Growth Marketers | IntentPeople';
+      if (shouldPushState && window.location.pathname !== '/recruiters') {
+        window.history.pushState({ pageView: 'recruiters' }, '', '/recruiters');
+      }
+    } else if (view === 'candidates') {
+      document.title = 'For Growth Marketers & Candidates | IntentPeople';
+      if (shouldPushState && window.location.pathname !== '/candidates') {
+        window.history.pushState({ pageView: 'candidates' }, '', '/candidates');
+      }
     } else {
       document.title = 'IntentPeople - AI-Powered Executive Hiring Platform';
       if (shouldPushState && window.location.pathname !== '/') {
-        window.history.pushState({ legalView: 'landing' }, '', '/');
+        window.history.pushState({ pageView: 'landing' }, '', '/');
       }
     }
   }, []);
 
   // Listen to browser Back / Forward (popstate)
   useEffect(() => {
-    const handlePopState = (event) => {
+    const handlePopState = () => {
       const resolved = resolveViewFromPath(window.location.pathname);
       setCurrentView(resolved);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -57,6 +76,10 @@ export default function LandingPage({ onNavigateToAuth }) {
         document.title = 'Terms & Conditions | IntentPeople';
       } else if (resolved === 'privacy') {
         document.title = 'Privacy Policy | IntentPeople';
+      } else if (resolved === 'recruiters') {
+        document.title = 'Hire Top 1% Growth Marketers | IntentPeople';
+      } else if (resolved === 'candidates') {
+        document.title = 'For Growth Marketers & Candidates | IntentPeople';
       } else {
         document.title = 'IntentPeople - AI-Powered Executive Hiring Platform';
       }
@@ -66,14 +89,40 @@ export default function LandingPage({ onNavigateToAuth }) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Set initial document title on mount if on legal page
+  // Set initial document title on mount
   useEffect(() => {
     if (currentView === 'terms') {
       document.title = 'Terms & Conditions | IntentPeople';
     } else if (currentView === 'privacy') {
       document.title = 'Privacy Policy | IntentPeople';
+    } else if (currentView === 'recruiters') {
+      document.title = 'Hire Top 1% Growth Marketers | IntentPeople';
+    } else if (currentView === 'candidates') {
+      document.title = 'For Growth Marketers & Candidates | IntentPeople';
     }
   }, [currentView]);
+
+  if (currentView === 'recruiters') {
+    return (
+      <RecruitersPage
+        onNavigateToView={switchView}
+        onNavigateToAuth={onNavigateToAuth}
+        onOpenPrivacy={() => switchView('privacy')}
+        onOpenTerms={() => switchView('terms')}
+      />
+    );
+  }
+
+  if (currentView === 'candidates') {
+    return (
+      <CandidatesPage
+        onNavigateToView={switchView}
+        onNavigateToAuth={onNavigateToAuth}
+        onOpenPrivacy={() => switchView('privacy')}
+        onOpenTerms={() => switchView('terms')}
+      />
+    );
+  }
 
   if (currentView === 'terms') {
     return (
@@ -98,6 +147,7 @@ export default function LandingPage({ onNavigateToAuth }) {
   return (
     <Landing
       onNavigateToAuth={onNavigateToAuth}
+      onNavigateToView={switchView}
       onOpenTerms={() => switchView('terms')}
       onOpenPrivacy={() => switchView('privacy')}
     />

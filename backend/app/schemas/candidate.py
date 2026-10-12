@@ -19,3 +19,12 @@ class CandidateProfileUpdate(BaseModel):
     certifications: Optional[List[dict]] = None
     expertise: Optional[List[str]] = None
     hiring_preferences: Optional[dict] = None
+    career_stage: Optional[str] = None
+    career_interests: Optional[dict] = None
+    specialisations_data: Optional[List[dict]] = None
+    gtm_experience: Optional[dict] = None
+    case_studies: Optional[List[dict]] = None
+    execution_environment: Optional[dict] = None
+    tools_proficiency: Optional[List[dict]] = None
+    onboarding_completed: Optional[bool] = None
+    onboarding_step: Optional[int] = None

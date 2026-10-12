@@ -38,6 +38,14 @@ def _candidate_to_dict(cand):
         "phone": cand.phone,
         "city": cand.city,
         "state": cand.state,
+        "career_stage": getattr(cand, "career_stage", "") or "",
+        "career_interests": getattr(cand, "career_interests", {}) or {},
+        "specialisations_data": getattr(cand, "specialisations_data", []) or [],
+        "gtm_experience": getattr(cand, "gtm_experience", {}) or {},
+        "case_studies": getattr(cand, "case_studies", []) or [],
+        "execution_environment": getattr(cand, "execution_environment", {}) or {},
+        "tools_proficiency": getattr(cand, "tools_proficiency", []) or [],
+        "onboarding_completed": bool(getattr(cand, "onboarding_completed", False)),
     }
 
 
@@ -46,14 +54,34 @@ def _job_to_dict(job):
     if not job:
         return {}
     return {
+        "id": job.id,
         "title": job.title,
         "description": job.description,
         "skills": job.skills or [],
         "experience_level": job.experience_level,
-        "specialization": job.specialization,
-        "must_have_capabilities": job.must_have_capabilities,
-        "preferred_capabilities": job.preferred_capabilities,
-        "min_experience": job.min_experience,
+        "specialization": getattr(job, "specialization", None),
+        "must_have_capabilities": getattr(job, "must_have_capabilities", None),
+        "preferred_capabilities": getattr(job, "preferred_capabilities", None),
+        "min_experience": getattr(job, "min_experience", None),
+        "ownership_level": getattr(job, "ownership_level", None),
+        "availability_requirement": getattr(job, "availability_requirement", None),
+        "salary_min": getattr(job, "salary_min", None),
+        "salary_max": getattr(job, "salary_max", None),
+        "salary_currency": getattr(job, "salary_currency", "USD"),
+        "location": getattr(job, "location", ""),
+        "work_mode": getattr(job, "work_mode", "Remote"),
+        "job_type": getattr(job, "job_type", "Full-Time"),
+        "product_service": getattr(job, "product_service", None),
+        "business_model": getattr(job, "business_model", None),
+        "growth_stage": getattr(job, "growth_stage", None),
+        "target_audience": getattr(job, "target_audience", None),
+        "ideal_customer_profile": getattr(job, "ideal_customer_profile", None),
+        "business_problem": getattr(job, "business_problem", None),
+        "expected_outcome": getattr(job, "expected_outcome", None),
+        "team_support": getattr(job, "team_support", None),
+        "monthly_budget_range": getattr(job, "monthly_budget_range", None),
+        "decision_authority": getattr(job, "decision_authority", None),
+        "success_horizon": getattr(job, "success_horizon", None),
     }
 
 
@@ -74,6 +102,7 @@ def _build_applicant_response(a, cand, job, cand_user=None, is_locked=False, loc
             "cover_letter": "•••••••••••• (Candidate profile locked. Upgrade your subscription plan to reveal.)",
             "screening_answers": [],
             "fit_score": a.fit_score,
+            "domain_alignment": (a.fit_breakdown.get("domain_alignment") if isinstance(a.fit_breakdown, dict) else None) or a.fit_score,
             "fit_breakdown": a.fit_breakdown,
             "applied_at": a.applied_at.isoformat() if a.applied_at else None,
             "is_locked": True,
@@ -98,7 +127,15 @@ def _build_applicant_response(a, cand, job, cand_user=None, is_locked=False, loc
                 "hiring_preferences": {},
                 "resume_url": None,
                 "resume_filename": None,
-                "portfolio_url": None
+                "portfolio_url": None,
+                "career_stage": "",
+                "career_interests": {},
+                "specialisations_data": [],
+                "gtm_experience": {},
+                "case_studies": [],
+                "execution_environment": {},
+                "tools_proficiency": [],
+                "onboarding_completed": False
             }
         }
 
@@ -115,6 +152,7 @@ def _build_applicant_response(a, cand, job, cand_user=None, is_locked=False, loc
         "cover_letter": a.cover_letter,
         "screening_answers": a.screening_answers or [],
         "fit_score": a.fit_score,
+        "domain_alignment": (a.fit_breakdown.get("domain_alignment") if isinstance(a.fit_breakdown, dict) else None) or a.fit_score,
         "fit_breakdown": a.fit_breakdown,
         "applied_at": a.applied_at.isoformat() if a.applied_at else None,
         "is_locked": False,
@@ -138,7 +176,15 @@ def _build_applicant_response(a, cand, job, cand_user=None, is_locked=False, loc
             "hiring_preferences": getattr(cand, "hiring_preferences", {}) or {},
             "resume_url": cand.resume_url if cand else None,
             "resume_filename": cand.resume_filename if cand else None,
-            "portfolio_url": cand.portfolio_url if cand else None
+            "portfolio_url": cand.portfolio_url if cand else None,
+            "career_stage": getattr(cand, "career_stage", "") or "",
+            "career_interests": getattr(cand, "career_interests", {}) or {},
+            "specialisations_data": getattr(cand, "specialisations_data", []) or [],
+            "gtm_experience": getattr(cand, "gtm_experience", {}) or {},
+            "case_studies": getattr(cand, "case_studies", []) or [],
+            "execution_environment": getattr(cand, "execution_environment", {}) or {},
+            "tools_proficiency": getattr(cand, "tools_proficiency", []) or [],
+            "onboarding_completed": bool(getattr(cand, "onboarding_completed", False))
         }
     }
 
@@ -206,9 +252,13 @@ def apply_job(job_id: int, data: schemas.ApplicationCreate, user: models.User = 
             message=f"{candidate.full_name} applied for '{job.title}'{score_label}."
         )
         db.add(notif)
-
     db.commit()
-    return {"message": "Job application submitted successfully!", "fit_score": fit_score}
+    return {
+        "message": "Job application submitted successfully!",
+        "fit_score": fit_score,
+        "domain_alignment": fit_breakdown.get("domain_alignment") if isinstance(fit_breakdown, dict) else fit_score,
+        "fit_breakdown": fit_breakdown
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -264,6 +314,7 @@ def get_my_applications(user: models.User = Depends(get_current_user), db: Sessi
             "status": a.status,
             "cover_letter": a.cover_letter,
             "fit_score": a.fit_score,
+            "domain_alignment": (a.fit_breakdown.get("domain_alignment") if isinstance(a.fit_breakdown, dict) else None) or a.fit_score,
             "fit_breakdown": a.fit_breakdown,
             "applied_at": a.applied_at.isoformat() if a.applied_at else None,
             "interview": iv_data,

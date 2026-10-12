@@ -10,6 +10,9 @@ import {
 import { api } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import ShareJobModal from '../../components/ShareJobModal';
+import { MARKETING_SPECIALISATIONS, CUSTOMER_MODELS } from '../../utils/marketingTaxonomy';
+import { computeUnifiedJobMatch } from '../../utils/aiMatchScorer';
+import RecruiterMatchDossier from '../../components/RecruiterMatchDossier';
 
 export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobId }) {
   const { user, refreshUser } = useAuth();
@@ -22,6 +25,8 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
   const [workModeFilter, setWorkModeFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('');
   const [selectedSkillTag, setSelectedSkillTag] = useState('');
+  const [specializationFilter, setSpecializationFilter] = useState('');
+  const [businessModelFilter, setBusinessModelFilter] = useState('');
   const [sortBy, setSortBy] = useState('relevant'); // 'relevant' | 'salary' | 'newest'
 
   // Application & Detail Modals
@@ -169,7 +174,7 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
       if (Array.isArray(myApps)) {
         const map = {};
         myApps.forEach(app => {
-          if (app.job_id) map[app.job_id] = true;
+          if (app.job_id) map[app.job_id] = app;
         });
         setAppliedJobs(map);
       }
@@ -182,13 +187,30 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
     if (searchTerm) params.search = searchTerm;
     if (workModeFilter) params.work_mode = workModeFilter;
     if (locationInput) params.location = locationInput;
+    if (specializationFilter) params.specialization = specializationFilter;
+    if (businessModelFilter) params.business_model = businessModelFilter;
 
     const merged = { ...params, ...overrideParams };
 
-    api.getJobs(merged)
+    return api.getJobs(merged)
       .then(list => setJobs(list || []))
       .catch(() => setJobs([]))
       .finally(() => setLoading(false));
+  };
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchJobs(),
+        fetchMyApplications(),
+        fetchSavedJobs()
+      ]);
+    } catch (e) {
+      console.error('Failed to refresh jobs:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSearchSubmit = (e) => {
@@ -214,7 +236,9 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
     setWorkModeFilter('');
     setExperienceFilter('');
     setSelectedSkillTag('');
-    fetchJobs({ search: '', work_mode: '', location: '' });
+    setSpecializationFilter('');
+    setBusinessModelFilter('');
+    fetchJobs({ search: '', work_mode: '', location: '', specialization: '', business_model: '' });
   };
 
   const handleToggleSave = async (job) => {
@@ -261,8 +285,9 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
     if (!job) return;
     setApplying(true);
     try {
-      await api.applyJob(job.id, letter, answers);
-      setAppliedJobs(prev => ({ ...prev, [job.id]: true }));
+      const res = await api.applyJob(job.id, letter, answers);
+      await fetchMyApplications();
+      setAppliedJobs(prev => ({ ...prev, [job.id]: res || true }));
       alert(`🎉 Application submitted successfully for '${job.title}'!`);
       setSelectedJob(null);
       setAiModalJob(null);
@@ -414,6 +439,8 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
     if (!job) {
       return {
         score: 0,
+        roleFitScore: 0,
+        domainAlignment: 0,
         skillsScore: 0,
         jdScore: 0,
         matchedSkills: [],
@@ -423,182 +450,14 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
         totalSkills: 0,
         badgeClass: '',
         barClass: '',
-        verdict: ''
+        verdict: '',
+        marketingMatch: false,
+        gtmMatch: false,
+        caseStudiesCount: 0
       };
     }
-
-    let candidateSkills = [];
-    if (Array.isArray(profileData?.skills)) {
-      candidateSkills = profileData.skills;
-    } else if (typeof profileData?.skills === 'string') {
-      candidateSkills = profileData.skills.split(',').map(s => s.trim());
-    }
-    const cleanCandSkills = candidateSkills.map(s => String(s).toLowerCase().trim()).filter(Boolean);
-
-    let candidateExpertise = [];
-    if (Array.isArray(profileData?.expertise)) {
-      candidateExpertise = profileData.expertise;
-    } else if (typeof profileData?.expertise === 'string') {
-      candidateExpertise = profileData.expertise.split(',').map(s => s.trim());
-    }
-    const cleanCandExpertise = candidateExpertise.map(s => String(s).toLowerCase().trim()).filter(Boolean);
-
-    const candTitle = String(profileData?.title || '').toLowerCase();
-    const candSummary = String(profileData?.summary || '').toLowerCase();
-
-    // 1. SKILLS MATCH
-    let jobSkills = [];
-    if (Array.isArray(job.skills)) {
-      jobSkills = job.skills;
-    } else if (typeof job.skills === 'string') {
-      jobSkills = job.skills.split(',').map(s => s.trim());
-    }
-    jobSkills = jobSkills.filter(Boolean);
-
-    const matchedSkills = [];
-    const missingSkills = [];
-
-    jobSkills.forEach(reqSkill => {
-      const reqClean = String(reqSkill).toLowerCase().trim();
-      if (!reqClean) return;
-
-      const isMatch =
-        cleanCandSkills.some(cs => cs === reqClean || cs.includes(reqClean) || reqClean.includes(cs)) ||
-        cleanCandExpertise.some(ce => ce === reqClean || ce.includes(reqClean) || reqClean.includes(ce)) ||
-        candTitle.includes(reqClean) ||
-        candSummary.includes(reqClean);
-
-      if (isMatch) {
-        matchedSkills.push(reqSkill);
-      } else {
-        missingSkills.push(reqSkill);
-      }
-    });
-
-    const totalReq = jobSkills.length;
-    let skillsScore = 0;
-    if (totalReq > 0) {
-      skillsScore = Math.round((matchedSkills.length / totalReq) * 100);
-    } else {
-      skillsScore = 80;
-    }
-
-    // 2. JOB JD (JOB DESCRIPTION & RESPONSIBILITIES) MATCH
-    const jdText = [
-      job.title || '',
-      job.description || '',
-      job.must_have_capabilities || '',
-      job.preferred_capabilities || '',
-      job.specialization || '',
-      job.experience_level || ''
-    ].join(' ').toLowerCase();
-
-    let candExpText = '';
-    if (Array.isArray(profileData?.experience)) {
-      candExpText = profileData.experience.map(e => `${e.title || ''} ${e.company || ''} ${e.description || ''}`).join(' ');
-    }
-    let candEduText = '';
-    if (Array.isArray(profileData?.education)) {
-      candEduText = profileData.education.map(ed => `${ed.degree || ''} ${ed.field_of_study || ''}`).join(' ');
-    }
-    const candFullText = [
-      candTitle,
-      candSummary,
-      cleanCandSkills.join(' '),
-      cleanCandExpertise.join(' '),
-      candExpText,
-      candEduText
-    ].join(' ').toLowerCase();
-
-    const stopwords = new Set([
-      'the', 'and', 'with', 'for', 'this', 'that', 'from', 'have', 'will', 'your',
-      'about', 'role', 'team', 'work', 'candidates', 'candidate', 'responsibilities',
-      'requirements', 'looking', 'uptrix', 'must', 'join', 'opportunity', 'plus',
-      'such', 'more', 'their', 'they', 'what', 'when', 'which', 'where', 'also'
-    ]);
-
-    const jdWords = jdText
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .map(w => w.trim())
-      .filter(w => w.length > 3 && !stopwords.has(w));
-
-    const uniqueJdWords = Array.from(new Set(jdWords));
-    let matchedJdWords = 0;
-    uniqueJdWords.forEach(w => {
-      if (candFullText.includes(w)) {
-        matchedJdWords++;
-      }
-    });
-
-    const keywordRatio = uniqueJdWords.length > 0 ? (matchedJdWords / uniqueJdWords.length) : 0.6;
-    let jdKeywordScore = Math.min(100, Math.round(keywordRatio * 100 * 1.35));
-
-    let titleBonus = 0;
-    const jobTitleLower = (job.title || '').toLowerCase();
-    const jobSpecLower = (job.specialization || '').toLowerCase();
-    if (candTitle && (candTitle.includes(jobTitleLower) || jobTitleLower.includes(candTitle))) {
-      titleBonus += 20;
-    } else if (jobSpecLower && candTitle && candTitle.includes(jobSpecLower)) {
-      titleBonus += 15;
-    } else if (cleanCandExpertise.some(ce => jobTitleLower.includes(ce) || jobSpecLower.includes(ce))) {
-      titleBonus += 12;
-    } else {
-      titleBonus += 5;
-    }
-
-    let locBonus = 0;
-    const jobWorkMode = (job.work_mode || '').toLowerCase();
-    const candCity = (profileData?.city || '').toLowerCase();
-    const jobLoc = (job.location || '').toLowerCase();
-    if (jobWorkMode.includes('remote') || (candCity && jobLoc.includes(candCity))) {
-      locBonus += 10;
-    } else {
-      locBonus += 5;
-    }
-
-    let expBonus = 0;
-    const reqExp = job.min_experience || 0;
-    const candExpYears = profileData?.years_of_experience || (Array.isArray(profileData?.experience) ? profileData.experience.length * 1.5 : 2);
-    if (candExpYears >= reqExp) {
-      expBonus += 15;
-    } else {
-      expBonus += 8;
-    }
-
-    let jdScore = Math.min(100, Math.max(15, Math.round((jdKeywordScore * 0.55) + titleBonus + locBonus + expBonus)));
-
-    // 3. OVERALL COMPOSITE FIT SCORE
-    let score = Math.round((skillsScore * 0.55) + (jdScore * 0.45));
-    score = Math.min(100, Math.max(10, score));
-
-    let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
-    let barClass = 'bg-emerald-500';
-    let verdict = 'Strong Match';
-
-    if (score < 50 || skillsScore < 50) {
-      badgeClass = 'bg-rose-50 text-rose-700 border-rose-200/80';
-      barClass = 'bg-rose-500';
-      verdict = 'Skill Gap Detected';
-    } else if (score < 75) {
-      badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/80';
-      barClass = 'bg-amber-500';
-      verdict = 'Good Match';
-    }
-
-    return {
-      score,
-      skillsScore,
-      jdScore,
-      matchedSkills,
-      missingSkills,
-      matchedCount: matchedSkills.length,
-      missingCount: missingSkills.length,
-      totalSkills: totalReq,
-      badgeClass,
-      barClass,
-      verdict
-    };
+    const appliedApp = job?.id ? appliedJobs[job.id] : null;
+    return computeUnifiedJobMatch(job, profileData, appliedApp);
   };
 
   const generateAiPitch = (job, match, profileData) => {
@@ -760,7 +619,7 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                     Filter Roles
                   </span>
                 </div>
-                {(workModeFilter || experienceFilter || selectedSkillTag || searchTerm || locationInput) && (
+                {(workModeFilter || experienceFilter || selectedSkillTag || searchTerm || locationInput || specializationFilter || businessModelFilter) && (
                   <button
                     type="button"
                     onClick={handleResetFilters}
@@ -769,6 +628,58 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                     <RefreshCw className="w-3 h-3" /> Reset
                   </button>
                 )}
+              </div>
+
+              {/* Marketing Specialisation Dropdown Filter */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#F2A93B]" /> Marketing Discipline
+                </label>
+                <select
+                  value={specializationFilter}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSpecializationFilter(val);
+                    fetchJobs({ specialization: val });
+                  }}
+                  className="w-full text-xs font-semibold py-2 px-3 rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="">All Disciplines (14 Specialisations)</option>
+                  {MARKETING_SPECIALISATIONS.map(spec => (
+                    <option key={spec.id} value={spec.title}>
+                      {spec.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer Model / GTM Alignment Filter */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Target className="w-3 h-3 text-indigo-500" /> Target Customer Model
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {['', ...CUSTOMER_MODELS.slice(0, 5)].map(model => {
+                    const label = model === '' ? 'All Models' : model;
+                    const isActive = businessModelFilter === model;
+                    return (
+                      <button
+                        key={model}
+                        type="button"
+                        onClick={() => {
+                          setBusinessModelFilter(model);
+                          fetchJobs({ business_model: model });
+                        }}
+                        className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border truncate ${isActive
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-slate-50/80 text-slate-600 border-slate-200/80 hover:bg-slate-100'
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Work Mode Pill Selector */}
@@ -908,9 +819,21 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                     Connect with top agency partners, growth teams, and verified hiring managers.
                   </p>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-                  <Sparkles className="w-3 h-3 text-emerald-600" /> Verified Openings
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:border-slate-300 disabled:opacity-50"
+                    title="Refresh jobs"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin text-[#FF7043]' : ''}`} />
+                    <span>Refresh</span>
+                  </button>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                    <Sparkles className="w-3 h-3 text-emerald-600" /> Verified Openings
+                  </span>
+                </div>
               </div>
 
               {/* Dual Input Search Bar */}
@@ -980,6 +903,16 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                     {workModeFilter}
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  className="ml-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                  title="Refresh jobs feed"
+                >
+                  <RefreshCw className={`w-3 h-3 text-slate-500 ${loading ? 'animate-spin text-[#FF7043]' : ''}`} />
+                  <span>Refresh</span>
+                </button>
               </div>
 
               {/* Sort By Dropdown */}
@@ -1013,13 +946,24 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Try broadening your keyword, removing location constraints, or clearing active filters.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="mt-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors border-none cursor-pointer"
-                >
-                  Reset All Filters
-                </button>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors border-none cursor-pointer"
+                  >
+                    Reset All Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#FF7043]' : ''}`} />
+                    <span>Refresh</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-3.5">
@@ -1028,6 +972,7 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                   const isSaved = Boolean(savedJobIds[job.id]);
                   const companyName = job.company?.company_name || 'Verified Agency';
                   const compInitial = companyName.charAt(0).toUpperCase();
+                  const cardMatch = computeProfileMatch(job, candidateProfile);
 
                   return (
                     <div
@@ -1041,12 +986,19 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                             {compInitial}
                           </div>
                           <div className="min-w-0">
-                            <h3
-                              onClick={() => setViewDetailsJob(job)}
-                              className="text-base font-bold text-slate-900 group-hover:text-[#FF7043] transition-colors leading-snug cursor-pointer line-clamp-1"
-                            >
-                              {job.title}
-                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3
+                                onClick={() => setViewDetailsJob(job)}
+                                className="text-base font-bold text-slate-900 group-hover:text-[#FF7043] transition-colors leading-snug cursor-pointer line-clamp-1 m-0"
+                              >
+                                {job.title}
+                              </h3>
+                              {cardMatch.marketingMatch && (
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold inline-flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-[#F2A93B]" /> Specialisation Match
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 mt-1 text-xs text-slate-600 flex-wrap">
                               <span className="font-semibold text-slate-800 flex items-center gap-1">
                                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
@@ -1111,6 +1063,16 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                         {job.specialization && (
                           <span className="font-medium text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg">
                             {job.specialization}
+                          </span>
+                        )}
+                        {(job.business_model || job.business_context?.business_model) && (
+                          <span className="font-medium text-sky-800 bg-sky-50 border border-sky-200/80 px-2.5 py-1 rounded-lg">
+                            {job.business_model || job.business_context?.business_model}
+                          </span>
+                        )}
+                        {(job.monthly_budget_range || job.hiring_need?.monthly_budget_range) && (
+                          <span className="font-medium text-emerald-800 bg-emerald-50/80 border border-emerald-200/70 px-2.5 py-1 rounded-lg">
+                            Budget: {job.monthly_budget_range || job.hiring_need?.monthly_budget_range}
                           </span>
                         )}
                         {job.availability_requirement && (
@@ -1418,6 +1380,27 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                             <X className="w-3 h-3 text-amber-600" /> {s}
                           </span>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Marketing & GTM Match Highlights */}
+                    {(detailsMatch.marketingMatch || detailsMatch.gtmMatch || detailsMatch.caseStudiesCount > 0) && (
+                      <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-200/60 text-[11px]">
+                        {detailsMatch.marketingMatch && (
+                          <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-[#F2A93B]" /> Verified Marketing Discipline Match
+                          </span>
+                        )}
+                        {detailsMatch.gtmMatch && (
+                          <span className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 font-bold flex items-center gap-1">
+                            <Target className="w-3.5 h-3.5 text-sky-600" /> Customer Model &amp; GTM Aligned
+                          </span>
+                        )}
+                        {detailsMatch.caseStudiesCount > 0 && (
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {detailsMatch.caseStudiesCount} Proof of Work Case Studies Attached
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2073,59 +2056,81 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                 <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex flex-col items-center justify-center shrink-0 shadow-inner">
+                    <div className="w-20 h-20 rounded-2xl bg-white/10 border border-white/20 flex flex-col items-center justify-center shrink-0 shadow-inner text-center p-1">
                       <span className="text-2xl font-black text-white leading-none">
                         {aiMatch.score}%
                       </span>
-                      <span className="text-[0.6rem] font-bold text-indigo-200 uppercase tracking-widest mt-1">
-                        Fit Score
+                      <span className="text-[0.58rem] font-bold text-indigo-200 uppercase tracking-widest mt-1">
+                        AI Role-Fit
+                      </span>
+                      <span className="text-[0.62rem] font-black text-emerald-300 mt-0.5">
+                        {aiMatch.domainAlignment}% Domain
                       </span>
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-bold text-white">
                           {aiMatch.verdict}
                         </span>
                         <span className="text-[0.68rem] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-400/30">
                           {aiMatch.matchedCount}/{aiMatch.totalSkills || 1} Skills Matched
                         </span>
+                        {aiMatch.isOfficial && (
+                          <span className="text-[0.65rem] px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 font-extrabold border border-indigo-400/30 uppercase tracking-wider">
+                            Verified Recruiter Parity
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-indigo-200/80 mt-1 max-w-md leading-relaxed">
                         {aiMatch.verdict === 'Skill Gap Detected'
-                          ? `Your skills match ${aiMatch.skillsScore}% of requested requirements, while your experience aligns with ${aiMatch.jdScore}% of the Job Description responsibilities.`
+                          ? `Domain Alignment is ${aiMatch.domainAlignment}% based on your verified marketing execution depth, budget scale & proof of work. Because this position specifically requires ${aiMatch.missingSkills?.join(', ') || 'SEO'} (${aiMatch.skillsScore}% Skills Match), your targeted AI Role-Fit is ${aiMatch.score}%.`
                           : (aiMatch.score >= 75
-                              ? "Your profile has high alignment with the requisition and Job Description. You are well-positioned for an interview shortlist."
-                              : "You have strong transferable background from the JD, and bridging remaining skills will maximize your interview callback rate.")}
+                              ? `Your profile has high alignment with the requisition and Job Description (${aiMatch.score}% Role-Fit, ${aiMatch.domainAlignment}% Domain Alignment). You are well-positioned for an interview shortlist.`
+                              : `You have strong transferable background from the JD (${aiMatch.domainAlignment}% Domain Alignment). Bridging remaining specific skills will maximize your interview callback rate.`)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
                     {/* Skills Match Gauge */}
-                    <div className="w-full sm:w-32 bg-white/10 p-2.5 rounded-xl border border-white/10 text-right">
-                      <span className="text-[0.62rem] text-emerald-300 block uppercase font-bold">Skills Match</span>
+                    <div className="w-full sm:w-28 bg-white/10 p-2.5 rounded-xl border border-white/10 text-right">
+                      <span className="text-[0.6rem] text-emerald-300 block uppercase font-bold">Skills Match</span>
                       <div className="text-base font-black text-white mt-0.5">
                         {aiMatch.skillsScore}%
                       </div>
                       <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-1">
                         <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${aiMatch.skillsScore}%` }} />
                       </div>
-                      <span className="text-[0.58rem] text-indigo-200 block mt-1">
+                      <span className="text-[0.55rem] text-indigo-200 block mt-1 truncate">
                         {aiMatch.matchedCount}/{aiMatch.totalSkills || 1} Skills
                       </span>
                     </div>
 
                     {/* Job JD Match Gauge */}
-                    <div className="w-full sm:w-32 bg-white/10 p-2.5 rounded-xl border border-white/10 text-right">
-                      <span className="text-[0.62rem] text-sky-300 block uppercase font-bold">Job JD Match</span>
+                    <div className="w-full sm:w-28 bg-white/10 p-2.5 rounded-xl border border-white/10 text-right">
+                      <span className="text-[0.6rem] text-sky-300 block uppercase font-bold">Job JD Match</span>
                       <div className="text-base font-black text-white mt-0.5">
                         {aiMatch.jdScore}%
                       </div>
                       <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-1">
                         <div className="bg-sky-400 h-full rounded-full transition-all duration-500" style={{ width: `${aiMatch.jdScore}%` }} />
                       </div>
-                      <span className="text-[0.58rem] text-indigo-200 block mt-1">
+                      <span className="text-[0.55rem] text-indigo-200 block mt-1">
                         JD Relevance
+                      </span>
+                    </div>
+
+                    {/* Domain Alignment Gauge */}
+                    <div className="w-full sm:w-28 bg-white/10 p-2.5 rounded-xl border border-white/10 text-right">
+                      <span className="text-[0.6rem] text-emerald-300 block uppercase font-bold">Domain Fit</span>
+                      <div className="text-base font-black text-emerald-300 mt-0.5">
+                        {aiMatch.domainAlignment}%
+                      </div>
+                      <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${aiMatch.domainAlignment}%` }} />
+                      </div>
+                      <span className="text-[0.55rem] text-indigo-200 block mt-1">
+                        Matrix Match
                       </span>
                     </div>
                   </div>
@@ -2304,6 +2309,17 @@ export default function JobSearch({ setActiveTab, selectedJobId, setSelectedJobI
                   </div>
                 </div>
 
+              </div>
+
+              {/* Recruiter-View 8-Dimension Dossier Preview */}
+              <div className="pt-2">
+                <RecruiterMatchDossier
+                  candidate={candidateProfile}
+                  job={aiModalJob}
+                  fitScore={aiMatch.score}
+                  fitBreakdown={aiMatch.breakdown}
+                  compact={false}
+                />
               </div>
 
               {/* AI Application Pitch / Recommendation Snippet */}

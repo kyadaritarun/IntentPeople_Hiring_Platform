@@ -43,6 +43,15 @@ def ensure_columns_exist():
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_applications ADD COLUMN IF NOT EXISTS screening_answers JSON DEFAULT \'[]\'::json;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS top_search_count INTEGER DEFAULT 0;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS career_stage VARCHAR;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS career_interests JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS specialisations_data JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS gtm_experience JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS case_studies JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS execution_environment JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS tools_proficiency JSON DEFAULT \'[]\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS onboarding_step INTEGER DEFAULT 1;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES "{schema_name}".portal_users(id);'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES "{schema_name}".portal_staff_groups(id) ON DELETE SET NULL;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_jobs ADD COLUMN IF NOT EXISTS interview_rounds JSON DEFAULT \'[]\'::json;'))
@@ -94,6 +103,15 @@ def ensure_columns_exist():
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS contact_person VARCHAR;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS year_founded VARCHAR;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS business_model_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS target_audience_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS growth_stage_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS marketing_team_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS hiring_defaults_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS compliance_documents_data JSON DEFAULT \'{{}}\'::json;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS verification_requested_at TIMESTAMP;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS verification_reviewed_at TIMESTAMP;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_companies ADD COLUMN IF NOT EXISTS verification_rejection_reason TEXT;'))
             conn.execute(text(f'ALTER TABLE "{schema_name}".portal_candidates ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR;'))
 
             # Create portal_payment_transactions table
@@ -173,6 +191,14 @@ def ensure_columns_exist():
             conn.execute(text(f'CREATE INDEX IF NOT EXISTS idx_portal_vendor_invitations_token ON "{schema_name}".portal_vendor_invitations(token);'))
             conn.execute(text(f'CREATE INDEX IF NOT EXISTS idx_portal_vendor_invitations_email ON "{schema_name}".portal_vendor_invitations(vendor_email);'))
             conn.execute(text(f'CREATE INDEX IF NOT EXISTS idx_portal_vendor_invitations_subdomain ON "{schema_name}".portal_vendor_invitations(subdomain);'))
+
+            # Internal Messages: file attachments & nullable content
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_internal_messages ADD COLUMN IF NOT EXISTS file_url VARCHAR;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_internal_messages ADD COLUMN IF NOT EXISTS file_name VARCHAR;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_internal_messages ADD COLUMN IF NOT EXISTS file_type VARCHAR;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_internal_messages ADD COLUMN IF NOT EXISTS file_size INTEGER;'))
+            conn.execute(text(f'ALTER TABLE "{schema_name}".portal_internal_messages ALTER COLUMN content DROP NOT NULL;'))
+
             conn.commit()
     except Exception as e:
         print(f"[AUTO-MIGRATE WARNING] {e}")

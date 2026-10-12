@@ -1,5 +1,5 @@
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -7,8 +7,29 @@ from app.database import get_db, SessionLocal
 from app import models, schemas
 from app.api.deps import get_current_user, get_user_company
 from app.core import security
+from app.services.s3 import upload_file_to_s3
 
 router = APIRouter(prefix="/messages", tags=["Internal Staff Messages"])
+
+
+def is_user_authorized_for_channel(channel: str, user_id: int) -> bool:
+    """
+    Checks if a user is authorized for a specific message channel.
+    - 'dm-{uid1}-{uid2}': Direct message strictly restricted to participants uid1 and uid2.
+    - Other channels ('team-sync', etc.): Available to all verified company staff.
+    """
+    if not channel:
+        return True
+    if channel.startswith("dm-"):
+        parts = channel.split("-")
+        if len(parts) == 3:
+            try:
+                u1 = int(parts[1])
+                u2 = int(parts[2])
+                return user_id in (u1, u2)
+            except ValueError:
+                return False
+    return True
 
 
 # ── Real-time In-Memory Connection Manager ──────────────────────────────────
@@ -38,8 +59,23 @@ class ConnectionManager:
     async def broadcast_to_company(self, company_id: int, payload: dict):
         if company_id not in self.active_connections:
             return
+
+        # If this is a direct message (dm-u1-u2), restrict delivery to u1 and u2 only!
+        target_channel = payload.get("message", {}).get("channel", "")
+        allowed_user_ids = None
+        if target_channel.startswith("dm-"):
+            parts = target_channel.split("-")
+            if len(parts) == 3:
+                try:
+                    allowed_user_ids = {int(parts[1]), int(parts[2])}
+                except ValueError:
+                    pass
+
         dead = []
         for conn in self.active_connections[company_id]:
+            # Skip clients that are not participants in this private DM
+            if allowed_user_ids is not None and conn.get("user_id") not in allowed_user_ids:
+                continue
             try:
                 await conn["ws"].send_json(payload)
             except Exception:
@@ -118,7 +154,16 @@ async def websocket_internal_messages(
             if action == "SEND_MESSAGE":
                 content = (data.get("content") or "").strip()
                 channel = (data.get("channel") or "team-sync").strip()
-                if content:
+                file_url = data.get("file_url")
+                file_name = data.get("file_name")
+                file_type = data.get("file_type")
+                file_size = data.get("file_size")
+
+                # Validate authorization for this channel
+                if not is_user_authorized_for_channel(channel, user_id):
+                    continue
+
+                if content or file_url:
                     msg_db = SessionLocal()
                     try:
                         sender_name = "Staff Member"
@@ -137,7 +182,11 @@ async def websocket_internal_messages(
                             sender_name=sender_name,
                             sender_role=user_role,
                             channel=channel,
-                            content=content
+                            content=content if content else "",
+                            file_url=file_url,
+                            file_name=file_name,
+                            file_type=file_type,
+                            file_size=file_size
                         )
                         msg_db.add(msg)
                         msg_db.commit()
@@ -150,7 +199,11 @@ async def websocket_internal_messages(
                             "sender_name": msg.sender_name,
                             "sender_role": msg.sender_role,
                             "channel": msg.channel,
-                            "content": msg.content,
+                            "content": msg.content or "",
+                            "file_url": msg.file_url,
+                            "file_name": msg.file_name,
+                            "file_type": msg.file_type,
+                            "file_size": msg.file_size,
                             "created_at": msg.created_at.isoformat() if msg.created_at else None
                         }
                     finally:
@@ -169,6 +222,47 @@ async def websocket_internal_messages(
         manager.disconnect(websocket, company_id)
 
 
+@router.post("/upload")
+async def upload_internal_message_file(
+    file: UploadFile = File(...),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload an image or document attachment for internal staff messages.
+    Strictly restricted to organization staff (ADMIN, RECRUITER, HIRING_MANAGER).
+    """
+    if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Access restricted: Staff only")
+
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+
+    # Check file size (max 25MB)
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+
+    if file_size > 25 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds maximum allowed limit (25MB)")
+
+    content_type = file.content_type or ""
+    filename_lower = file.filename.lower()
+    is_image = content_type.startswith("image/") or filename_lower.endswith(
+        (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp")
+    )
+    folder = "image" if is_image else "compliance"
+
+    file_url, orig_name = upload_file_to_s3(file=file, folder=folder, entity_id=user.id)
+
+    return {
+        "file_url": file_url,
+        "file_name": orig_name or file.filename,
+        "file_type": content_type or ("image/jpeg" if is_image else "application/octet-stream"),
+        "file_size": file_size
+    }
+
+
 @router.get("")
 def get_internal_messages(
     channel: Optional[str] = None,
@@ -180,6 +274,7 @@ def get_internal_messages(
     STRICTLY RESTRICTED: Only ADMIN, RECRUITER, HIRING_MANAGER can access.
     STRICT MULTI-TENANT ISOLATION: Filtered exclusively by the user's company_id.
     Zero data is ever accessible to candidates or other organizations.
+    Direct messages are strictly restricted to the conversation participants.
     """
     if user.role not in ["ADMIN", "RECRUITER", "HIRING_MANAGER"]:
         raise HTTPException(
@@ -193,7 +288,11 @@ def get_internal_messages(
 
     query = db.query(models.InternalMessage).filter(models.InternalMessage.company_id == company.id)
     if channel and channel.strip():
-        query = query.filter(models.InternalMessage.channel == channel.strip())
+        ch = channel.strip()
+        # Verify user authorization for DM channels (dm-{u1}-{u2})
+        if not is_user_authorized_for_channel(ch, user.id):
+            return []
+        query = query.filter(models.InternalMessage.channel == ch)
 
     messages = query.order_by(models.InternalMessage.created_at.asc()).all()
 
@@ -205,7 +304,11 @@ def get_internal_messages(
             "sender_name": m.sender_name,
             "sender_role": m.sender_role,
             "channel": m.channel,
-            "content": m.content,
+            "content": m.content or "",
+            "file_url": m.file_url,
+            "file_name": m.file_name,
+            "file_type": m.file_type,
+            "file_size": m.file_size,
             "created_at": m.created_at.isoformat() if m.created_at else None
         }
         for m in messages
@@ -230,8 +333,14 @@ async def send_internal_message(
             detail="Access restricted: Only internal organization staff can send workspace messages"
         )
 
-    if not data.content or not data.content.strip():
-        raise HTTPException(status_code=400, detail="Message content cannot be empty")
+    channel = (data.channel or "team-sync").strip()
+    if not is_user_authorized_for_channel(channel, user.id):
+        raise HTTPException(status_code=403, detail="Unauthorized to send to this private direct conversation")
+
+    has_content = bool(data.content and data.content.strip())
+    has_attachment = bool(data.file_url and data.file_url.strip())
+    if not has_content and not has_attachment:
+        raise HTTPException(status_code=400, detail="Message must include text content or an attachment")
 
     company = get_user_company(user, db)
     if not company:
@@ -253,8 +362,12 @@ async def send_internal_message(
         sender_id=user.id,
         sender_name=sender_name,
         sender_role=user.role,
-        channel=(data.channel or "team-sync").strip(),
-        content=data.content.strip()
+        channel=channel,
+        content=(data.content or "").strip() if data.content else "",
+        file_url=data.file_url.strip() if data.file_url else None,
+        file_name=data.file_name.strip() if data.file_name else None,
+        file_type=data.file_type.strip() if data.file_type else None,
+        file_size=data.file_size if data.file_size else None
     )
     db.add(msg)
     db.commit()
@@ -267,11 +380,15 @@ async def send_internal_message(
         "sender_name": msg.sender_name,
         "sender_role": msg.sender_role,
         "channel": msg.channel,
-        "content": msg.content,
+        "content": msg.content or "",
+        "file_url": msg.file_url,
+        "file_name": msg.file_name,
+        "file_type": msg.file_type,
+        "file_size": msg.file_size,
         "created_at": msg.created_at.isoformat() if msg.created_at else None
     }
 
-    # Broadcast in real-time to all colleagues active in this company
+    # Broadcast in real-time to participants
     await manager.broadcast_to_company(company.id, {
         "type": "NEW_MESSAGE",
         "message": response_payload

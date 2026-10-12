@@ -190,6 +190,118 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const [success, setSuccess] = useState(false);
   const [createdUser, setCreatedUser] = useState(null);
 
+  // Validation State for Add & Edit Staff
+  const [validationErrors, setValidationErrors] = useState({});
+  const [editValidationErrors, setEditValidationErrors] = useState({});
+
+  const clearFieldError = (field) => {
+    setValidationErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const clearEditFieldError = (field) => {
+    setEditValidationErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const validateAddForm = () => {
+    const errors = {};
+    let firstErrorField = null;
+
+    const setErr = (field, msg) => {
+      errors[field] = msg;
+      if (!firstErrorField) firstErrorField = field;
+    };
+
+    if (!formData.name?.trim()) {
+      setErr('name', 'Full name is required');
+    } else if (formData.name.trim().length < 2) {
+      setErr('name', 'Full name must be at least 2 characters');
+    }
+
+    if (!formData.email?.trim()) {
+      setErr('email', 'Official work email is required');
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        setErr('email', 'Please enter a valid work email address (e.g. name@company.com)');
+      }
+    }
+
+    if (!formData.password) {
+      setErr('password', 'Initial password is required');
+    } else if (formData.password.length < 6) {
+      setErr('password', 'Password must be at least 6 characters');
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+      firstErrorField
+    };
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    let firstErrorField = null;
+
+    const setErr = (field, msg) => {
+      errors[field] = msg;
+      if (!firstErrorField) firstErrorField = field;
+    };
+
+    if (!editFormData.name?.trim()) {
+      setErr('name', 'Staff member name is required');
+    } else if (editFormData.name.trim().length < 2) {
+      setErr('name', 'Full name must be at least 2 characters');
+    }
+
+    if (!editFormData.email?.trim()) {
+      setErr('email', 'Email address is required');
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editFormData.email.trim())) {
+        setErr('email', 'Please enter a valid work email address');
+      }
+    }
+
+    if (editFormData.password && editFormData.password.length > 0 && editFormData.password.length < 6) {
+      setErr('password', 'New password must be at least 6 characters');
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors,
+      firstErrorField
+    };
+  };
+
+  const getAddInputClassName = (fieldName, customClass = '') => {
+    const hasError = Boolean(validationErrors[fieldName]);
+    if (hasError) {
+      return `w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-rose-500 bg-rose-50/30 text-xs font-semibold text-rose-900 placeholder:text-rose-400 focus:outline-none ring-2 ring-rose-500/20 transition-all ${customClass}`;
+    }
+    return `w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all bg-white ${customClass}`;
+  };
+
+  const renderAddFieldError = (fieldName) => {
+    if (!validationErrors[fieldName]) return null;
+    return (
+      <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1 mt-1 animate-in fade-in">
+        <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+        <span>{validationErrors[fieldName]}</span>
+      </p>
+    );
+  };
+
   const [staffDocs, setStaffDocs] = useState([]);
 
   // Fetch team members and groups on mount
@@ -273,6 +385,21 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const { isValid, errors, firstErrorField } = validateAddForm();
+    if (!isValid) {
+      setValidationErrors(errors);
+      if (firstErrorField) {
+        const el = document.querySelector(`[name="${firstErrorField}"]`) || document.getElementById(`field-${firstErrorField}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el.focus) el.focus();
+        }
+      }
+      return;
+    }
+
+    setValidationErrors({});
     setLoading(true);
 
     try {
@@ -386,15 +513,14 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const handleSaveEdit = async (e) => {
     if (e) e.preventDefault();
     if (!editingMember) return;
-    if (!editFormData.name.trim()) {
-      setEditError('Staff member name is required.');
-      return;
-    }
-    if (!editFormData.email.trim()) {
-      setEditError('Staff member email is required.');
+    
+    const { isValid, errors } = validateEditForm();
+    if (!isValid) {
+      setEditValidationErrors(errors);
       return;
     }
 
+    setEditValidationErrors({});
     setEditLoading(true);
     setEditError('');
 
@@ -608,10 +734,11 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
   const managerCount = staffMembers.filter(m => m.role === 'HIRING_MANAGER').length;
 
   const planType = user?.profile?.plan_type || 'FREE';
+  const isCustomVendor = planType === 'CUSTOM_VENDOR';
   const maxRoles = user?.profile?.max_roles !== undefined
     ? Math.max(Number(user.profile.max_roles), 1)
-    : 1;
-  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+    : (isCustomVendor ? 999 : 1);
+  const planName = isCustomVendor ? 'Enterprise Partner Contract' : (planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan'));
   const isRoleLimitReached = staffMembers.length >= maxRoles;
 
   return (
@@ -643,18 +770,31 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
         {/* View Switcher Tabs (Only shown when viewing Staff Directory / Add Staff Member) */}
         {viewMode !== 'groups' && (
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-              title="Manage Plan & Role Limits"
-            >
-              <Crown className="w-3.5 h-3.5 text-amber-600" />
-              <span>Roles: {staffMembers.length}/{maxRoles}</span>
-              <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
-                Upgrade
-              </span>
-            </button>
+            {!isCustomVendor ? (
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                title="Manage Plan & Role Limits"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <span>Roles: {staffMembers.length}/{maxRoles}</span>
+                <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
+                  Upgrade
+                </span>
+              </button>
+            ) : (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold shadow-2xs select-none"
+                title="Dedicated Organization Staff Seats"
+              >
+                <Users className="w-3.5 h-3.5 text-slate-600" />
+                <span>Roles: {staffMembers.length}/{maxRoles}</span>
+                <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ml-1">
+                  Dedicated
+                </span>
+              </div>
+            )}
 
             <div className="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80 shadow-2xs">
               <button
@@ -1572,18 +1712,30 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                     Staff Roles Capacity Reached ({staffMembers.length}/{maxRoles})
                   </h4>
                   <p className="text-slate-600 mt-0.5 m-0 text-[11.5px]">
-                    Your current subscription ({planName}) allows up to {maxRoles} staff roles. Upgrade your plan to add more team members.
+                    {isCustomVendor
+                      ? `Your organization contract allows up to ${maxRoles} staff roles. To request additional seats, please contact your IntentPeople account administrator.`
+                      : `Your current subscription (${planName}) allows up to ${maxRoles} staff roles. Upgrade your plan to add more team members.`}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(true)}
-                className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
-              >
-                <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
-                <span>Upgrade Plan</span>
-              </button>
+              {!isCustomVendor ? (
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="px-4 py-2.5 bg-[#1E3155] hover:bg-[#152340] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <Crown className="w-3.5 h-3.5 text-[#F2A93B]" />
+                  <span>Upgrade Plan</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab && setActiveTab('support')}
+                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0 border-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>Contact Support</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -1813,49 +1965,65 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <User className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${validationErrors.name ? 'text-rose-500' : 'text-slate-400'}`} />
                     <input
                       type="text"
-                      required
+                      id="field-name"
+                      name="name"
                       placeholder="e.g. Sarah Jenkins"
                       value={formData.name}
-                      onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all bg-white"
+                      onChange={e => {
+                        clearFieldError('name');
+                        setFormData({ ...formData, name: e.target.value });
+                      }}
+                      className={getAddInputClassName('name')}
                     />
                   </div>
+                  {renderAddFieldError('name')}
                 </div>
 
                 {/* Official Email */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Official Work Email *</label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${validationErrors.email ? 'text-rose-500' : 'text-slate-400'}`} />
                     <input
                       type="email"
-                      required
+                      id="field-email"
+                      name="email"
                       placeholder="e.g. sarah@company.com"
                       value={formData.email}
-                      onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all bg-white"
+                      onChange={e => {
+                        clearFieldError('email');
+                        setFormData({ ...formData, email: e.target.value });
+                      }}
+                      className={getAddInputClassName('email')}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    The member will use this email address to log in to their dashboard.
-                  </p>
+                  {renderAddFieldError('email')}
+                  {!validationErrors.email && (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      The member will use this email address to log in to their dashboard.
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Initial Password *</label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${validationErrors.password ? 'text-rose-500' : 'text-slate-400'}`} />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      required
+                      id="field-password"
+                      name="password"
                       placeholder="Set initial secure password"
                       value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all bg-white"
+                      onChange={e => {
+                        clearFieldError('password');
+                        setFormData({ ...formData, password: e.target.value });
+                      }}
+                      className={getAddInputClassName('password', 'pr-10')}
                     />
                     <button
                       type="button"
@@ -1865,6 +2033,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                       {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
+                  {renderAddFieldError('password')}
                 </div>
 
                 {/* Job Title */}
@@ -1949,18 +2118,28 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   Cancel
                 </button>
                 {isRoleLimitReached ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpgradeModal(true)}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 border-none cursor-pointer"
-                  >
-                    <Crown className="w-4 h-4 text-amber-200" />
-                    Role Limit Reached ({staffMembers.length}/{maxRoles}) — Upgrade Plan
-                  </button>
+                  isCustomVendor ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="px-6 py-2.5 rounded-xl bg-slate-200 text-slate-500 text-xs font-bold cursor-not-allowed border-none"
+                    >
+                      Role Limit Reached ({staffMembers.length}/{maxRoles})
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 border-none cursor-pointer"
+                    >
+                      <Crown className="w-4 h-4 text-amber-200" />
+                      Role Limit Reached ({staffMembers.length}/{maxRoles}) — Upgrade Plan
+                    </button>
+                  )
                 ) : (
                   <button
                     type="submit"
-                    disabled={loading || uploadingAvatar || !formData.name || !formData.email || !formData.password}
+                    disabled={loading || uploadingAvatar}
                     className="px-6 py-2.5 rounded-xl bg-[#FF7043] hover:bg-[#E65B30] disabled:opacity-40 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(255,112,67,0.3)] flex items-center gap-2 border-none cursor-pointer"
                   >
                     {loading ? (
@@ -2225,16 +2404,29 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   Full Name <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <User className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${editValidationErrors.name ? 'text-rose-500' : 'text-slate-400'}`} />
                   <input
                     type="text"
                     required
                     value={editFormData.name}
-                    onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border border-slate-200/80 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 text-slate-800"
+                    onChange={e => {
+                      clearEditFieldError('name');
+                      setEditFormData({ ...editFormData, name: e.target.value });
+                    }}
+                    className={`w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                      editValidationErrors.name
+                        ? 'border-rose-500 bg-rose-50/30 text-rose-900 ring-2 ring-rose-500/20'
+                        : 'border-slate-200/80 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 text-slate-800'
+                    }`}
                     placeholder="e.g. Sarah Jenkins"
                   />
                 </div>
+                {editValidationErrors.name && (
+                  <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <span>{editValidationErrors.name}</span>
+                  </p>
+                )}
               </div>
 
               {/* Email Address */}
@@ -2243,16 +2435,29 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
                   Email Address <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${editValidationErrors.email ? 'text-rose-500' : 'text-slate-400'}`} />
                   <input
                     type="email"
                     required
                     value={editFormData.email}
-                    onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border border-slate-200/80 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 text-slate-800"
+                    onChange={e => {
+                      clearEditFieldError('email');
+                      setEditFormData({ ...editFormData, email: e.target.value });
+                    }}
+                    className={`w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border transition-all ${
+                      editValidationErrors.email
+                        ? 'border-rose-500 bg-rose-50/30 text-rose-900 ring-2 ring-rose-500/20'
+                        : 'border-slate-200/80 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 text-slate-800'
+                    }`}
                     placeholder="staff@company.com"
                   />
                 </div>
+                {editValidationErrors.email && (
+                  <p className="text-[11px] font-semibold text-rose-600 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <span>{editValidationErrors.email}</span>
+                  </p>
+                )}
               </div>
 
               {/* Role Selection */}
@@ -3010,7 +3215,7 @@ export default function AddStaffMember({ setActiveTab, initialView = 'form' }) {
       )}
 
       {/* Plan Selection / Upgrade Modal */}
-      {showUpgradeModal && (
+      {showUpgradeModal && !isCustomVendor && (
         <PlanSelectionModal
           isOpen={true}
           onClose={() => setShowUpgradeModal(false)}

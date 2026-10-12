@@ -236,8 +236,8 @@ server {{
     listen [::]:443 ssl;
     server_name intentpeople.com www.intentpeople.com;
 
-    ssl_certificate /etc/letsencrypt/live/intentpeople.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/intentpeople.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com-0001/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -294,8 +294,8 @@ server {{
     listen [::]:443 ssl;
     server_name portal.intentpeople.com *.intentpeople.com;
 
-    ssl_certificate /etc/letsencrypt/live/intentpeople.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/intentpeople.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com-0001/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -359,8 +359,8 @@ server {{
     listen [::]:443 ssl;
     server_name admin.intentpeople.com;
 
-    ssl_certificate /etc/letsencrypt/live/intentpeople.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/intentpeople.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com-0001/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -419,8 +419,8 @@ server {{
     listen [::]:443 ssl;
     server_name backend.intentpeople.com;
 
-    ssl_certificate /etc/letsencrypt/live/intentpeople.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/intentpeople.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/intentpeople.com-0001/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -475,13 +475,18 @@ server {{
     admin_check, _ = run_sudo_command(client, "curl -s -H 'Host: admin.intentpeople.com' http://127.0.0.1/ | grep -i 'doctype html'")
     safe_print(f"Admin accessible via Nginx: {'YES' if 'doctype' in admin_check.lower() else 'NO'}")
 
-    # Certbot SSL certificate ensure
-    safe_print("\nEnsuring SSL Certificate via Certbot...")
-    cert_cmd = "certbot certonly --nginx -d intentpeople.com -d www.intentpeople.com -d backend.intentpeople.com -d portal.intentpeople.com -d admin.intentpeople.com --expand --non-interactive --agree-tos -m kyadaritarun10@gmail.com"
-    cert_out, cert_err = run_sudo_command(client, cert_cmd)
-    safe_print(f"Certbot result:\n{cert_out}")
-    if cert_err:
-        safe_print(f"Certbot stderr:\n{cert_err}")
+    # Wildcard SSL Certificate Verification
+    safe_print("\nVerifying Wildcard SSL Certificate (intentpeople.com-0001)...")
+    cert_status, _ = run_sudo_command(client, "certbot certificates --cert-name intentpeople.com-0001")
+    if "intentpeople.com-0001" in cert_status:
+        safe_print(f"Wildcard SSL (*.intentpeople.com) is ACTIVE:\n{cert_status.strip()}")
+    else:
+        safe_print("Wildcard certificate not found, ensuring base SSL certificate...")
+        cert_cmd = "certbot certonly --nginx -d intentpeople.com -d www.intentpeople.com -d backend.intentpeople.com -d portal.intentpeople.com -d admin.intentpeople.com --expand --non-interactive --agree-tos -m kyadaritarun10@gmail.com"
+        cert_out, cert_err = run_sudo_command(client, cert_cmd)
+        safe_print(f"Certbot result:\n{cert_out}")
+        if cert_err:
+            safe_print(f"Certbot stderr:\n{cert_err}")
 
     # Final public URL verification
     safe_print("\nVerifying Public Endpoints...")

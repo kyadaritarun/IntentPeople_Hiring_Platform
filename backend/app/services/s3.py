@@ -57,8 +57,13 @@ def upload_file_to_s3(
     Returns:
       (file_url, original_filename)
     """
-    # Normalize folder to exact S3 folders requested: 'image' or 'resume'
-    target_folder = "image" if folder in ("image", "images", "photo", "avatar", "cover") else "resume"
+    # Normalize folder in S3 bucket: 'compliance', 'image', or 'resume'
+    if folder in ("compliance", "documents", "legal"):
+        target_folder = "compliance"
+    elif folder in ("image", "images", "photo", "avatar", "cover"):
+        target_folder = "image"
+    else:
+        target_folder = "resume"
 
     original_filename = file.filename or "upload"
     # Clean and sanitize filename
@@ -76,45 +81,34 @@ def upload_file_to_s3(
         guessed, _ = mimetypes.guess_type(original_filename)
         content_type = guessed or "application/octet-stream"
 
-    # 1. Attempt AWS S3 upload if configured
-    if is_s3_configured():
-        try:
-            s3 = get_s3_client()
-            file.file.seek(0)
-            
-            s3.upload_fileobj(
-                file.file,
-                settings.AWS_S3_BUCKET_NAME.strip(),
-                s3_key,
-                ExtraArgs={
-                    "ContentType": content_type
-                }
-            )
+    # Strict AWS S3 Cloud Upload (No localhost disk storage)
+    if not is_s3_configured():
+        raise RuntimeError("AWS S3 is not configured. Localhost storage is disabled.")
 
-            # Build URL
-            if settings.AWS_S3_CUSTOM_DOMAIN:
-                s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN.strip().rstrip('/')}/{s3_key}"
-            else:
-                region = (settings.AWS_REGION or "ap-south-1").strip()
-                bucket = settings.AWS_S3_BUCKET_NAME.strip()
-                s3_url = f"https://{bucket}.s3.{region}.amazonaws.com/{s3_key}"
+    try:
+        s3 = get_s3_client()
+        file.file.seek(0)
+        
+        s3.upload_fileobj(
+            file.file,
+            settings.AWS_S3_BUCKET_NAME.strip(),
+            s3_key,
+            ExtraArgs={
+                "ContentType": content_type
+            }
+        )
 
-            logger.info(f"Successfully uploaded to AWS S3: {s3_url}")
-            return s3_url, original_filename
+        # Build URL
+        if settings.AWS_S3_CUSTOM_DOMAIN:
+            s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN.strip().rstrip('/')}/{s3_key}"
+        else:
+            region = (settings.AWS_REGION or "ap-south-1").strip()
+            bucket = settings.AWS_S3_BUCKET_NAME.strip()
+            s3_url = f"https://{bucket}.s3.{region}.amazonaws.com/{s3_key}"
 
-        except Exception as err:
-            logger.error(f"Failed to upload to AWS S3 (Bucket: {settings.AWS_S3_BUCKET_NAME}): {err}. Falling back to local disk storage.")
+        logger.info(f"Successfully uploaded to AWS S3: {s3_url}")
+        return s3_url, original_filename
 
-    # 2. Resilient local fallback if S3 is not yet configured or AWS throws an error
-    upload_dir = os.path.join(os.getcwd(), "uploads", target_folder)
-    os.makedirs(upload_dir, exist_ok=True)
-    local_filename = f"{entity_id or 'user'}_{short_uid}_{clean_name}"
-    local_path = os.path.join(upload_dir, local_filename)
-
-    file.file.seek(0)
-    with open(local_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    local_url = f"/uploads/{target_folder}/{local_filename}"
-    logger.info(f"Saved locally to {local_path} (URL: {local_url})")
-    return local_url, original_filename
+    except Exception as err:
+        logger.error(f"Failed to upload to AWS S3 (Bucket: {settings.AWS_S3_BUCKET_NAME}): {err}")
+        raise RuntimeError(f"AWS S3 Cloud upload failed: {str(err)}")

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Briefcase, Eye, Plus, Search, Filter, X, RefreshCw,
   CheckCircle2, Clock, MapPin, Users, Building2,
-  ChevronRight, ArrowUpRight, Sparkles, Loader2, AlertCircle,
+  ChevronRight, ChevronLeft, ArrowUpRight, Sparkles, Loader2, AlertCircle,
   Edit3, Save, DollarSign, Layers, FileText, Check, Crown, Lock, Share2
 } from 'lucide-react';
 import { api } from '../../api';
@@ -46,10 +46,13 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
   const [togglingId, setTogglingId] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [sharingJob, setSharingJob] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const planType = user?.profile?.plan_type || 'FREE';
-  const maxJobs = user?.profile?.max_jobs || (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1));
-  const planName = planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan');
+  const isCustomVendor = planType === 'CUSTOM_VENDOR';
+  const maxJobs = user?.profile?.max_jobs || (isCustomVendor ? 999 : (planType === 'PLAN_14999' ? 8 : (planType === 'PLAN_4999' ? 4 : 1)));
+  const planName = isCustomVendor ? 'Enterprise Partner Contract' : (planType === 'PLAN_14999' ? 'Growth Plan (₹14,999/mo)' : (planType === 'PLAN_4999' ? 'Standard Plan (₹4,999/45 days)' : 'Free Plan'));
   const isJobLimitReached = jobs.length >= maxJobs;
 
   // Edit Job State
@@ -180,6 +183,11 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
     }
   };
 
+  // Reset pagination when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, workModeFilter, groupFilter, pageSize]);
+
   // Filtered Jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch =
@@ -193,6 +201,24 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
 
     return matchesSearch && matchesStatus && matchesWorkMode && matchesGroup;
   });
+
+  const totalPages = Math.ceil(filteredJobs.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + pageSize);
+
+  const getPageNumbers = (current, total) => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
 
   const availableGroups = Array.from(new Set(jobs.map(j => j.group_name).filter(Boolean)));
 
@@ -251,32 +277,49 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#5C59E8]' : ''}`} />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowUpgradeModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            title="Manage Plan & Job Limits"
-          >
-            <Crown className="w-3.5 h-3.5 text-amber-600" />
-            <span>Jobs: {jobs.length}/{maxJobs}</span>
-            <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
-              Upgrade
-            </span>
-          </button>
+          {!isCustomVendor ? (
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Manage Plan & Job Limits"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span>Jobs: {jobs.length}/{maxJobs}</span>
+              <span className="text-[10px] text-amber-800 bg-amber-200/80 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-1">
+                Upgrade
+              </span>
+            </button>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-800 border border-slate-200 text-xs font-bold shadow-2xs select-none"
+              title="Dedicated Organization Quota"
+            >
+              <Briefcase className="w-3.5 h-3.5 text-slate-600" />
+              <span>Jobs: {jobs.length}/{maxJobs}</span>
+              <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ml-1">
+                Dedicated
+              </span>
+            </div>
+          )}
 
           {canPostJob && (
             <button
               type="button"
               onClick={() => {
                 if (isJobLimitReached) {
-                  setShowUpgradeModal(true);
+                  if (!isCustomVendor) {
+                    setShowUpgradeModal(true);
+                  } else {
+                    setToastMessage(`Job quota reached (${jobs.length}/${maxJobs}). Contact your administrator to increase allocation.`);
+                    setTimeout(() => setToastMessage(''), 4000);
+                  }
                 } else {
                   setActiveTab?.('post_job');
                 }
               }}
-              className={`px-4 py-2.5 rounded-lg text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none ${
-                isJobLimitReached ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#FF7043] hover:bg-[#E65B30]'
-              }`}
+              className={`px-4 py-2.5 rounded-lg text-white text-xs font-semibold shadow-[0_1px_2px_rgba(255,112,67,0.3)] transition-colors flex items-center gap-1.5 cursor-pointer border-none ${isJobLimitReached ? (isCustomVendor ? 'bg-slate-500 hover:bg-slate-600' : 'bg-amber-600 hover:bg-amber-700') : 'bg-[#FF7043] hover:bg-[#E65B30]'
+                }`}
             >
               {isJobLimitReached ? (
                 <>
@@ -471,10 +514,12 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 text-center w-12 text-slate-400 font-bold">#</th>
                   <th className="py-3.5 px-5">Title & Location</th>
                   <th className="py-3.5 px-5">Work Mode</th>
                   <th className="py-3.5 px-5">Skills Required</th>
@@ -484,13 +529,21 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium">
-                {filteredJobs.map(job => {
+                {paginatedJobs.map((job, idx) => {
+                  const rowNumber = startIndex + idx + 1;
                   const isPublished = job.status === 'PUBLISHED';
                   const isToggling = togglingId === job.id;
                   const salary = formatSalary(job);
 
                   return (
                     <tr key={job.id} className="hover:bg-slate-50/60 transition-colors">
+                      {/* Row Index (# 1, 2, 3...) */}
+                      <td className="py-4 px-4 text-center align-middle">
+                        <span className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs inline-flex items-center justify-center border border-slate-200/80 shadow-2xs">
+                          {rowNumber}
+                        </span>
+                      </td>
+
                       {/* Title & Location */}
                       <td className="py-4 px-5">
                         <div className="font-semibold text-slate-900 text-xs sm:text-sm">
@@ -564,11 +617,10 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
 
                       {/* Status */}
                       <td className="py-4 px-5">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${
-                          isPublished
-                            ? 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15'
-                            : 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200/70'
-                        }`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${isPublished
+                          ? 'bg-[#00A884]/8 text-[#00846A] ring-1 ring-inset ring-[#00A884]/15'
+                          : 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200/70'
+                          }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                           {job.status}
                         </span>
@@ -585,7 +637,7 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${(job.applicant_count || 0) > 0
                             ? 'bg-[#5C59E8]/10 hover:bg-[#5C59E8]/15 text-[#4845D2] border-[#5C59E8]/20 shadow-[0_1px_2px_rgba(92,89,232,0.06)]'
                             : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                          }`}
+                            }`}
                           title={`View ${job.applicant_count || 0} candidate applicant(s)`}
                         >
                           <Users className="w-3.5 h-3.5" />
@@ -625,11 +677,10 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                                 type="button"
                                 disabled={isToggling}
                                 onClick={() => handleToggleStatus(job.id, job.status)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                                  isPublished
-                                    ? 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
-                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/80 shadow-[0_1px_2px_rgba(16,185,129,0.1)]'
-                                }`}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${isPublished
+                                  ? 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
+                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/80 shadow-[0_1px_2px_rgba(16,185,129,0.1)]'
+                                  }`}
                                 title="Toggle publication status"
                               >
                                 {isToggling ? '...' : (isPublished ? 'Close Job' : 'Publish Job')}
@@ -637,19 +688,6 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
                             </>
                           )}
 
-                          {/* View Applicants */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedJobId?.(job.id);
-                              setActiveTab?.('applicants_view');
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.1)] flex items-center gap-1.5 cursor-pointer border-none"
-                            title="Review job applicants"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Applicants ({job.applicant_count || 0})</span>
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -658,14 +696,82 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* ── Pagination Controls Bar ── */}
+          <div className="border-t border-slate-200/80 px-5 py-3.5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 text-slate-500 font-medium flex-wrap">
+              <span>
+                Showing <strong className="text-slate-900">{filteredJobs.length === 0 ? 0 : startIndex + 1}</strong> to{' '}
+                <strong className="text-slate-900">{Math.min(startIndex + pageSize, filteredJobs.length)}</strong> of{' '}
+                <strong className="text-slate-900">{filteredJobs.length}</strong> requisitions
+              </span>
+              <span className="hidden sm:inline-block text-slate-300">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 text-[11px]">Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-[#5C59E8] cursor-pointer shadow-2xs"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {getPageNumbers(safePage, totalPages).map((p, idx) => (
+                  p === '...' ? (
+                    <span key={`dots-${idx}`} className="px-1 text-slate-400 font-bold">...</span>
+                  ) : (
+                    <button
+                      key={`page-${p}`}
+                      type="button"
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer border transition-colors ${safePage === p
+                        ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       </div>
 
       {/* ── Edit Job Modal ── */}
       {editingJob && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-3xl my-auto overflow-hidden flex flex-col max-h-[90vh]">
-            
+
             {/* Modal Header */}
             <div className="p-5 sm:p-6 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/70 shrink-0">
               <div className="flex items-center gap-3">
@@ -971,7 +1077,7 @@ export default function ManageJobs({ setActiveTab, setSelectedJobId, role }) {
       )}
 
       {/* Plan Selection / Upgrade Modal */}
-      {showUpgradeModal && (
+      {showUpgradeModal && !isCustomVendor && (
         <PlanSelectionModal
           isOpen={true}
           onClose={() => setShowUpgradeModal(false)}

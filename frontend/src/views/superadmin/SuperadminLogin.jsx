@@ -87,8 +87,8 @@ export default function SuperadminLogin({ onLoginSuccess, onBackToLanding }) {
           
           {/* Header & Icon */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 mb-4 shadow-xs">
-              <ShieldCheck className="w-7 h-7 text-blue-600" />
+            <div className="flex items-center justify-center mb-4">
+              <img src="/logo.svg" alt="IntentPeople" className="h-9 w-auto object-contain" />
             </div>
 
             <div className="flex items-center justify-center gap-2 mb-1">

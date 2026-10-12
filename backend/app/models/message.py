@@ -11,5 +11,9 @@ class InternalMessage(Base):
     channel = Column(String, nullable=False, default="team-sync", index=True)
     sender_name = Column(String, nullable=False)
     sender_role = Column(String, nullable=False)  # ADMIN, RECRUITER, HIRING_MANAGER
-    content = Column(Text, nullable=False)
+    content = Column(Text, nullable=True)
+    file_url = Column(String, nullable=True)
+    file_name = Column(String, nullable=True)
+    file_type = Column(String, nullable=True)
+    file_size = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

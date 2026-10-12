@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck, Check, Sparkles, Zap, Crown, ArrowRight,
-  Loader2, X, AlertCircle, Users, Briefcase, Eye, CheckCircle2, Lock, Star
+  Loader2, X, AlertCircle, Users, Briefcase, Eye, CheckCircle2, Lock, Star, Building2, Clock
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -82,6 +82,10 @@ export default function PlanSelectionModal({
   triggerReason = ''
 }) {
   const { user, refreshUser } = useAuth();
+  const isCustomVendor = user?.profile?.plan_type === 'CUSTOM_VENDOR';
+
+  if (!isOpen || isCustomVendor) return null;
+
   const [plans, setPlans] = useState(PLANS_DATA);
   const [plansLoading, setPlansLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('PLAN_4999');
@@ -187,7 +191,109 @@ export default function PlanSelectionModal({
   if (!isOpen) return null;
 
   const currentPlan = user?.profile?.plan_type || 'NONE';
+  const isCompanyVerified = Boolean(user?.profile?.is_verified) || user?.profile?.verification_status === 'VERIFIED';
+  const verificationStatus = user?.profile?.verification_status || (isCompanyVerified ? 'VERIFIED' : 'PENDING_PROFILE');
   const isCompanyAdmin = user?.role === 'ADMIN';
+
+  if (!isCompanyVerified) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4 animate-in fade-in">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-indigo-100 overflow-hidden text-slate-800 text-center relative p-7 space-y-5">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border-none"
+              title="Close"
+            >
+              <X size={16} />
+            </button>
+          )}
+
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center mx-auto text-[#5C59E8]">
+            {verificationStatus === 'UNDER_REVIEW' ? (
+              <Clock className="w-8 h-8 text-blue-600 animate-pulse" />
+            ) : verificationStatus === 'REJECTED' ? (
+              <AlertCircle className="w-8 h-8 text-rose-600" />
+            ) : (
+              <Building2 className="w-8 h-8 text-[#5C59E8]" />
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+              verificationStatus === 'UNDER_REVIEW'
+                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                : verificationStatus === 'REJECTED'
+                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                  : 'bg-indigo-100 text-indigo-800 border-indigo-200'
+            }`}>
+              {verificationStatus === 'UNDER_REVIEW'
+                ? 'Superadmin Review In Progress'
+                : verificationStatus === 'REJECTED'
+                  ? 'Verification Required'
+                  : 'Profile Completion Required'}
+            </span>
+            <h3 className="text-xl font-bold text-slate-900 mt-2">
+              Complete Profile to Unlock Plans
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+              Subscription plans and Free Trial access are locked until your organization completes 100% of the Company Profile and receives Superadmin approval.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-left space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-700">Current Status</span>
+              <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase ${
+                verificationStatus === 'UNDER_REVIEW'
+                  ? 'bg-blue-100 text-blue-800'
+                  : verificationStatus === 'REJECTED'
+                    ? 'bg-rose-100 text-rose-800'
+                    : 'bg-amber-100 text-amber-800'
+              }`}>
+                {verificationStatus === 'UNDER_REVIEW'
+                  ? 'In Review'
+                  : verificationStatus === 'REJECTED'
+                    ? 'Rejected'
+                    : 'Profile Incomplete'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              {verificationStatus === 'UNDER_REVIEW'
+                ? 'Your profile is currently under review by the Superadmin. Once approved, your Free Starter Plan and upgrade options will become accessible.'
+                : verificationStatus === 'REJECTED'
+                  ? 'Your profile was rejected. Please review feedback in your Company Profile, update required documents, and resubmit.'
+                  : 'Please complete all 7 steps of your Company Profile (including statutory compliance documents: PAN, Labour License, Trade License, COI, Registration doc).'}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (onClose) onClose();
+                window.dispatchEvent(new CustomEvent('uptrix:navigate_tab', { detail: 'company_profile' }));
+              }}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#5C59E8] to-[#4F46E5] hover:from-[#4F46E5] hover:to-[#4338CA] text-white font-bold text-xs shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all border-none"
+            >
+              <span>{verificationStatus === 'UNDER_REVIEW' ? 'View Profile Status' : 'Go to Company Profile (Complete 7 Steps)'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors border-none cursor-pointer"
+              >
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSelectFree = async () => {
     if (!isCompanyAdmin) {

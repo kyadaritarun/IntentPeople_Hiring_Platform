@@ -29,6 +29,12 @@ class CompanyProfileUpdate(BaseModel):
     monthly_budget_range: Optional[str] = None
     decision_authority: Optional[str] = None
     success_horizon: Optional[str] = None
+    business_model_data: Optional[dict] = None
+    target_audience_data: Optional[dict] = None
+    growth_stage_data: Optional[dict] = None
+    marketing_team_data: Optional[dict] = None
+    hiring_defaults_data: Optional[dict] = None
+    compliance_documents_data: Optional[dict] = None
 
 class MemberProfileUpdate(BaseModel):
     name: Optional[str] = None

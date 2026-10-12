@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { api } from "./api";
+import { api, DEFAULT_PLANS } from "./api";
+import RolesExplorer from "./RolesExplorer";
+import Header from "./Header";
 import {
   ArrowRight,
   ChevronDown,
@@ -27,93 +29,51 @@ import {
   DollarSign,
   CheckCircle2,
   Lock,
+  Eye,
+  Crown,
+  X,
+  CreditCard,
+  HelpCircle,
+  Info
 } from "lucide-react";
 
-/**
- * Animated Number Counter: supports both increasing (e.g. 0 -> 1,400)
- * and decreasing (e.g. 50 -> 1 for Top 1%) with smooth cubic easing.
- */
-function AnimatedNumber({ from = 0, to, duration = 1800, decimals = 0, prefix = "", suffix = "" }) {
-  const [value, setValue] = useState(from);
-  const ref = useRef(null);
-  const hasAnimated = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true;
-          let startTime = null;
-          const step = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            // Ease-out cubic formula
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const current = from + (to - from) * easeOut;
-            setValue(current);
-            if (progress < 1) {
-              requestAnimationFrame(step);
-            } else {
-              setValue(to);
-            }
-          };
-          requestAnimationFrame(step);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [from, to, duration]);
-
-  const display = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toLocaleString();
-
-  return (
-    <span ref={ref} className="tabular-nums font-mono">
-      {prefix}{display}{suffix}
-    </span>
-  );
-}
-
-/**
- * Animated Progress Bar: smoothly fills from 0% to target width when scrolled into view.
- */
-function AnimatedProgressBar({ targetWidth, gradientClass }) {
-  const [width, setWidth] = useState("0%");
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => setWidth(targetWidth), 250);
-        }
-      },
-      { threshold: 0.2 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [targetWidth]);
-
-  return (
-    <div ref={ref} className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-      <div
-        className={`h-full ${gradientClass} rounded-full transition-all duration-1200 ease-out`}
-        style={{ width }}
-      />
-    </div>
-  );
-}
-
-export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }) {
-  const [plans, setPlans] = useState([]);
-  const [plansLoading, setPlansLoading] = useState(true);
+export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerms, onOpenPrivacy }) {
+  const [plans, setPlans] = useState(DEFAULT_PLANS);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
+  const [rolesMenuOpen, setRolesMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState(null);
   const [selectedJourney, setSelectedJourney] = useState(null);
+
+  // Initial scroll if URL contains #pricing or /pricing
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      (window.location.hash === "#pricing" || window.location.pathname === "/pricing")
+    ) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("pricing");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handlePricingClick = (e) => {
+    if (e) e.preventDefault();
+    const el = document.getElementById("pricing");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+      if (window.location.hash !== "#pricing") {
+        window.history.pushState(null, "", "#pricing");
+      }
+    }
+  };
+
+  const handleChoosePlan = (plan) => {
+    handleStartHiring();
+  };
 
   // Load subscription plans from API with fallback
   useEffect(() => {
@@ -140,8 +100,14 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
   // Close dropdown on outside click
   useEffect(() => {
     const closeDropdown = (e) => {
+      // If target element is already detached from DOM (unmounted by React during state update), do not close
+      if (!e.target || !document.body.contains(e.target)) return;
+
       if (!e.target.closest("#login-dropdown-container")) {
         setLoginDropdownOpen(false);
+      }
+      if (!e.target.closest("#roles-nav-container") && !e.target.closest("#roles-header-dropdown")) {
+        setRolesMenuOpen(false);
       }
     };
     window.addEventListener("click", closeDropdown);
@@ -175,6 +141,14 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
 
   const focusJourney = (journeyKey, targetCardId) => {
     setSelectedJourney(journeyKey);
+    if (journeyKey === "recruiter" && onNavigateToView) {
+      onNavigateToView("recruiters");
+      return;
+    }
+    if (journeyKey === "candidate" && onNavigateToView) {
+      onNavigateToView("candidates");
+      return;
+    }
     const targetElement = document.getElementById(targetCardId);
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -191,215 +165,15 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
       <div className="ambient-field" aria-hidden="true" />
 
       {/* ============================================================
-           HEADER & NAVIGATION
+           HEADER & NAVIGATION (SHARED COMPONENT)
            ============================================================ */}
-      <header
-        id="site-header"
-        className="fixed w-full top-0 bg-[#FAF9F6]/95 backdrop-blur-md z-50 border-b border-slate-200/80 transition-all duration-300"
-      >
-        <div className="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
-          {/* Logo */}
-          <a href="#" className="flex items-center gap-3 font-serif font-semibold text-xl text-[#0F172A] hover:opacity-90 transition-opacity">
-            <img src="/logo.svg" alt="IntentPeople" className="h-8 w-auto object-contain select-none" />
-          </a>
-
-          {/* Navigation Links */}
-          <nav className="hidden md:flex gap-7 text-sm items-center text-[#526071] font-medium">
-            <a href="#home" className="text-indigo-600 font-semibold border-b-2 border-indigo-600 pb-0.5">
-              Home
-            </a>
-            <a href="#recruiters" className="hover:text-indigo-600 transition-colors">
-              For Recruiters
-            </a>
-            <a href="#candidates" className="hover:text-indigo-600 transition-colors">
-              For Candidates
-            </a>
-            <a href="#enterprise" className="hover:text-indigo-600 transition-colors">
-              Enterprise
-            </a>
-            <a href="#stats" className="hover:text-indigo-600 transition-colors">
-              Platform Stats
-            </a>
-          </nav>
-
-          {/* Action CTAs */}
-          <div className="flex items-center gap-3.5">
-            {/* Split Login Dropdown */}
-            <div id="login-dropdown-container" className="relative">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLoginDropdownOpen((prev) => !prev);
-                }}
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors cursor-pointer"
-              >
-                <span>Sign In</span>
-                <ChevronDown size={14} className={`text-slate-400 transition-transform ${loginDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {loginDropdownOpen && (
-                <div
-                  className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-xl shadow-slate-900/10 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
-                >
-                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                      Select Portal Access
-                    </span>
-                  </div>
-
-                  {/* Candidate Login */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLoginDropdownOpen(false);
-                      handleCandidateLogin();
-                    }}
-                    className="group flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-teal-50/80 border-none bg-transparent cursor-pointer"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-[#00a884] group-hover:bg-[#00a884] group-hover:text-white transition-colors shadow-2xs">
-                      <UserCheck size={17} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-teal-900 transition-colors flex items-center justify-between">
-                        <span>Candidate Login</span>
-                        <ChevronRight size={13} className="text-slate-400 group-hover:text-[#00a884] group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate m-0 mt-0.5">
-                        Jobs, applications & interviews
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* Recruiter Login */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLoginDropdownOpen(false);
-                      handleRecruiterLogin();
-                    }}
-                    className="group flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-indigo-50/80 border-none bg-transparent cursor-pointer mt-0.5"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-2xs">
-                      <Building2 size={17} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-indigo-900 transition-colors flex items-center justify-between">
-                        <span>Recruiter Login</span>
-                        <ChevronRight size={13} className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate m-0 mt-0.5">
-                        Post jobs, pipelines & hire talent
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Primary Get Started Button */}
-            <button
-              onClick={handleGetStarted}
-              type="button"
-              className="btn btn-primary inline-flex text-xs md:text-sm font-semibold py-2.5 px-5 rounded-lg shadow-sm cursor-pointer"
-            >
-              Start Hiring
-            </button>
-
-            {/* Mobile Hamburger Toggle */}
-            <button
-              onClick={() => setMobileOpen((prev) => !prev)}
-              type="button"
-              className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none cursor-pointer"
-              aria-label="Toggle navigation menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-
-        {/* Mobile Dropdown Menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 shadow-xl py-4 px-6 flex flex-col gap-3.5 animate-in fade-in duration-200">
-            <a
-              href="#home"
-              onClick={() => setMobileOpen(false)}
-              className="text-indigo-600 font-semibold py-1 border-b border-slate-100"
-            >
-              Home
-            </a>
-            <a
-              href="#recruiters"
-              onClick={() => setMobileOpen(false)}
-              className="text-slate-700 hover:text-indigo-600 font-medium py-1 border-b border-slate-100"
-            >
-              For Recruiters
-            </a>
-            <a
-              href="#candidates"
-              onClick={() => setMobileOpen(false)}
-              className="text-slate-700 hover:text-indigo-600 font-medium py-1 border-b border-slate-100"
-            >
-              For Candidates
-            </a>
-            <a
-              href="#enterprise"
-              onClick={() => setMobileOpen(false)}
-              className="text-slate-700 hover:text-indigo-600 font-medium py-1 border-b border-slate-100"
-            >
-              Enterprise
-            </a>
-            <a
-              href="#stats"
-              onClick={() => setMobileOpen(false)}
-              className="text-slate-700 hover:text-indigo-600 font-medium py-1 border-b border-slate-100"
-            >
-              Platform Stats
-            </a>
-
-            <div className="pt-2 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  handleCandidateLogin();
-                }}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 py-2.5 text-xs font-bold text-teal-800"
-              >
-                <UserCheck size={14} className="text-[#00a884]" />
-                <span>Candidate</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  handleRecruiterLogin();
-                }}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 py-2.5 text-xs font-bold text-indigo-800"
-              >
-                <Building2 size={14} className="text-indigo-600" />
-                <span>Recruiter</span>
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setMobileOpen(false);
-                handleGetStarted();
-              }}
-              type="button"
-              className="btn btn-primary w-full text-center font-semibold py-3 rounded-lg text-xs mt-1"
-            >
-              Start Hiring
-            </button>
-          </div>
-        )}
-      </header>
+      <Header
+        currentView="landing"
+        onNavigateToView={onNavigateToView}
+        onNavigateToAuth={onNavigateToAuth}
+        rolesMenuOpen={rolesMenuOpen}
+        setRolesMenuOpen={setRolesMenuOpen}
+      />
 
       {/* ============================================================
            HERO SECTION
@@ -424,13 +198,13 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
               </h1>
 
               <p className="text-[#526071] text-base md:text-lg leading-relaxed mb-6 max-w-xl mx-auto md:mx-0">
-                Whether you're an ambitious growth marketer advancing your career, or a hiring team scouting top-tier marketing talent, IntentPeople connects verified skill graphs with high-impact opportunities.
+                IntentPeople connects verified marketing skills with genuine opportunities, making it easier for professionals to find the right role and companies to find the right talent.
               </p>
 
               {/* 3 Value Badges */}
               <div className="hidden md:flex items-center gap-7 text-sm font-semibold text-[#526071] mb-8">
                 <div className="flex items-center gap-2">
-                  <span className="text-indigo-600 font-bold">✓</span> AI-Verified Skill Dossiers
+                  <span className="text-indigo-600 font-bold">✓</span> AI-Verified Talent Profiles
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-indigo-600 font-bold">✓</span> Real Campaign Portfolios
@@ -710,7 +484,7 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
                   CHOOSE YOUR OBJECTIVE
                 </span>
                 <h3 className="font-serif text-xl md:text-2xl font-semibold text-[#0F172A]">
-                  Tailored pathways for employers, marketers, and enterprises
+                  Tailored pathways for employers, marketers, and growth teams
                 </h3>
               </div>
               <p className="text-xs text-[#526071] max-w-sm">
@@ -746,7 +520,7 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
                     Hire Verified Growth Leaders
                   </h4>
                   <p className="text-xs leading-relaxed text-[#526071] mb-4">
-                    Instant access to pre-vetted marketing leaders with verified ROAS and ad spend history. Zero resume fluff with a guaranteed 48-hour interview turnaround.
+                    Find marketing professionals with verified skills, real project experience, and proven performance not just impressive resumes. Get access to relevant, pre-vetted candidates and spend less time screening and more time talking to the right talent.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[11px] font-medium text-slate-600">
@@ -808,7 +582,7 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
                     Advance Your Marketing Career
                   </h4>
                   <p className="text-xs leading-relaxed text-[#526071] mb-4">
-                    Build a private AI talent dossier that highlights your real campaign impact. Skip recruiters and get direct inbound interview invites from funded startups.
+                    Showcase your skills, campaigns, and results and get discovered by companies looking for marketing talent.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[11px] font-medium text-slate-600">
@@ -843,63 +617,67 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
                 </div>
               </div>
 
-              {/* Card 3: Agency & Enterprise */}
+              {/* Card 3: Roles & Taxonomy */}
               <div
-                className={`relative flex flex-col justify-between p-6 rounded-2xl bg-white border transition-all duration-300 ${selectedJourney === "enterprise"
-                  ? "border-purple-600 shadow-xl shadow-purple-500/10 ring-2 ring-purple-500/20"
-                  : "border-slate-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/5"
+                className={`relative flex flex-col justify-between p-6 rounded-2xl bg-white border transition-all duration-300 ${selectedJourney === "roles"
+                  ? "border-amber-500 shadow-xl shadow-amber-500/10 ring-2 ring-amber-500/20"
+                  : "border-slate-200 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5"
                   }`}
-                onMouseEnter={() => setSelectedJourney("enterprise")}
+                onMouseEnter={() => setSelectedJourney("roles")}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <div className="w-11 h-11 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shadow-sm">
-                      <Building2 className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-sm">
+                      <Target className="w-5 h-5" />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
-                        Enterprise
+                      <span className="text-[10.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                        Roles
                       </span>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        Dedicated Portal
+                        Curated Directory
                       </span>
                     </div>
                   </div>
 
                   <h4 className="text-base font-bold text-[#0F172A] mb-1.5">
-                    Deploy a Dedicated Hiring Suite
+                    Explore Roles & Specializations
                   </h4>
                   <p className="text-xs leading-relaxed text-[#526071] mb-4">
-                    Scale high-volume marketing recruitment with dedicated tenant subdomains, multi-seat hiring pods, automated skill tests, and centralized ATS sync.
+                    Browse pre-vetted marketing roles across Strategy, Customer Acquisition, Convert & Retain, and Ops & Data. Search verified candidates and active jobs.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[11px] font-medium text-slate-600">
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      🏢 Multi-Seat Pods
+                      🎯 Strategy & CMOs
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      🌐 Custom Domain
+                      📈 Paid Social & Search
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      📊 Central Pipeline
+                      ⚡ Retention & Ops
                     </span>
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                  <a
-                    href="#enterprise"
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs shadow-sm hover:shadow transition-all no-underline cursor-pointer"
-                  >
-                    <span>View Enterprise Cloud</span>
-                    <ArrowRight size={13} />
-                  </a>
                   <button
                     type="button"
-                    onClick={() => focusJourney("enterprise", "enterprise")}
-                    className="py-2.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                    onClick={() => setRolesMenuOpen(true)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm hover:shadow transition-all cursor-pointer border-none"
                   >
-                    Architecture
+                    <span>Explore Roles</span>
+                    <ArrowRight size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRolesMenuOpen(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="py-2.5 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors cursor-pointer text-center bg-transparent"
+                  >
+                    Directory
                   </button>
                 </div>
               </div>
@@ -908,160 +686,7 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
         </div>
       </section>
 
-      {/* ============================================================
-           PLATFORM BENCHMARKS & AUDITED SIGNAL SECTION
-           ============================================================ */}
-      <section id="stats" className="py-14 md:py-20 px-6 bg-[#FAF9F6] border-y border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-6 border-b border-slate-200/80 gap-4">
-            <div>
-              <span className="eyebrow mb-2">PLATFORM BENCHMARKS & AUDITED SIGNAL</span>
-              <h2 className="font-serif text-2xl md:text-3xl font-medium text-[#0F172A] m-0">
-                Verified talent performance in real time
-              </h2>
-            </div>
-            <p className="text-xs md:text-sm text-[#526071] max-w-md m-0 leading-relaxed">
-              Every metric on IntentPeople is backed by live candidate skill assessments, verified ad spend, and authenticated hiring outcomes.
-            </p>
-          </div>
 
-          {/* 4 Stat Counter Spotlight Tiles */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-            {/* Tile 1: Verified Profiles (Increasing Number 0 -> 1,400+) */}
-            <div className="group relative p-6 rounded-2xl text-white bg-gradient-to-b from-[#111C35] to-[#0A1020] border border-slate-700/70 shadow-xl hover:border-emerald-500/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none group-hover:bg-emerald-500/25 transition-colors" />
-
-              <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shadow-sm group-hover:scale-105 transition-transform">
-                  <Users size={20} />
-                </div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Active Pool
-                </span>
-              </div>
-
-              <div className="relative z-10">
-                <h4 className="font-serif font-extrabold text-white text-3xl md:text-4xl leading-tight tracking-tight mb-1 flex items-baseline gap-0.5">
-                  <AnimatedNumber from={0} to={1400} duration={1800} />
-                  <span className="text-emerald-400 font-sans font-bold">+</span>
-                </h4>
-                <p className="text-xs font-semibold text-slate-300 mb-4">
-                  Verified Marketer Profiles
-                </p>
-
-                <div className="pt-3 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-                    <span>Performance & Growth</span>
-                    <span className="text-emerald-400 font-bold">₹120 Cr+ Spend</span>
-                  </div>
-                  <AnimatedProgressBar targetWidth="88%" gradientClass="bg-gradient-to-r from-emerald-500 to-teal-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Tile 2: Recruiter Satisfaction (Increasing Number 0.0 -> 5.0 ★) */}
-            <div className="group relative p-6 rounded-2xl text-white bg-gradient-to-b from-[#111C35] to-[#0A1020] border border-slate-700/70 shadow-xl hover:border-amber-500/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-amber-500/15 blur-2xl pointer-events-none group-hover:bg-amber-500/25 transition-colors" />
-
-              <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-sm group-hover:scale-105 transition-transform">
-                  <Star size={20} />
-                </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/10 text-amber-300 border border-amber-500/25">
-                  <Star size={10} className="fill-amber-400 text-amber-400" />
-                  Verified Reviews
-                </span>
-              </div>
-
-              <div className="relative z-10">
-                <h4 className="font-serif font-extrabold text-amber-300 text-3xl md:text-4xl leading-tight tracking-tight mb-1 flex items-baseline gap-1.5">
-                  <AnimatedNumber from={0} to={5.0} duration={1600} decimals={1} />
-                  <span className="text-2xl text-amber-400">★</span>
-                </h4>
-                <p className="text-xs font-semibold text-slate-300 mb-4">
-                  Recruiter Hiring Satisfaction
-                </p>
-
-                <div className="pt-3 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-                    <span>Placement CSAT</span>
-                    <span className="text-amber-400 font-bold">100% Recommended</span>
-                  </div>
-                  <AnimatedProgressBar targetWidth="100%" gradientClass="bg-gradient-to-r from-amber-500 to-yellow-300" />
-                </div>
-              </div>
-            </div>
-
-            {/* Tile 3: AI Precision Match (Increasing Number 0% -> 98.2%) */}
-            <div className="group relative p-6 rounded-2xl text-white bg-gradient-to-b from-[#111C35] to-[#0A1020] border border-slate-700/70 shadow-xl hover:border-orange-500/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[#FF6008]/15 blur-2xl pointer-events-none group-hover:bg-[#FF6008]/25 transition-colors" />
-
-              <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#FF6008]/10 border border-[#FF6008]/30 text-[#FF6008] shadow-sm group-hover:scale-105 transition-transform">
-                  <Target size={20} />
-                </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-[#FF6008]/10 text-orange-300 border border-[#FF6008]/25">
-                  <Sparkles size={10} className="text-[#FF6008]" />
-                  AI Scored
-                </span>
-              </div>
-
-              <div className="relative z-10">
-                <h4 className="font-serif font-extrabold text-white text-3xl md:text-4xl leading-tight tracking-tight mb-1 flex items-baseline gap-0.5">
-                  <AnimatedNumber from={0} to={98.2} duration={1800} decimals={1} />
-                  <span className="text-[#FF6008] font-sans font-bold">%</span>
-                </h4>
-                <p className="text-xs font-semibold text-slate-300 mb-4">
-                  AI Dossier Precision Match
-                </p>
-
-                <div className="pt-3 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-                    <span>Interview to Offer</span>
-                    <span className="text-[#FF6008] font-bold">&lt;48h Fast Track</span>
-                  </div>
-                  <AnimatedProgressBar targetWidth="98%" gradientClass="bg-gradient-to-r from-orange-500 to-amber-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Tile 4: Top 1% Pre-Evaluated (Decreasing Number 50% -> 1%) */}
-            <div className="group relative p-6 rounded-2xl text-white bg-gradient-to-b from-[#111C35] to-[#0A1020] border border-slate-700/70 shadow-xl hover:border-cyan-500/60 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-cyan-500/15 blur-2xl pointer-events-none group-hover:bg-cyan-500/25 transition-colors" />
-
-              <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-sm group-hover:scale-105 transition-transform">
-                  <Award size={20} />
-                </div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
-                  <TrendingUp size={10} className="text-cyan-400" />
-                  Elite Tier
-                </span>
-              </div>
-
-              <div className="relative z-10">
-                <h4 className="font-serif font-extrabold text-white text-3xl md:text-4xl leading-tight tracking-tight mb-1 flex items-baseline gap-0.5">
-                  <span className="font-serif">Top </span>
-                  <AnimatedNumber from={50} to={1} duration={1800} />
-                  <span className="text-cyan-400 font-sans font-bold">%</span>
-                </h4>
-                <p className="text-xs font-semibold text-slate-300 mb-4">
-                  Pre-Evaluated Talent Rank
-                </p>
-
-                <div className="pt-3 border-t border-slate-800/80">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-                    <span>Rigorous Vetting</span>
-                    <span className="text-cyan-400 font-bold">1 in 100 Selected</span>
-                  </div>
-                  <AnimatedProgressBar targetWidth="92%" gradientClass="bg-gradient-to-r from-cyan-500 to-teal-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ============================================================
            RECRUITER HIRING SECTION (FOR EMPLOYERS & HIRING MANAGERS)
@@ -1147,10 +772,10 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
                   <TrendingUp size={20} />
                 </div>
                 <h3 className="font-serif font-semibold text-lg text-[#0F172A] mb-2">
-                  Audited Ad Spend & ROAS
+                  Know Their Real Marketing Experience
                 </h3>
                 <p className="text-xs text-[#526071] leading-relaxed">
-                  Marketers verify historical spend histories and campaign portfolios. Review verified CAC scale, blended ROAS, and channel mastery across Meta, Google Ads, TikTok, and Amazon Ads before booking an interview.
+                  See the marketing experience behind the resume, campaigns managed, ad spend handled, ROAS achieved, CAC delivered, and channels worked across. Get a clearer picture of a marketer’s real performance before bringing them into the interview process.
                 </p>
               </div>
 
@@ -1331,97 +956,124 @@ export default function Landing({ onNavigateToAuth, onOpenTerms, onOpenPrivacy }
         </div>
       </section>
 
+
+
       {/* ============================================================
-           ENTERPRISE & AGENCY WORKSPACES SECTION
+           PRICING & SUBSCRIPTION PLANS SECTION
            ============================================================ */}
-      <section id="enterprise" className="py-16 md:py-24 px-6 bg-white border-b border-slate-200">
+      <section id="pricing" className="py-16 md:py-24 px-6 bg-[#FAF9F6] border-b border-slate-200 relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-12 gap-10 items-center">
-            {/* Left Content (6 Cols) */}
-            <div className="lg:col-span-6 space-y-6">
-              <div>
-                <span className="eyebrow mb-3 text-purple-700">ENTERPRISE & AGENCY HIRING CLOUD</span>
-                <h2 className="font-serif text-3xl md:text-4xl font-medium text-[#0F172A] leading-tight mb-4">
-                  Dedicated Multi-Pod Hiring Portals for Scale-Ups & Agencies
-                </h2>
-                <p className="text-[#526071] text-base leading-relaxed">
-                  Deploy a branded, multi-tenant recruitment environment for your internal teams or client hiring pods. Includes dedicated company subdomains, automated skill evaluation pipelines, and centralized ATS synchronization.
-                </p>
-              </div>
+          {/* Section Header */}
+          <div className="max-w-3xl mb-12 pb-6 border-b border-slate-200/80">
+            <span className="eyebrow mb-2">TRANSPARENT SUBSCRIPTION TIERS</span>
+            <h2 className="font-serif text-3xl md:text-4xl font-medium text-[#0F172A] leading-tight mb-3">
+              Simple, predictable plans. Zero placement commissions.
+            </h2>
+            <p className="text-[#526071] text-sm md:text-base leading-relaxed m-0">
+              Every plan includes pre-evaluated candidate dossiers, verified ad spend histories, and direct scheduling. Scale your hiring without percentage-based agency fees.
+            </p>
+          </div>
 
-              <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 rounded-xl bg-[#FAF9F6] border border-slate-200">
-                  <div className="text-purple-600 font-bold text-sm mb-1 flex items-center gap-1.5">
-                    <Globe size={16} />
-                    <span>Branded Subdomain</span>
-                  </div>
-                  <p className="text-xs text-slate-500 m-0">
-                    Host on your dedicated address (e.g. yourbrand.intentpeople.com).
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#FAF9F6] border border-slate-200">
-                  <div className="text-purple-600 font-bold text-sm mb-1 flex items-center gap-1.5">
-                    <Building2 size={16} />
-                    <span>Multi-Seat Pods</span>
-                  </div>
-                  <p className="text-xs text-slate-500 m-0">
-                    Unlimited recruiter seats with granular role-based permissions.
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#FAF9F6] border border-slate-200">
-                  <div className="text-purple-600 font-bold text-sm mb-1 flex items-center gap-1.5">
-                    <Zap size={16} />
-                    <span>Custom Skill Audits</span>
-                  </div>
-                  <p className="text-xs text-slate-500 m-0">
-                    Tailored pre-hire assessments tuned to your specific growth stack.
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#FAF9F6] border border-slate-200">
-                  <div className="text-purple-600 font-bold text-sm mb-1 flex items-center gap-1.5">
-                    <Layers size={16} />
-                    <span>ATS & Webhook Sync</span>
-                  </div>
-                  <p className="text-xs text-slate-500 m-0">
-                    Instant bi-directional candidate pipeline sync with Greenhouse & Ashby.
-                  </p>
-                </div>
-              </div>
+          {/* 3 Core Plan Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+            {plans.map((plan) => {
+              const isPopular = Boolean(plan.is_popular);
+              const priceDisplay = plan.price_display || (plan.price === 0 ? "₹0" : `₹${plan.price?.toLocaleString()}`);
 
-              <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleStartHiring}
-                  type="button"
-                  className="btn bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl shadow-sm transition-colors cursor-pointer"
+              return (
+                <div
+                  key={plan.id}
+                  className={`rounded-3xl flex flex-col justify-between transition-all duration-300 relative ${isPopular
+                      ? "bg-white border-2 border-indigo-600 shadow-xl hover:shadow-2xl md:-translate-y-2 p-7 lg:p-8"
+                      : "bg-white border border-slate-200 shadow-sm hover:shadow-md p-7 lg:p-8"
+                    }`}
                 >
-                  Deploy Enterprise Portal &rarr;
-                </button>
-                <button
-                  onClick={handleRecruiterLogin}
-                  type="button"
-                  className="btn btn-secondary font-semibold text-xs py-3.5 px-6 rounded-xl cursor-pointer"
-                >
-                  Recruiter Sign In
-                </button>
-              </div>
+                  {/* Top Recommended Tag for Popular Plan */}
+                  {isPopular && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[11px] font-bold tracking-wide uppercase px-4 py-1 rounded-full shadow-md flex items-center gap-1.5 whitespace-nowrap">
+                      <Star size={11} className="fill-white" />
+                      <span>Most Popular • Recommended</span>
+                    </div>
+                  )}
+
+                  <div>
+                    {/* Badge & Name */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${plan.badge_color || (isPopular ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "bg-slate-100 text-slate-700 border border-slate-200")
+                        }`}>
+                        {plan.badge || "Plan Tier"}
+                      </span>
+                    </div>
+
+                    <h3 className="font-serif text-2xl font-bold text-[#0F172A] mb-1.5">
+                      {plan.name}
+                    </h3>
+                    <p className="text-xs text-[#526071] leading-relaxed mb-6 min-h-[36px]">
+                      {plan.description || "Scalable recruitment tier for hiring managers and growth teams."}
+                    </p>
+
+                    {/* Price Header */}
+                    <div className="pb-6 mb-6 border-b border-slate-100">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-4xl font-extrabold text-[#0F172A] tracking-tight">
+                          {priceDisplay}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">
+                          / {plan.billing || (plan.price === 0 ? "forever" : `${plan.duration_days} days`)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Features List */}
+                    <div className="space-y-2.5 mb-8">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        Included Platform Features:
+                      </div>
+                      {(plan.features || []).map((feat, idx) => (
+                        <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700">
+                          <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Check size={10} className="stroke-[3]" />
+                          </div>
+                          <span className="leading-snug">{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Plan Card Actions */}
+                  <div className="pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleChoosePlan(plan)}
+                      className={`w-full py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs ${isPopular
+                          ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg"
+                          : plan.price === 0
+                            ? "bg-slate-900 hover:bg-slate-800 text-white"
+                            : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                        }`}
+                    >
+                      <span>{plan.price === 0 ? "Get Started Free" : `Choose ${plan.name}`}</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Payment & Trust Guarantee Badges */}
+          <div className="mt-10 pt-8 border-t border-slate-200/80 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-500 font-medium">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-600" />
+              <span>Instant platform activation via Razorpay</span>
             </div>
-
-            {/* Right Visual (6 Cols) */}
-            <div className="lg:col-span-6">
-              <div className="rounded-3xl border border-slate-200 p-3 bg-[#FAF9F6] shadow-sm relative group overflow-hidden">
-                <div className="rounded-2xl overflow-hidden border border-slate-200/90 shadow-md">
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    src="/images/journey_enterprise.jpg"
-                    alt="Enterprise Hiring Cloud Architecture"
-                    className="w-full h-80 sm:h-[28rem] object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute top-4 left-4 bg-[#0F172A]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-md text-white text-xs font-semibold">
-                    Multi-Pod Cloud Architecture
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <CreditCard size={16} className="text-indigo-600" />
+              <span>GST compliant tax invoices generated automatically</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle size={16} className="text-amber-500" />
+              <span>0% Placement commissions • Zero hidden agency fees</span>
             </div>
           </div>
         </div>

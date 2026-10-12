@@ -2,17 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search, Filter, Users, Briefcase, MapPin, Award, GraduationCap,
   Sparkles, CheckCircle2, Download, Printer, X, Eye, Phone, Mail,
-  ExternalLink, FileText, ChevronDown, Compass, ShieldCheck, Clock,
-  Building2, ArrowRight, RefreshCw, Zap, Tag, Star
+  ExternalLink, FileText, ChevronDown, ChevronLeft, ChevronRight, Compass, ShieldCheck, Clock,
+  Building2, ArrowRight, RefreshCw, Zap, Tag, Star, Trophy
 } from 'lucide-react';
 import { api } from '../../api';
+import { MARKETING_SPECIALISATIONS, CUSTOMER_MODELS } from '../../utils/marketingTaxonomy';
+import RecruiterMatchDossier from '../../components/RecruiterMatchDossier';
 
 // Popular digital marketing skill suggestions for 1-click filtering
 const POPULAR_SKILLS = [
-  'SEO', 'Google Ads', 'Meta Ads', 'Performance Marketing', 'GA4 & Analytics',
-  'Content Strategy', 'ROAS Optimization', 'Email Marketing', 'Social Media Marketing',
-  'SEM & PPC', 'Conversion Rate Optimization (CRO)', 'Copywriting', 'Influencer Marketing',
-  'Lead Generation', 'Affiliate Marketing', 'CRM & HubSpot'
+  'SEO', 'Google Ads', 'Meta Ads', 'Performance Marketing', 'Social Media Marketing', 'Copywriting'
 ];
 
 const EXPERIENCE_TIERS = [
@@ -56,15 +55,21 @@ export default function CandidateSearchView({ setActiveTab }) {
   const [selectedExpTier, setSelectedExpTier] = useState('all');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedWorkMode, setSelectedWorkMode] = useState('all');
+  const [selectedSpecialisation, setSelectedSpecialisation] = useState('ALL');
+  const [selectedCustomerModel, setSelectedCustomerModel] = useState('ALL');
+  const [onlyWithCaseStudies, setOnlyWithCaseStudies] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  // PDF Dossier Modal state
+  // Modal states
   const [selectedCandidateForPdf, setSelectedCandidateForPdf] = useState(null);
+  const [selectedCandidateForDossier, setSelectedCandidateForDossier] = useState(null);
 
   // Initial candidate load
   const loadCandidates = async () => {
     setLoading(true);
     try {
-      const results = await api.searchCandidates({});
+      const results = await api.searchCandidates({ limit: 100 });
       setCandidates(results || []);
     } catch (err) {
       console.error('Failed to load candidate database:', err);
@@ -89,6 +94,7 @@ export default function CandidateSearchView({ setActiveTab }) {
         max_experience: tier && tier.max !== null ? tier.max : undefined,
         city: selectedCity.trim() || undefined,
         work_mode: selectedWorkMode !== 'all' ? selectedWorkMode : undefined,
+        limit: 100,
       };
 
       const results = await api.searchCandidates(params);
@@ -108,7 +114,69 @@ export default function CandidateSearchView({ setActiveTab }) {
     setSelectedExpTier('all');
     setSelectedCity('');
     setSelectedWorkMode('all');
+    setSelectedSpecialisation('ALL');
+    setSelectedCustomerModel('ALL');
+    setOnlyWithCaseStudies(false);
+    setCurrentPage(1);
     loadCandidates();
+  };
+
+  // Filter candidates client-side based on marketing attributes
+  const displayedCandidates = useMemo(() => {
+    return candidates.filter(cand => {
+      if (selectedSpecialisation !== 'ALL') {
+        const specs = cand.specialisations_data || [];
+        const matchesSpec = specs.some(s => s.id === selectedSpecialisation || s.name?.toLowerCase().includes(selectedSpecialisation.toLowerCase()))
+          || (cand.title && cand.title.toLowerCase().includes(selectedSpecialisation.toLowerCase()))
+          || (cand.skills && cand.skills.some(sk => sk.toLowerCase().includes(selectedSpecialisation.toLowerCase())));
+        if (!matchesSpec) return false;
+      }
+      if (selectedCustomerModel !== 'ALL') {
+        const rawM = cand.gtm_experience?.customer_model;
+        const models = Array.isArray(rawM) ? rawM : (rawM ? [rawM] : []);
+        const matchesModel = models.some(m => String(m).toLowerCase().includes(selectedCustomerModel.toLowerCase()))
+          || (cand.summary && cand.summary.toLowerCase().includes(selectedCustomerModel.toLowerCase()));
+        if (!matchesModel) return false;
+      }
+      if (onlyWithCaseStudies) {
+        if (!cand.case_studies || cand.case_studies.length === 0) return false;
+      }
+      return true;
+    });
+  }, [candidates, selectedSpecialisation, selectedCustomerModel, onlyWithCaseStudies]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    query,
+    selectedSkills,
+    selectedExpTier,
+    selectedCity,
+    selectedWorkMode,
+    selectedSpecialisation,
+    selectedCustomerModel,
+    onlyWithCaseStudies,
+    pageSize
+  ]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(displayedCandidates.length / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedCandidates = displayedCandidates.slice(startIndex, startIndex + pageSize);
+
+  const getPageNumbers = (current, total) => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
   };
 
   // Skill toggle
@@ -141,7 +209,7 @@ export default function CandidateSearchView({ setActiveTab }) {
         <div style="font-size: 12px; color: #00a884; font-weight: 600; margin-top: 2px;">
           ${exp.company || ''} ${exp.location ? '• ' + exp.location : ''} ${exp.employment_type ? '(' + exp.employment_type + ')' : ''}
         </div>
-        ${exp.description ? `<p style="font-size: 11px; color: #334155; margin-top: 4px; line-height: 1.5;">${exp.description}</p>` : ''}
+        ${exp.description ? `<p style="font-size: 11px; color: #4a4e55ff; margin-top: 4px; line-height: 1.5;">${exp.description}</p>` : ''}
         ${Array.isArray(exp.technologies) && exp.technologies.length > 0 ? `
           <div style="margin-top: 5px;">
             ${exp.technologies.map(t => `<span style="display: inline-block; background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 9.5px; font-weight: bold; margin-right: 4px; margin-bottom: 4px;">${t}</span>`).join('')}
@@ -277,7 +345,7 @@ export default function CandidateSearchView({ setActiveTab }) {
       className="p-4 sm:p-7 max-w-7xl mx-auto space-y-6 bg-[#F7F8FB] min-h-full antialiased select-text text-slate-800"
       style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
     >
-      
+
       {/* ── 1. Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
@@ -307,7 +375,7 @@ export default function CandidateSearchView({ setActiveTab }) {
 
       {/* ── 2. Search & Filter Command Panel ── */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-4">
-        
+
         {/* Main Search Input & Sourcing Button */}
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="flex items-center gap-2 flex-1 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 focus-within:border-[#5C59E8] focus-within:ring-2 focus-within:ring-[#5C59E8]/10 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
@@ -401,11 +469,10 @@ export default function CandidateSearchView({ setActiveTab }) {
                   key={skill}
                   type="button"
                   onClick={() => toggleSkill(skill)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'bg-[#5C59E8]/10 text-[#4845D2] border-[#5C59E8]/30 shadow-[0_1px_2px_rgba(92,89,232,0.06)]'
-                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${isSelected
+                    ? 'bg-[#5C59E8]/10 text-[#4845D2] border-[#5C59E8]/30 shadow-[0_1px_2px_rgba(92,89,232,0.06)]'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    }`}
                 >
                   {isSelected ? '✓ ' : '+ '}{skill}
                 </button>
@@ -431,8 +498,44 @@ export default function CandidateSearchView({ setActiveTab }) {
           </div>
         </div>
 
-        {/* Experience Tier, Location, and Work Mode Filters */}
-        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Marketing Specialisation, Customer Model, Experience Tier, and Work Mode Filters */}
+        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Marketing Specialisation */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              Marketing Specialisation:
+            </label>
+            <select
+              value={selectedSpecialisation}
+              onChange={(e) => setSelectedSpecialisation(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-2xs focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
+            >
+              <option value="ALL">All 14 Specialisations</option>
+              {MARKETING_SPECIALISATIONS.map(spec => (
+                <option key={spec.id} value={spec.title || spec.name}>
+                  {spec.title || spec.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Customer Model */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              Customer / GTM Model:
+            </label>
+            <select
+              value={selectedCustomerModel}
+              onChange={(e) => setSelectedCustomerModel(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-2xs focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
+            >
+              <option value="ALL">All GTM Models</option>
+              {CUSTOMER_MODELS.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Experience Tier */}
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
@@ -441,29 +544,12 @@ export default function CandidateSearchView({ setActiveTab }) {
             <select
               value={selectedExpTier}
               onChange={(e) => setSelectedExpTier(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-[0_1px_2px_rgba(15,23,42,0.02)] focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-2xs focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
             >
               {EXPERIENCE_TIERS.map(tier => (
                 <option key={tier.id} value={tier.id}>{tier.label}</option>
               ))}
             </select>
-          </div>
-
-          {/* Location / City */}
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              Location / City:
-            </label>
-            <div className="flex items-center gap-2 bg-white border border-slate-200/90 rounded-xl px-3.5 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)] focus-within:border-[#5C59E8] focus-within:ring-2 focus-within:ring-[#5C59E8]/10 transition-all">
-              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="e.g. Hyderabad, Bengaluru..."
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="w-full bg-transparent border-none text-xs outline-none text-slate-800 placeholder:text-slate-400 font-medium"
-              />
-            </div>
           </div>
 
           {/* Work Mode */}
@@ -474,7 +560,7 @@ export default function CandidateSearchView({ setActiveTab }) {
             <select
               value={selectedWorkMode}
               onChange={(e) => setSelectedWorkMode(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-[0_1px_2px_rgba(15,23,42,0.02)] focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-2xs focus:border-[#5C59E8] focus:ring-2 focus:ring-[#5C59E8]/10 transition-all"
             >
               <option value="all">All Work Modes</option>
               <option value="remote">Remote Only</option>
@@ -482,6 +568,25 @@ export default function CandidateSearchView({ setActiveTab }) {
               <option value="on-site">On-site</option>
             </select>
           </div>
+        </div>
+
+        {/* Proof of Work Toggle Bar */}
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 font-semibold">
+            <input
+              type="checkbox"
+              checked={onlyWithCaseStudies}
+              onChange={(e) => setOnlyWithCaseStudies(e.target.checked)}
+              className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300"
+            />
+            <span className="flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              Only show candidates with verified Campaign Case Studies (Proof of Work)
+            </span>
+          </label>
+          <span className="text-slate-500 text-[11px] font-medium">
+            Showing <strong className="text-slate-900">{displayedCandidates.length === 0 ? 0 : startIndex + 1}</strong> to <strong className="text-slate-900">{Math.min(startIndex + pageSize, displayedCandidates.length)}</strong> of <strong className="text-slate-900">{displayedCandidates.length}</strong> talent profiles
+          </span>
         </div>
       </div>
 
@@ -491,14 +596,14 @@ export default function CandidateSearchView({ setActiveTab }) {
           <RefreshCw className="w-8 h-8 text-[#5C59E8] animate-spin mx-auto" />
           <p className="text-xs text-slate-500 font-semibold">Scanning candidate talent pool...</p>
         </div>
-      ) : candidates.length === 0 ? (
+      ) : displayedCandidates.length === 0 ? (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-16 text-center shadow-[0_1px_2px_rgba(15,23,42,0.04)] space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-[#5C59E8]/10 text-[#4845D2] flex items-center justify-center mx-auto mb-2">
             <Users className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-semibold text-slate-900 m-0">No candidates match your criteria</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 leading-relaxed">
-            Try broadening your search query, removing skill filters, or adjusting the experience tier to discover more candidates.
+            Try broadening your search query, adjusting specialisation or customer model filters to discover more candidates.
           </p>
           <button
             type="button"
@@ -509,34 +614,41 @@ export default function CandidateSearchView({ setActiveTab }) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {candidates.map(candidate => {
-            const expYears = candidate.total_experience_years || 0;
-            const skills = candidate.skills || [];
-            const latestExp = (candidate.experience && candidate.experience[0]) || null;
-            const pref = candidate.hiring_preferences || {};
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedCandidates.map(candidate => {
+              const expYears = candidate.total_experience_years || 0;
+              const skills = candidate.skills || [];
+              const latestExp = (candidate.experience && candidate.experience[0]) || null;
+              const pref = candidate.hiring_preferences || {};
+              const primarySpec = candidate.specialisations_data?.find(s => s.type === 'primary') || candidate.specialisations_data?.[0];
+              const caseStudiesCount = candidate.case_studies?.length || 0;
+              const rawCustomerModel = candidate.gtm_experience?.customer_model;
+              const customerModels = Array.isArray(rawCustomerModel)
+                ? rawCustomerModel
+                : (rawCustomerModel ? [rawCustomerModel] : []);
 
-            return (
-              <div
-                key={candidate.id}
-                className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
-              >
-                <div>
-                  {/* Card Header: Avatar, Name, Experience */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {candidate.avatar_url ? (
-                        <img
-                          src={candidate.avatar_url}
-                          alt={candidate.full_name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                          {(candidate.full_name || 'C').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0">
+              return (
+                <div
+                  key={candidate.id}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
+                >
+                  <div>
+                    {/* Card Header: Avatar, Name, Experience, and # Number Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {candidate.avatar_url ? (
+                          <img
+                            src={candidate.avatar_url}
+                            alt={candidate.full_name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                            {(candidate.full_name || 'C').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
                         <div className="font-semibold text-sm text-slate-900 truncate">
                           {candidate.full_name || 'Candidate'}
                         </div>
@@ -554,6 +666,26 @@ export default function CandidateSearchView({ setActiveTab }) {
                       <Clock className="w-3 h-3 text-slate-400 mr-1" />
                       <span>{expYears > 0 ? `${expYears}y exp` : 'Fresher'}</span>
                     </Badge>
+                  </div>
+
+                  {/* Primary Specialisation & Case Studies Badges */}
+                  <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                    {primarySpec && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        ★ {primarySpec.name}
+                      </span>
+                    )}
+                    {caseStudiesCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                        <Trophy className="w-3 h-3 text-amber-600" />
+                        {caseStudiesCount} Case {caseStudiesCount === 1 ? 'Study' : 'Studies'}
+                      </span>
+                    )}
+                    {customerModels.slice(0, 2).map((cm, i) => (
+                      <span key={i} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[9px] font-bold border border-blue-200">
+                        {cm}
+                      </span>
+                    ))}
                   </div>
 
                   {/* Summary Snippet */}
@@ -582,11 +714,10 @@ export default function CandidateSearchView({ setActiveTab }) {
                       return (
                         <span
                           key={idx}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
-                            isMatched
-                              ? 'bg-[#5C59E8]/10 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/20'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${isMatched
+                            ? 'bg-[#5C59E8]/10 text-[#4845D2] ring-1 ring-inset ring-[#5C59E8]/20'
+                            : 'bg-slate-100 text-slate-600'
+                            }`}
                         >
                           {sk}
                         </span>
@@ -601,26 +732,42 @@ export default function CandidateSearchView({ setActiveTab }) {
                 </div>
 
                 {/* Card Action Buttons */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
                   <div className="text-[11px] text-slate-400 font-medium">
                     {pref.work_mode ? `${pref.work_mode}` : 'Open to offers'}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {/* View Match Dossier Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCandidateForDossier(candidate);
+                        if (candidate.id) {
+                          api.recordCandidateView(candidate.id).catch(() => { });
+                        }
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer border-none shadow-2xs transition-all"
+                      title="Open 8-Dimension Recruiter Match Dossier"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                      <span>Dossier</span>
+                    </button>
+
                     {/* View Profile in PDF Format (Modal) */}
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedCandidateForPdf(candidate);
                         if (candidate.id) {
-                          api.recordCandidateView(candidate.id).catch(() => {});
+                          api.recordCandidateView(candidate.id).catch(() => { });
                         }
                       }}
-                      className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-[0_1px_2px_rgba(15,23,42,0.1)] flex items-center gap-1.5 cursor-pointer border-none"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-2xs flex items-center gap-1 cursor-pointer border-none"
                       title="View complete profile dossier in PDF form"
                     >
                       <FileText className="w-3.5 h-3.5 text-slate-300" />
-                      <span>View PDF</span>
+                      <span>PDF</span>
                     </button>
 
                     {/* Quick Print / Download Shortcut */}
@@ -629,10 +776,10 @@ export default function CandidateSearchView({ setActiveTab }) {
                       onClick={() => {
                         handlePrintCandidatePdf(candidate);
                         if (candidate.id) {
-                          api.recordCandidateView(candidate.id).catch(() => {});
+                          api.recordCandidateView(candidate.id).catch(() => { });
                         }
                       }}
-                      className="p-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                      className="p-1.5 rounded-lg border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer bg-white shadow-2xs"
                       title="Direct Download / Print PDF"
                     >
                       <Printer className="w-3.5 h-3.5" />
@@ -643,7 +790,75 @@ export default function CandidateSearchView({ setActiveTab }) {
             );
           })}
         </div>
-      )}
+
+        {/* ── Pagination Controls Bar ── */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl px-5 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3 text-slate-500 font-medium flex-wrap">
+            <span>
+              Showing <strong className="text-slate-900">{displayedCandidates.length === 0 ? 0 : startIndex + 1}</strong> to{' '}
+              <strong className="text-slate-900">{Math.min(startIndex + pageSize, displayedCandidates.length)}</strong> of{' '}
+              <strong className="text-slate-900">{displayedCandidates.length}</strong> talent profiles
+            </span>
+            <span className="hidden sm:inline-block text-slate-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 text-[11px]">Show:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-[#5C59E8] cursor-pointer shadow-2xs"
+              >
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={30}>30 per page</option>
+                <option value={50}>50 per page</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers(safePage, totalPages).map((p, idx) => (
+                p === '...' ? (
+                  <span key={`dots-${idx}`} className="px-1 text-slate-400 font-bold">...</span>
+                ) : (
+                  <button
+                    key={`page-${p}`}
+                    type="button"
+                    onClick={() => setCurrentPage(p)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer border transition-colors ${safePage === p
+                      ? 'bg-[#5C59E8] text-white border-[#5C59E8] shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                  >
+                    {p}
+                  </button>
+                )
+              ))}
+            </div>
+
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-700 bg-white flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </>
+    )}
 
       {/* ── 4. Full Candidate Dossier PDF Modal ── */}
       {selectedCandidateForPdf && (
@@ -692,7 +907,7 @@ export default function CandidateSearchView({ setActiveTab }) {
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               <div className="max-w-2xl mx-auto bg-white p-6 sm:p-10 rounded-2xl border border-slate-200/80 shadow-md text-slate-800 space-y-6">
-                
+
                 {/* Document Sheet Header */}
                 <div className="flex items-start justify-between pb-5 border-b-2 border-[#00a884] gap-4">
                   <div className="flex items-center gap-4">
@@ -920,6 +1135,58 @@ export default function CandidateSearchView({ setActiveTab }) {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. Recruiter Match Dossier Modal ── */}
+      {selectedCandidateForDossier && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
+          onClick={() => setSelectedCandidateForDossier(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-7 border border-slate-200 text-xs max-h-[90vh] overflow-y-auto no-scrollbar scrollbar-none space-y-4 animate-in zoom-in-95"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+                  <Zap className="w-5 h-5 text-indigo-600 fill-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    {selectedCandidateForDossier.full_name || 'Candidate'} — Candidate Match Dossier
+                  </h3>
+                  <p className="text-[0.7rem] text-slate-500">
+                    {selectedCandidateForDossier.title || 'Digital Marketer'} • {selectedCandidateForDossier.city || 'India'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCandidateForDossier(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center border-none cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <RecruiterMatchDossier
+              candidate={selectedCandidateForDossier}
+              compact={false}
+            />
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedCandidateForDossier(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer border-none"
+              >
+                Close Dossier
+              </button>
+            </div>
           </div>
         </div>
       )}

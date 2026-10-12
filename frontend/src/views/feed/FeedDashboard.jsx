@@ -7,7 +7,7 @@ import {
   CalendarCheck, CalendarOff, UsersRound, LayoutDashboard, PlusCircle,
   HelpCircle, Check, Copy, Folder, ArrowUpRight, Activity, Rocket,
   ClipboardList, Laptop, Brain, Shield, BarChart3, Code, UserPlus,
-  MessageSquare, Menu, Share2, Globe, Server, Layers, Crown, Sliders, Lock
+  MessageSquare, Menu, Share2, Globe, Server, Layers, Crown, Sliders, Lock, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api';
@@ -18,6 +18,7 @@ const MyApplications = lazy(() => import('../candidate/MyApplications'));
 const SavedJobs = lazy(() => import('../candidate/SavedJobs'));
 const CandidateSkillAdvisoryView = lazy(() => import('../candidate/CandidateSkillAdvisoryView'));
 const CandidateProfile = lazy(() => import('../candidate/CandidateProfile'));
+const CandidateOnboardingView = lazy(() => import('../candidate/CandidateOnboardingView'));
 const InterviewsView = lazy(() => import('../common/InterviewsView'));
 const MessagesView = lazy(() => import('../common/MessagesView'));
 const AdminDashboard = lazy(() => import('../admin/AdminDashboard'));
@@ -36,9 +37,10 @@ const RecruiterDocumentsView = lazy(() => import('../recruiter/RecruiterDocument
 const NotificationModal = lazy(() => import('../../components/NotificationModal'));
 const UnifiedRoleDashboard = lazy(() => import('../dashboard/UnifiedRoleDashboard'));
 import PlanSelectionModal from '../../components/PlanSelectionModal';
+import ToastNotification from '../../components/ToastNotification';
 
 // Universal view loading fallback
-function ViewLoadingFallback({ message = "Loading Uptrix Platform..." }) {
+function ViewLoadingFallback({ message = "Loading Platform..." }) {
   return (
     <div className="min-h-[420px] flex flex-col items-center justify-center py-20 px-4 bg-[#F6F7FB]/50 rounded-2xl animate-in fade-in">
       <div className="flex flex-col items-center gap-3">
@@ -91,7 +93,7 @@ export default function FeedDashboard({
   onCloseCreatePostModal
 }) {
   useBrandFonts();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const role = user?.role || 'CANDIDATE';
   const isAdmin = role === 'ADMIN';
   const isRecruiter = role === 'RECRUITER';
@@ -146,23 +148,32 @@ export default function FeedDashboard({
     }
     return false;
   });
-  const [activeSidebarItem, setActiveSidebarItem] = useState(() => normalizeTab(activeTab || (isStaff ? 'dashboard' : 'home')));
+  const [activeSidebarItem, setActiveSidebarItem] = useState(() => {
+    if (isStaff && user?.profile?.verification_status !== 'VERIFIED' && (!user?.profile?.plan_type || user?.profile?.plan_type === 'NONE')) {
+      return 'company_profile';
+    }
+    return normalizeTab(activeTab || (isStaff ? 'dashboard' : 'home'));
+  });
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showToast, setShowToast] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showVendorDetailsModal, setShowVendorDetailsModal] = useState(false);
   const [planModalTriggerReason, setPlanModalTriggerReason] = useState('');
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const profileDropdownRef = useRef(null);
 
   // Synchronize company subscription & sidebar access permissions
+  const isCustomVendor = user?.profile?.plan_type === 'CUSTOM_VENDOR' || currentSubscription?.plan_type === 'CUSTOM_VENDOR' || Boolean(currentSubscription?.is_custom_vendor);
+  const isVendorExpired = isCustomVendor && (currentSubscription?.days_remaining === 0 || currentSubscription?.plan_status === 'EXPIRED');
+
   const fetchSubscription = useCallback(() => {
     if (isStaff) {
       api.getCurrentSubscription()
         .then(sub => {
           if (sub) setCurrentSubscription(sub);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isStaff]);
 
@@ -172,6 +183,11 @@ export default function FeedDashboard({
 
   // Compute live active sidebar access dictionary
   const activeSidebarAccess = currentSubscription?.sidebar_access || user?.profile?.sidebar_access || {};
+
+  // Live verification and unlocked plan state
+  const isCompanyVerified = Boolean(currentSubscription?.is_verified ?? user?.profile?.is_verified) || (currentSubscription?.verification_status || user?.profile?.verification_status) === 'VERIFIED';
+  const verificationStatus = currentSubscription?.verification_status || user?.profile?.verification_status || (isCompanyVerified ? 'VERIFIED' : 'PENDING_PROFILE');
+  const isPlanUnlocked = isCompanyVerified || (user?.profile?.plan_type && user?.profile?.plan_type !== 'NONE' && user?.profile?.plan_type !== 'FREE_TRIAL_PENDING');
 
   const isNavLocked = useCallback((item) => {
     if (!isStaff || !item) return false;
@@ -290,6 +306,108 @@ export default function FeedDashboard({
   const filledFields = profileFields.filter(Boolean).length;
   const profilePct = Math.round((filledFields / profileFields.length) * 100);
 
+  // ── Company Profile 6-Step Completion for Administrator ────────────────
+  const companyProfileProgress = React.useMemo(() => {
+    if (!isAdmin || !user?.profile) {
+      return { completedCount: 0, percent: 0, isComplete: false, steps: [] };
+    }
+
+    const p = user.profile;
+    const bm = p.business_model_data || {};
+    const ta = p.target_audience_data || {};
+    const gs = p.growth_stage_data || {};
+    const mt = p.marketing_team_data || {};
+    const hd = p.hiring_defaults_data || {};
+
+    // 1. Company Profile Overview
+    const step1 = Boolean(
+      p.company_name?.trim() &&
+      (p.website?.trim() || p.no_website || p.website === '') &&
+      (p.organisation_type || p.organization_type) &&
+      (p.primary_industry || p.industry) &&
+      p.company_size &&
+      (p.headquarters_location || p.location) &&
+      p.about?.trim()
+    );
+
+    // 2. Products & Business Model
+    const step2 = Boolean(
+      (bm.customer_model || p.business_model) &&
+      (bm.revenue_model || p.business_model) &&
+      (bm.offering_description?.trim() || p.product_service?.trim())
+    );
+
+    // 3. Target Audience & Buyers
+    const step3 = Boolean(
+      (ta.target_markets?.trim() || p.target_audience?.trim()) &&
+      (ta.customer_segment || p.ideal_customer_profile) &&
+      (ta.buyer_roles?.trim() || p.ideal_customer_profile?.trim()) &&
+      (ta.customer_problem?.trim() || p.ideal_customer_profile?.trim())
+    );
+
+    // 4. Growth Stage & Priorities
+    const step4 = Boolean(
+      (gs.business_stage || p.growth_stage) &&
+      (gs.marketing_challenge?.trim() || p.business_problem?.trim()) &&
+      ((Array.isArray(gs.business_priorities) && gs.business_priorities.length > 0) || p.expected_outcome)
+    );
+
+    // 5. Team Structure, Capabilities & Tools
+    const step5 = Boolean(
+      (mt.team_size || p.team_support) &&
+      (mt.leadership_structure || p.decision_authority)
+    );
+
+    // 6. Hiring Defaults & Showcase
+    const step6 = Boolean(
+      hd.workplace_model &&
+      Array.isArray(hd.employment_types) &&
+      hd.employment_types.length > 0
+    );
+
+    // 7. Compliance & Legal Documents (Requires at least 2 out of 5 statutory documents)
+    const cd = p.compliance_documents_data || {};
+    const validDocsCount = ['pan_card', 'labour_license', 'trade_license', 'coi', 'registration_doc'].filter(
+      k => Boolean(cd[k] && (cd[k].file_url || cd[k].doc_number))
+    ).length;
+    const step7 = validDocsCount >= 2;
+
+    const steps = [
+      { id: 'overview', name: 'Profile Overview', done: step1 },
+      { id: 'business_model', name: 'Products & Model', done: step2 },
+      { id: 'target_audience', name: 'Target Audience', done: step3 },
+      { id: 'growth_stage', name: 'Growth Stage', done: step4 },
+      { id: 'marketing_team', name: 'Team & Tools', done: step5 },
+      { id: 'hiring_defaults', name: 'Hiring Defaults', done: step6 },
+      { id: 'compliance_documents', name: 'Compliance & Documents', done: step7 }
+    ];
+
+    const completedCount = steps.filter(s => s.done).length;
+    const percent = Math.round((completedCount / 7) * 100);
+
+    return {
+      completedCount,
+      percent,
+      isComplete: completedCount === 7,
+      steps
+    };
+  }, [isAdmin, user?.profile]);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      refreshUser?.();
+    };
+    const handleNavigateTab = (e) => {
+      if (e.detail) handleTabChange(e.detail);
+    };
+    window.addEventListener('uptrix:company_profile_updated', handleProfileUpdate);
+    window.addEventListener('uptrix:navigate_tab', handleNavigateTab);
+    return () => {
+      window.removeEventListener('uptrix:company_profile_updated', handleProfileUpdate);
+      window.removeEventListener('uptrix:navigate_tab', handleNavigateTab);
+    };
+  }, [refreshUser]);
+
   const handleCreatePost = (e) => {
     e.preventDefault();
     if (!newPostText.trim()) return;
@@ -397,7 +515,6 @@ export default function FeedDashboard({
 
   const triggerToast = (msg) => {
     setShowToast(msg);
-    setTimeout(() => setShowToast(null), 3500);
   };
 
   const handleScheduleSubmit = () => {
@@ -453,7 +570,7 @@ export default function FeedDashboard({
     { id: 'interviews', label: 'Candidate Interviews', icon: Calendar, tab: 'interviews' },
     { id: 'messages', label: 'Internal Messages', icon: MessageSquare, tab: 'messages' },
     { id: 'documents', label: 'Recruiter Documents', icon: Folder, tab: 'documents' },
-    { id: 'company_profile', label: 'Company Profile', icon: Building2, tab: 'company_profile' },
+    { id: 'company_profile', label: 'My Profile', icon: User, tab: 'company_profile' },
     { id: 'support', label: 'Support & Help', icon: HelpCircle, tab: 'support' }
   ];
 
@@ -524,7 +641,7 @@ export default function FeedDashboard({
       case 'application_status':
         return 'Application Status';
       case 'company_profile':
-        return 'Company Profile';
+        return isAdmin ? 'Company Profile & Intelligence' : 'My Profile';
       case 'add_staff':
         return 'Add Staff Member';
       case 'hiring_groups':
@@ -542,7 +659,19 @@ export default function FeedDashboard({
 
   const handleNavClick = (item) => {
     if (isNavLocked(item)) {
-      if (currentSubscription?.plan_type === 'CUSTOM_VENDOR') {
+      if (!isCompanyVerified) {
+        if (verificationStatus === 'UNDER_REVIEW') {
+          triggerToast('⏳ Your company profile is under inspect review. All features will unlock upon approval.');
+        } else if (verificationStatus === 'REJECTED') {
+          triggerToast('⚠️ Profile verification was rejected. Please review feedback in Company Profile to fix and resubmit.');
+        } else {
+          triggerToast(`📋 Complete all 7 steps of your Company Profile (${companyProfileProgress.completedCount}/7) to unlock "${item.label}".`);
+        }
+        handleTabChange('company_profile');
+        return;
+      }
+
+      if (isCustomVendor) {
         setShowToast(`🔒 "${item.label}" is not enabled for your organization portal.`);
       } else {
         setPlanModalTriggerReason(`Upgrade your plan to unlock "${item.label}"`);
@@ -579,12 +708,14 @@ export default function FeedDashboard({
         .ux-tabular { font-variant-numeric: tabular-nums; }
       `}</style>
 
-      {/* Toast Alert */}
+      {/* Toast Notification Pop-up */}
       {showToast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900 text-white shadow-2xl border border-indigo-500/40 text-xs font-medium animate-bounce">
-          <CheckCircle2 className="w-4 h-4 text-[#5C59E8]" />
-          {showToast}
-        </div>
+        <ToastNotification
+          toast={showToast}
+          onClose={() => setShowToast(null)}
+          onAction={(tab) => handleTabChange(tab)}
+          duration={5000}
+        />
       )}
 
       {/* Mobile Drawer Overlay Backdrop */}
@@ -676,11 +807,44 @@ export default function FeedDashboard({
                     <span className="truncate">{item.label}</span>
                   )}
 
+                  {/* Company Profile 6-step completion badge in sidebar (ONLY for administrator) */}
+                  {!sidebarCollapsed && item.id === 'company_profile' && isAdmin && (
+                    <span className={`ml-auto flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${companyProfileProgress.isComplete
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200/90'
+                      : 'bg-orange-50 text-[#FF7043] border-orange-200/90'
+                      }`}>
+                      {companyProfileProgress.isComplete ? (
+                        <>
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                          <span>100%</span>
+                        </>
+                      ) : (
+                        <span>{companyProfileProgress.completedCount}/7 ({companyProfileProgress.percent}%)</span>
+                      )}
+                    </span>
+                  )}
+
                   {/* Lock Indicator Badge if feature is locked */}
                   {!sidebarCollapsed && locked && (
-                    <span className="ml-auto flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-100/90 border border-amber-200/80 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
-                      <Lock className="w-2.5 h-2.5 text-amber-600" />
-                      <span>{currentSubscription?.plan_type === 'CUSTOM_VENDOR' ? 'Restricted' : 'Upgrade'}</span>
+                    <span
+                      title={
+                        !isCompanyVerified
+                          ? (verificationStatus === 'UNDER_REVIEW'
+                            ? 'Feature locked: Under Inspect Review'
+                            : verificationStatus === 'REJECTED'
+                              ? 'Feature locked: Verification rejected'
+                              : 'Feature locked: Complete profile to unlock')
+                          : (currentSubscription?.plan_type === 'CUSTOM_VENDOR' ? 'Restricted' : 'Click to Upgrade')
+                      }
+                      className={`ml-auto flex items-center justify-center shrink-0 border rounded-md transition-all ${!isCompanyVerified
+                        ? 'w-6 h-6 text-amber-600 bg-amber-50/90 border-amber-200/80 shadow-2xs'
+                        : 'gap-1 text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wider text-amber-700 bg-amber-100/90 border border-amber-200/80'
+                        }`}
+                    >
+                      <Lock className={`${!isCompanyVerified ? 'w-3 h-3' : 'w-2.5 h-2.5'} text-amber-600`} />
+                      {isCompanyVerified && (
+                        <span>{currentSubscription?.plan_type === 'CUSTOM_VENDOR' ? 'Restricted' : 'Upgrade'}</span>
+                      )}
                     </span>
                   )}
 
@@ -694,8 +858,18 @@ export default function FeedDashboard({
                 {sidebarCollapsed && (
                   <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center gap-1.5 select-none">
                     {locked && <Lock className="w-3 h-3 text-amber-400" />}
-                    <span>{item.label}</span>
-                    {locked && <span className="text-[10px] text-amber-300 font-semibold">(Upgrade)</span>}
+                    <span>
+                      {item.id === 'company_profile' && isAdmin
+                        ? `${item.label} (${companyProfileProgress.completedCount}/7 • ${companyProfileProgress.percent}%)`
+                        : item.label}
+                    </span>
+                    {locked && (
+                      <span className="text-[10px] text-amber-300 font-semibold">
+                        {!isCompanyVerified
+                          ? '(Locked)'
+                          : (currentSubscription?.plan_type === 'CUSTOM_VENDOR' ? '(Restricted)' : '(Upgrade)')}
+                      </span>
+                    )}
                     <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
                   </div>
                 )}
@@ -704,34 +878,141 @@ export default function FeedDashboard({
           })}
         </div>
 
-        {/* Staff Subscription Plan Banner */}
+
+
+        {/* Staff Subscription Plan / Verification Banner */}
         {isStaff && !sidebarCollapsed && (
           <div className="px-3 pb-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isAdmin) {
-                  setPlanModalTriggerReason('Subscription plan upgrades can only be made by your company Administrator.');
-                }
-                setShowPlanModal(true);
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/80 transition-all cursor-pointer group shadow-2xs text-left"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-                <div className="truncate">
-                  <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
-                    {user?.profile?.plan_type === 'PLAN_14999' ? 'Growth Scale Plan' : (user?.profile?.plan_type === 'PLAN_4999' ? 'Standard Role Plan' : 'Free Starter Plan')}
+            {!isCompanyVerified ? (
+              verificationStatus === 'UNDER_REVIEW' ? (
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('company_profile')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/80 transition-all cursor-pointer group shadow-2xs text-left"
+                  title="Company Profile is Under Inspect Review"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Clock className="w-4 h-4 text-blue-600 shrink-0 animate-pulse" />
+                    <div className="truncate">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
+                        Under Inspect Review
+                      </div>
+                      <div className="text-[9.5px] text-blue-700 font-medium truncate">
+                        Free trial unlocks upon approval
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[9.5px] text-amber-800 font-medium">
-                    {isAdmin ? 'Manage plan & limits' : 'Company subscription tier'}
+                  <span className="text-[9px] font-black uppercase text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-md group-hover:bg-blue-200 transition-colors shrink-0">
+                    In Review
+                  </span>
+                </button>
+              ) : verificationStatus === 'REJECTED' ? (
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('company_profile')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 border border-rose-200/80 transition-all cursor-pointer group shadow-2xs text-left"
+                  title="Company Verification Rejected - Click to Fix"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <div className="truncate">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
+                        Verification Rejected
+                      </div>
+                      <div className="text-[9.5px] text-rose-700 font-medium truncate">
+                        Update profile to resubmit
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-md group-hover:bg-rose-200 transition-colors shrink-0">
+                    Fix Profile
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('company_profile')}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200/80 transition-all cursor-pointer group shadow-2xs text-left"
+                  title="Complete Profile to 100% and Request Verification"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="w-4 h-4 text-[#5C59E8] shrink-0" />
+                    <div className="truncate">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
+                        Complete Company Profile
+                      </div>
+                      <div className="text-[9.5px] text-indigo-700 font-medium truncate">
+                        {companyProfileProgress.completedCount}/7 steps ({companyProfileProgress.percent}%)
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-black uppercase text-[#5C59E8] bg-indigo-100/90 px-1.5 py-0.5 rounded-md group-hover:bg-indigo-200 transition-colors shrink-0">
+                    Complete
+                  </span>
+                </button>
+              )
+            ) : isCustomVendor ? (
+              <div
+                onClick={() => setShowVendorDetailsModal(true)}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-white border shadow-xs text-left cursor-pointer transition-all select-none group ${isVendorExpired
+                  ? 'bg-gradient-to-r from-amber-950/90 to-slate-900 border-amber-500/50 hover:border-amber-400'
+                  : 'bg-gradient-to-r from-slate-900 to-slate-800 border-slate-700/60 hover:border-slate-500/80'
+                  }`}
+                title="View Dedicated Contract Details & Quotas"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border group-hover:scale-105 transition-transform ${isVendorExpired
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    }`}>
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="truncate">
+                    <div className={`text-[11px] font-bold text-white leading-tight truncate transition-colors ${isVendorExpired ? 'group-hover:text-amber-300' : 'group-hover:text-emerald-300'
+                      }`}>
+                      Dedicated Partner Portal
+                    </div>
+                    <div className="text-[9.5px] text-slate-300 font-medium">
+                      {currentSubscription?.days_remaining != null
+                        ? (currentSubscription.days_remaining > 0 ? `${currentSubscription.days_remaining} Days Active` : 'Contract Expired · Renew')
+                        : 'Custom Contract Active'}
+                    </div>
                   </div>
                 </div>
+                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0 border ${isVendorExpired
+                  ? 'text-amber-300 bg-amber-950/80 border-amber-500/30'
+                  : 'text-emerald-300 bg-emerald-950/80 border-emerald-500/30'
+                  }`}>
+                  {isVendorExpired ? 'Expired' : 'Active'}
+                </span>
               </div>
-              <span className="text-[9px] font-black uppercase text-amber-800 bg-amber-200/80 px-1.5 py-0.5 rounded-md group-hover:bg-amber-300 transition-colors shrink-0">
-                {isAdmin ? 'Upgrade' : 'Plan'}
-              </span>
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAdmin) {
+                    setPlanModalTriggerReason('Subscription plan upgrades can only be made by your company Administrator.');
+                  }
+                  setShowPlanModal(true);
+                }}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200/80 transition-all cursor-pointer group shadow-2xs text-left"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+                  <div className="truncate">
+                    <div className="text-[11px] font-bold text-slate-800 leading-tight truncate">
+                      {user?.profile?.plan_type === 'PLAN_14999' ? 'Growth Scale Plan' : (user?.profile?.plan_type === 'PLAN_4999' ? 'Standard Role Plan' : 'Free Starter Plan')}
+                    </div>
+                    <div className="text-[9.5px] text-amber-800 font-medium">
+                      {isAdmin ? 'Manage plan & limits' : 'Company subscription tier'}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[9px] font-black uppercase text-amber-800 bg-amber-200/80 px-1.5 py-0.5 rounded-md group-hover:bg-amber-300 transition-colors shrink-0">
+                  {isAdmin ? 'Upgrade' : 'Plan'}
+                </span>
+              </button>
+            )}
           </div>
         )}
 
@@ -739,19 +1020,48 @@ export default function FeedDashboard({
         <div className="p-3 border-t border-slate-100 bg-white shrink-0 relative" ref={profileDropdownRef}>
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2.5 py-1">
-              {/* Collapsed Plan Crown for Staff */}
-              {isStaff && (
+              {/* Collapsed Plan / Verification Crown for Staff */}
+              {isStaff && !isCustomVendor && (
                 <div className="relative group">
                   <button
                     type="button"
-                    onClick={() => setShowPlanModal(true)}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors relative border-none bg-transparent cursor-pointer"
-                    title="Subscription Plans"
+                    onClick={() => {
+                      if (!isCompanyVerified) {
+                        handleTabChange('company_profile');
+                      } else {
+                        setShowPlanModal(true);
+                      }
+                    }}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors relative border-none bg-transparent cursor-pointer ${!isCompanyVerified
+                      ? 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                      : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                      }`}
+                    title={!isCompanyVerified ? 'Complete Company Profile to Unlock Plans' : 'Subscription Plans'}
                   >
-                    <Crown className="w-4 h-4" />
+                    {!isCompanyVerified ? (
+                      verificationStatus === 'UNDER_REVIEW' ? <Clock className="w-4 h-4 animate-pulse" /> : <Building2 className="w-4 h-4" />
+                    ) : (
+                      <Crown className="w-4 h-4" />
+                    )}
                   </button>
                   <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
-                    <span>Subscription Plans</span>
+                    <span>{!isCompanyVerified ? (verificationStatus === 'UNDER_REVIEW' ? 'Verification Under Review' : 'Complete Profile') : 'Subscription Plans'}</span>
+                    <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                  </div>
+                </div>
+              )}
+              {isStaff && isCustomVendor && (
+                <div className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => setShowVendorDetailsModal(true)}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-emerald-600 bg-emerald-50/70 hover:bg-emerald-100/80 border border-emerald-200/50 cursor-pointer transition-colors"
+                    title="Dedicated Partner Portal"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                  </button>
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                    <span>Dedicated Partner Portal (Active)</span>
                     <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
                   </div>
                 </div>
@@ -781,20 +1091,86 @@ export default function FeedDashboard({
                 <button
                   type="button"
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] p-0.5 shadow-sm hover:ring-2 hover:ring-[#FF7043]/30 transition-all border-none cursor-pointer flex items-center justify-center"
-                  title={userName}
+                  className="w-11 h-11 p-0 rounded-full flex items-center justify-center relative border-none bg-transparent cursor-pointer"
+                  title={`${userName} (${companyProfileProgress.percent}% Completed)`}
                 >
-                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xs bg-[#FF7043]">
-                    {user?.profile?.avatar_url ? (
-                      <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
-                    ) : (
-                      firstName.charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  {isAdmin ? (
+                    <div className="relative w-11 h-11 flex items-center justify-center">
+                      <svg className="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="19"
+                          fill="none"
+                          stroke="#E2E8F0"
+                          strokeWidth="2.5"
+                        />
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="19"
+                          fill="none"
+                          stroke={companyProfileProgress.isComplete ? "#10B981" : "#FF7043"}
+                          strokeWidth="2.5"
+                          strokeDasharray={119.38}
+                          strokeDashoffset={119.38 - (119.38 * companyProfileProgress.percent) / 100}
+                          strokeLinecap="round"
+                          className="transition-all duration-700 ease-out"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 m-auto w-[31px] h-[31px] rounded-full overflow-hidden bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-xs shadow-xs">
+                        {user?.profile?.avatar_url ? (
+                          <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          firstName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div
+                        className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-black px-1 py-0.5 rounded-full shadow-xs leading-none whitespace-nowrap border border-white z-10 ${companyProfileProgress.isComplete
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-[#FF7043] text-white'
+                          }`}
+                      >
+                        {companyProfileProgress.percent}%
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] p-0.5 shadow-sm hover:ring-2 hover:ring-[#FF7043]/30 transition-all flex items-center justify-center">
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-white font-bold text-xs bg-[#FF7043]">
+                        {user?.profile?.avatar_url ? (
+                          <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          firstName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </button>
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex flex-col select-none">
                   <span>{userName}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">{userTitle || role}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {userTitle || role}{isAdmin ? ` • ${companyProfileProgress.percent}% Profile` : ''}
+                  </span>
+                  <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
+                </div>
+              </div>
+
+              {/* Collapsed Quick Logout */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to log out?')) {
+                      logout();
+                    }
+                  }}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-none bg-transparent cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center select-none">
+                  <span>Sign Out</span>
                   <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-slate-900" />
                 </div>
               </div>
@@ -807,15 +1183,65 @@ export default function FeedDashboard({
                 className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer select-none"
                 title="View account options"
               >
-                <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-sm shadow-xs">
-                    {user?.profile?.avatar_url ? (
-                      <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
-                    ) : (
-                      firstName.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <div className="relative shrink-0 flex items-center justify-center">
+                  {isAdmin ? (
+                    <div className="relative w-11 h-11 flex items-center justify-center">
+                      {/* SVG Circular Progress Ring */}
+                      <svg className="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="19"
+                          fill="none"
+                          stroke="#E2E8F0"
+                          strokeWidth="2.5"
+                        />
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="19"
+                          fill="none"
+                          stroke={companyProfileProgress.isComplete ? "#10B981" : "#FF7043"}
+                          strokeWidth="2.5"
+                          strokeDasharray={119.38}
+                          strokeDashoffset={119.38 - (119.38 * companyProfileProgress.percent) / 100}
+                          strokeLinecap="round"
+                          className="transition-all duration-700 ease-out"
+                        />
+                      </svg>
+
+                      {/* Photo / Avatar in the center of the circle ring */}
+                      <div className="absolute inset-0 m-auto w-[31px] h-[31px] rounded-full overflow-hidden bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-xs shadow-xs">
+                        {user?.profile?.avatar_url ? (
+                          <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          firstName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      {/* Percentage Badge on the Circle */}
+                      <div
+                        className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs leading-none whitespace-nowrap border border-white z-10 ${companyProfileProgress.isComplete
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-[#FF7043] text-white'
+                          }`}
+                        title={`${companyProfileProgress.percent}% Company Blueprint Completed`}
+                      >
+                        {companyProfileProgress.percent}%
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#FF7043] to-[#FF8A65] flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                        {user?.profile?.avatar_url ? (
+                          <img src={user.profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          firstName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                    </>
+                  )}
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -824,18 +1250,36 @@ export default function FeedDashboard({
                 </div>
               </div>
 
-              {/* Notification Bell Icon */}
-              <div className="relative">
+              {/* Notification Bell & Logout Icons */}
+              <div className="flex items-center gap-0.5 shrink-0">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowNotifDropdown(true)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors relative border-none bg-transparent cursor-pointer"
+                    title="Notifications"
+                    aria-label="Notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {unreadNotifsCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Quick Logout Button */}
                 <button
                   type="button"
-                  onClick={() => setShowNotifDropdown(true)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#5C59E8] hover:bg-[#F4F3FF] transition-colors relative border-none bg-transparent cursor-pointer shrink-0"
-                  title="Notifications"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to log out?')) {
+                      logout();
+                    }
+                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-none bg-transparent cursor-pointer"
+                  title="Sign Out"
+                  aria-label="Sign Out"
                 >
-                  <Bell className="w-4 h-4" />
-                  {unreadNotifsCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
-                  )}
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -872,6 +1316,19 @@ export default function FeedDashboard({
                 <span>My Profile</span>
               </button>
 
+              {!isStaff && (
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    handleTabChange('onboarding');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-[#F2A93B]" />
+                  <span>Marketing Onboarding (7 Steps)</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setShowProfileDropdown(false);
@@ -883,17 +1340,43 @@ export default function FeedDashboard({
                 <span>Help &amp; Support</span>
               </button>
 
-              {isStaff && (
+              {isStaff && isCustomVendor && (
                 <button
                   onClick={() => {
                     setShowProfileDropdown(false);
-                    setShowPlanModal(true);
+                    setShowVendorDetailsModal(true);
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-700 hover:text-amber-900 hover:bg-amber-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors border-none bg-transparent cursor-pointer text-left"
                 >
-                  <Crown className="w-4 h-4 text-amber-600" />
-                  <span>Subscription &amp; Plans</span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Portal Contract &amp; Quotas</span>
                 </button>
+              )}
+
+              {isStaff && !isCustomVendor && (
+                !isCompanyVerified ? (
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      handleTabChange('company_profile');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 hover:text-indigo-900 hover:bg-indigo-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+                  >
+                    <Building2 className="w-4 h-4 text-[#5C59E8]" />
+                    <span>Company Verification ({companyProfileProgress.completedCount}/7)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setShowPlanModal(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-700 hover:text-amber-900 hover:bg-amber-50 transition-colors border-none bg-transparent cursor-pointer text-left"
+                  >
+                    <Crown className="w-4 h-4 text-amber-600" />
+                    <span>Subscription &amp; Plans</span>
+                  </button>
+                )
               )}
 
               <div className="my-1 border-t border-slate-100" />
@@ -946,10 +1429,131 @@ export default function FeedDashboard({
         {/* ── DYNAMIC MAIN WORKSPACE CONTENT ── */}
         <main className="flex-1 overflow-y-auto bg-[#F8F9FD]">
 
+          {/* Top Verification & Free Trial Notice for Unverified Organizations */}
+          {(isAdmin || isStaff) && !user?.profile?.is_verified && user?.profile?.verification_status !== 'VERIFIED' && (
+            <div className="p-4 sm:p-6 pb-0">
+              {user?.profile?.verification_status === 'REJECTED' ? (
+                <div className="rounded-2xl p-4 bg-rose-50 border border-rose-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-rose-950">Organization Verification Rejected</p>
+                      <p className="text-[11px] text-rose-800 mt-0.5">
+                        {user.profile.verification_rejection_reason || 'Compliance document photos or business details need revision.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTabChange('company_profile')}
+                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shrink-0 border-none cursor-pointer"
+                  >
+                    Fix in Company Profile →
+                  </button>
+                </div>
+              ) : user?.profile?.verification_status === 'UNDER_REVIEW' ? (
+                <div className="rounded-2xl p-4 bg-amber-50 border border-amber-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-amber-950">Company Profile Under Inspect Review</p>
+                      <p className="text-[11px] text-amber-800 mt-0.5">
+                        Your compliance documents are being verified by our compliance team. Your 30-Day Free Trial will activate upon approval.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleTabChange('company_profile')}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-semibold hover:bg-amber-100/50 transition-colors cursor-pointer"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('plans')}
+                      className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold border-none cursor-pointer"
+                    >
+                      Upgrade for Instant Access
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-indigo-900/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 flex items-center justify-center shrink-0">
+                      <Lock className="w-4 h-4 text-indigo-300" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white flex items-center gap-2">
+                        Complete Profile to Unlock Free Trial
+                        <span className="text-[10px] font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full">
+                          {companyProfileProgress.completedCount}/7 Steps Complete
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-300 mt-0.5">
+                        {companyProfileProgress.isComplete
+                          ? 'All 7 profile steps are done! Submit for Superadmin verification to activate your 30-day Free Trial.'
+                          : 'Complete all 7 profile steps and statutory compliance documents to submit for Superadmin verification.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleTabChange('company_profile')}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#5C59E8] hover:bg-[#4E4AD6] text-white text-xs font-semibold border-none cursor-pointer shadow-sm transition-all"
+                    >
+                      {companyProfileProgress.isComplete ? 'Submit for Verification →' : 'Complete Profile (100%) →'}
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('plans')}
+                      className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 cursor-pointer transition-all"
+                    >
+                      Upgrade Plan
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Marketing Onboarding Notice for Candidates */}
+          {!isStaff && !user?.profile?.onboarding_completed && activeSidebarItem !== 'onboarding' && (
+            <div className="p-4 sm:p-6 pb-0">
+              <div className="rounded-2xl p-4 bg-gradient-to-r from-[#1E3155] via-[#243B66] to-[#1E3155] text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-[#F2A93B]/30 animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#F2A93B]/20 border border-[#F2A93B]/40 text-[#F2A93B] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-[#F2A93B]" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-black text-white flex items-center gap-2 m-0">
+                      Complete Your 7-Step Marketing Talent Dossier
+                      <span className="text-[10px] font-extrabold bg-[#F2A93B] text-[#1E3155] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        5x Recruiter Match
+                      </span>
+                    </p>
+                    <p className="text-[11.5px] text-slate-200 mt-0.5 m-0">
+                      Showcase your 14 Marketing Specialisations, GTM experience (B2B/B2C, ACV), and campaign case studies to unlock direct recruiter introductions.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('onboarding')}
+                  className="px-4 py-2 rounded-xl bg-[#F2A93B] hover:bg-[#d98d1e] text-[#1E3155] text-xs font-black shrink-0 border-none cursor-pointer flex items-center gap-1.5 shadow-sm transition-all"
+                >
+                  <span>Start Onboarding Wizard →</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ═══════════════════════════════════════════════════════════════════════ */}
           {/* UNIFIED ROLE-BASED DASHBOARD (CANDIDATE, RECRUITER, ADMIN, MANAGER)     */}
           {/* ═══════════════════════════════════════════════════════════════════════ */}
-          {(activeSidebarItem === 'home' ||
+          {!isNavLocked({ id: activeSidebarItem, tab: activeSidebarItem }) && (activeSidebarItem === 'home' ||
             activeSidebarItem === 'dashboard' ||
             activeSidebarItem === 'recruiter_dashboard' ||
             activeSidebarItem === 'admin_dashboard' ||
@@ -1275,39 +1879,70 @@ export default function FeedDashboard({
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isNavLocked({ id: activeSidebarItem, tab: activeSidebarItem }) ? (
             <div className="min-h-[70vh] flex items-center justify-center p-6">
-              <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-amber-200/80 shadow-xl shadow-amber-500/5 text-center space-y-4 animate-in zoom-in-95">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center mx-auto text-amber-600">
-                  <Lock className="w-8 h-8" />
+              <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-indigo-200/80 shadow-xl shadow-indigo-500/5 text-center space-y-4 animate-in zoom-in-95">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto ${!isCompanyVerified
+                  ? (verificationStatus === 'UNDER_REVIEW' ? 'bg-blue-50 text-blue-600 border border-blue-200' : verificationStatus === 'REJECTED' ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-indigo-50 text-[#5C59E8] border border-indigo-200')
+                  : 'bg-amber-50 text-amber-600 border border-amber-200/80'
+                  }`}>
+                  {!isCompanyVerified ? (
+                    verificationStatus === 'UNDER_REVIEW' ? <Clock className="w-8 h-8 animate-pulse" /> : verificationStatus === 'REJECTED' ? <AlertCircle className="w-8 h-8" /> : <Building2 className="w-8 h-8" />
+                  ) : (
+                    <Lock className="w-8 h-8" />
+                  )}
                 </div>
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
-                    Feature Locked
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${!isCompanyVerified
+                    ? (verificationStatus === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-800 border-blue-200' : verificationStatus === 'REJECTED' ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200')
+                    : 'bg-amber-100 text-amber-800 border-amber-200'
+                    }`}>
+                    {!isCompanyVerified
+                      ? (verificationStatus === 'UNDER_REVIEW' ? 'Under Inspect Review' : verificationStatus === 'REJECTED' ? 'Verification Rejected' : 'Profile Completion Required')
+                      : 'Feature Locked'}
                   </span>
                   <h3 className="text-lg font-bold text-slate-900 mt-2">
                     {getPageTitle(activeSidebarItem)}
                   </h3>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    This feature is locked under your company's current subscription tier. Upgrade your plan to unlock full team access.
+                    {!isCompanyVerified
+                      ? (verificationStatus === 'UNDER_REVIEW'
+                        ? 'Your company profile is currently being reviewed by compliance. Free trial access and workspace tools will automatically unlock upon approval.'
+                        : verificationStatus === 'REJECTED'
+                          ? 'Your verification was reviewed and requires updates. Please check the feedback notes on your Company Profile and resubmit.'
+                          : `Please complete all 7 steps of your Company Profile (${companyProfileProgress.completedCount}/7 completed) and submit for Superadmin verification to unlock this feature.`)
+                      : isCustomVendor
+                        ? "This module is not included in your organization's dedicated portal package. To enable this module, please contact your IntentPeople administrator."
+                        : "This feature is locked under your company's current subscription tier. Upgrade your plan to unlock full team access."}
                   </p>
                 </div>
                 <div className="pt-2 flex flex-col gap-2">
+                  {!isCompanyVerified ? (
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('company_profile')}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#5C59E8] to-[#4F46E5] hover:from-[#4F46E5] hover:to-[#4338CA] text-white font-bold text-xs shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all border-none"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span>{verificationStatus === 'UNDER_REVIEW' ? 'View Profile Status' : 'Go to Company Profile'}</span>
+                    </button>
+                  ) : !isCustomVendor && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlanModalTriggerReason(`Upgrade your plan to unlock ${getPageTitle(activeSidebarItem)}`);
+                        setShowPlanModal(true);
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all border-none"
+                    >
+                      <Crown className="w-4 h-4" />
+                      <span>Upgrade Plan to Unlock</span>
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => {
-                      setPlanModalTriggerReason(`Upgrade your plan to unlock ${getPageTitle(activeSidebarItem)}`);
-                      setShowPlanModal(true);
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
-                  >
-                    <Crown className="w-4 h-4" />
-                    <span>Upgrade Plan to Unlock</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange(isAdmin ? 'admin_dashboard' : isRecruiter ? 'recruiter_dashboard' : 'hiring_manager_dashboard')}
+                    onClick={() => handleTabChange(isAdmin ? (!isCompanyVerified ? 'company_profile' : 'admin_dashboard') : (!isCompanyVerified ? 'company_profile' : isRecruiter ? 'recruiter_dashboard' : 'hiring_manager_dashboard'))}
                     className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors border-none cursor-pointer"
                   >
-                    Return to Dashboard
+                    {!isCompanyVerified ? 'Back to Company Profile' : 'Return to Dashboard'}
                   </button>
                 </div>
               </div>
@@ -1322,163 +1957,173 @@ export default function FeedDashboard({
                 </div>
               )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 3. MY APPLICATIONS VIEW                                             */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'my_applications' && (
-              <div className="min-h-full">
-                <MyApplications setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 3. MY APPLICATIONS VIEW                                             */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'my_applications' && (
+                <div className="min-h-full">
+                  <MyApplications setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 4. SAVED JOBS VIEW                                                  */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'saved_jobs' && (
-              <div className="min-h-full">
-                <SavedJobs setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 4. SAVED JOBS VIEW                                                  */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'saved_jobs' && (
+                <div className="min-h-full">
+                  <SavedJobs setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 4B. MONTHLY ANALYSIS VIEW                                         */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'skill_advisory' && (
-              <div className="pt-1 pb-6 min-h-full">
-                <CandidateSkillAdvisoryView
-                  setActiveTab={handleTabChange}
-                  onNavigateTab={handleTabChange}
-                  setSelectedJobId={setSelectedJobId}
-                />
-              </div>
-            )}
-
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 5. INTERVIEWS VIEW (CANDIDATE & RECRUITER)                          */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {(activeSidebarItem === 'my_interviews' || activeSidebarItem === 'interviews') && (
-              <div className="min-h-full">
-                <InterviewsView setActiveTab={handleTabChange} />
-              </div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 6. CANDIDATE PROFILE VIEW                                           */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {(activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile') && (
-              <div className="min-h-full">
-                <CandidateProfile onNavigateTab={handleTabChange} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 4B. MONTHLY ANALYSIS VIEW                                         */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'skill_advisory' && (
+                <div className="pt-1 pb-6 min-h-full">
+                  <CandidateSkillAdvisoryView
+                    setActiveTab={handleTabChange}
+                    onNavigateTab={handleTabChange}
+                    setSelectedJobId={setSelectedJobId}
+                  />
+                </div>
+              )}
 
 
-            {/* 7A-2. ADD STAFF MEMBER & STAFF DIRECTORY & HIRING GROUPS IN-PAGE VIEW */}
-            {(activeSidebarItem === 'add_staff' || activeSidebarItem === 'staff_directory' || activeSidebarItem === 'hiring_groups') && (
-              <div className="min-h-full">
-                <AddStaffMember
-                  setActiveTab={handleTabChange}
-                  initialView={
-                    activeSidebarItem === 'hiring_groups'
-                      ? 'groups'
-                      : activeSidebarItem === 'staff_directory'
-                        ? 'directory'
-                        : 'form'
-                  }
-                />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 5. INTERVIEWS VIEW (CANDIDATE & RECRUITER)                          */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {(activeSidebarItem === 'my_interviews' || activeSidebarItem === 'interviews') && (
+                <div className="min-h-full">
+                  <InterviewsView setActiveTab={handleTabChange} />
+                </div>
+              )}
 
-            {/* 7A-3. STAFF KYC & COMPLIANCE DOCUMENTS VIEW */}
-            {activeSidebarItem === 'staff_documents' && (
-              <div className="min-h-full">
-                <StaffDocumentsView setActiveTab={handleTabChange} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 6. CANDIDATE PROFILE VIEW                                           */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {(activeSidebarItem === 'profile' || activeSidebarItem === 'candidate_profile') && (
+                <div className="min-h-full">
+                  <CandidateProfile onNavigateTab={handleTabChange} />
+                </div>
+              )}
+
+              {/* 6B. CANDIDATE ONBOARDING WIZARD VIEW */}
+              {activeSidebarItem === 'onboarding' && (
+                <div className="min-h-full">
+                  <CandidateOnboardingView
+                    onComplete={(targetTab) => handleTabChange(targetTab || 'profile')}
+                    onExit={() => handleTabChange('profile')}
+                  />
+                </div>
+              )}
 
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 8. POST JOB VIEW                                                    */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'post_job' && (
-              <div className="min-h-full">
-                <PostJob setActiveTab={handleTabChange} />
-              </div>
-            )}
+              {/* 7A-2. ADD STAFF MEMBER & STAFF DIRECTORY & HIRING GROUPS IN-PAGE VIEW */}
+              {(activeSidebarItem === 'add_staff' || activeSidebarItem === 'staff_directory' || activeSidebarItem === 'hiring_groups') && (
+                <div className="min-h-full">
+                  <AddStaffMember
+                    setActiveTab={handleTabChange}
+                    initialView={
+                      activeSidebarItem === 'hiring_groups'
+                        ? 'groups'
+                        : activeSidebarItem === 'staff_directory'
+                          ? 'directory'
+                          : 'form'
+                    }
+                  />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 9. MANAGE JOBS VIEW                                                 */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'manage_jobs' && (
-              <div className="min-h-full">
-                <ManageJobs setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} role={user?.role} />
-              </div>
-            )}
+              {/* 7A-3. STAFF KYC & COMPLIANCE DOCUMENTS VIEW */}
+              {activeSidebarItem === 'staff_documents' && (
+                <div className="min-h-full">
+                  <StaffDocumentsView setActiveTab={handleTabChange} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 9B. SEARCH CANDIDATES VIEW (RECRUITER ONLY)                         */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'search_candidates' && (
-              <div className="min-h-full">
-                <CandidateSearchView setActiveTab={handleTabChange} />
-              </div>
-            )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 10. APPLICANTS VIEW                                                 */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {(activeSidebarItem === 'applicants' || activeSidebarItem === 'applicants_view') && (
-              <div className="min-h-full">
-                <ApplicantsView jobId={selectedJobId} setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} role={user?.role} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 8. POST JOB VIEW                                                    */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'post_job' && (
+                <div className="min-h-full">
+                  <PostJob setActiveTab={handleTabChange} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 10B. RECRUITER APPLICATION STATUS PIPELINE VIEW                      */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'application_status' && (
-              <div className="min-h-full">
-                <ApplicationStatusView setActiveTab={handleTabChange} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 9. MANAGE JOBS VIEW                                                 */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'manage_jobs' && (
+                <div className="min-h-full">
+                  <ManageJobs setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} role={user?.role} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 11. COMPANY PROFILE VIEW                                            */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'company_profile' && (
-              <div className="min-h-full">
-                <CompanyProfile />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 9B. SEARCH CANDIDATES VIEW (RECRUITER ONLY)                         */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'search_candidates' && (
+                <div className="min-h-full">
+                  <CandidateSearchView setActiveTab={handleTabChange} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 11B. MESSAGES VIEW                                                  */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'messages' && (
-              <div className="min-h-full">
-                <MessagesView />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 10. APPLICANTS VIEW                                                 */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {(activeSidebarItem === 'applicants' || activeSidebarItem === 'applicants_view') && (
+                <div className="min-h-full">
+                  <ApplicantsView jobId={selectedJobId} setActiveTab={handleTabChange} setSelectedJobId={setSelectedJobId} role={user?.role} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 11C. UPTRIX SUPPORT & CONCIERGE DESK (IN-PAGE VIEW)                 */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeSidebarItem === 'support' && (
-              <div className="min-h-full">
-                <SupportDeskView setActiveTab={handleTabChange} />
-              </div>
-            )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 10B. RECRUITER APPLICATION STATUS PIPELINE VIEW                      */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'application_status' && (
+                <div className="min-h-full">
+                  <ApplicationStatusView setActiveTab={handleTabChange} />
+                </div>
+              )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* 11D. RECRUITER & ORGANIZATION DOCUMENTS VAULT                        */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {(activeSidebarItem === 'documents' || activeSidebarItem === 'recruiter_documents') && (
-              <div className="min-h-full">
-                <RecruiterDocumentsView setActiveTab={handleTabChange} />
-              </div>
-            )}
-          </Suspense>
-        )}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 11. COMPANY PROFILE VIEW                                            */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'company_profile' && (
+                <div className="min-h-full">
+                  <CompanyProfile />
+                </div>
+              )}
+
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 11B. MESSAGES VIEW                                                  */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'messages' && (
+                <div className="min-h-full">
+                  <MessagesView />
+                </div>
+              )}
+
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 11C. UPTRIX SUPPORT & CONCIERGE DESK (IN-PAGE VIEW)                 */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {activeSidebarItem === 'support' && (
+                <div className="min-h-full">
+                  <SupportDeskView setActiveTab={handleTabChange} />
+                </div>
+              )}
+
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {/* 11D. RECRUITER & ORGANIZATION DOCUMENTS VAULT                        */}
+              {/* ═══════════════════════════════════════════════════════════════════ */}
+              {(activeSidebarItem === 'documents' || activeSidebarItem === 'recruiter_documents') && (
+                <div className="min-h-full">
+                  <RecruiterDocumentsView setActiveTab={handleTabChange} />
+                </div>
+              )}
+            </Suspense>
+          )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 12. VCRUITAI SCHEDULER WIZARD + REVIEW SUMMARY                      */}
@@ -1978,8 +2623,8 @@ export default function FeedDashboard({
         </main>
       </div>
 
-      {/* Subscription / Upgrade Modal */}
-      {showPlanModal && (
+      {/* Subscription / Upgrade Modal (Standard plans only) */}
+      {showPlanModal && !isCustomVendor && (
         <PlanSelectionModal
           isOpen={true}
           triggerReason={planModalTriggerReason}
@@ -1993,6 +2638,112 @@ export default function FeedDashboard({
             fetchSubscription();
           }}
         />
+      )}
+
+      {/* Dedicated Vendor Contract & Quotas Details Modal */}
+      {showVendorDetailsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-[#101A33] text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white m-0">Dedicated Partner Portal</h3>
+                  <p className="text-xs text-slate-300 m-0">Custom Organization Agreement</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVendorDetailsModal(false)}
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center border-none cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Status &amp; Validity</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isVendorExpired ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                    <span className={`text-xs font-bold ${isVendorExpired ? 'text-amber-800' : 'text-slate-800'}`}>
+                      {currentSubscription?.days_remaining != null
+                        ? (currentSubscription.days_remaining > 0 ? `${currentSubscription.days_remaining} Days Active` : 'Contract Expired')
+                        : 'Active Contract'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Assigned Subdomain</span>
+                  <div className="text-xs font-mono font-bold text-sky-800 truncate">
+                    {currentSubscription?.subdomain ? `${currentSubscription.subdomain}.intentpeople.com` : 'Dedicated Subdomain'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quotas Box */}
+              <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-2.5">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider m-0">Assigned Contract Quotas</h4>
+                <div className="flex justify-between items-center text-xs py-1 border-b border-slate-200/60">
+                  <span className="text-slate-600">Active Job Postings Limit</span>
+                  <span className="font-bold text-slate-900">{currentSubscription?.jobs_used || 0} / {currentSubscription?.max_jobs || 'Custom'}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs py-1 border-b border-slate-200/60">
+                  <span className="text-slate-600">Recruiter / Staff Seats</span>
+                  <span className="font-bold text-slate-900">{currentSubscription?.roles_used || 0} / {currentSubscription?.max_roles || 'Custom'}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs py-1">
+                  <span className="text-slate-600">Candidate Pipeline Capacity</span>
+                  <span className="font-bold text-slate-900">Up to {currentSubscription?.max_candidates_per_job || 'Custom'} per job</span>
+                </div>
+              </div>
+
+              {/* Notice */}
+              <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${isVendorExpired
+                ? 'bg-amber-100/90 border-amber-300/90 text-amber-950'
+                : 'bg-amber-50/80 border-amber-200/80 text-amber-900'
+                }`}>
+                <strong>{isVendorExpired ? '⚠️ Portal Validity Expired' : 'Need to extend validity or upgrade quotas?'}</strong>
+                <p className="mt-1 m-0 text-[11.5px]">
+                  {isVendorExpired
+                    ? 'Your organization’s 30-day dedicated portal agreement has ended. Please request a contract renewal or contact your Super Administrator to extend your validity and upgrade limits.'
+                    : 'Custom vendor organizations operate under bespoke agreements. To extend your validity period, add more job openings, or increase recruiter seats, please reach out to your IntentPeople account administrator.'}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVendorDetailsModal(false);
+                    handleTabChange('support');
+                  }}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2 cursor-pointer border-none transition-all ${isVendorExpired
+                    ? 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800'
+                    : 'bg-[#101A33] hover:bg-black'
+                    }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{isVendorExpired ? 'Request Plan Renewal / Upgrade' : 'Contact Support Desk'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVendorDetailsModal(false)}
+                  className="py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border-none cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

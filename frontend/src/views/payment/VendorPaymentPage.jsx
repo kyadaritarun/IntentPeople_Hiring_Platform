@@ -38,7 +38,7 @@ export default function VendorPaymentPage({ token: propToken, onLoginRedirect })
   const [loading, setLoading] = useState(true);
   const [invitation, setInvitation] = useState(null);
   const [error, setError] = useState('');
-  
+
   // Checkout state
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -312,7 +312,7 @@ export default function VendorPaymentPage({ token: propToken, onLoginRedirect })
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
-      
+
       {/* Top Header */}
       <header className="border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-6 py-4 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -333,10 +333,10 @@ export default function VendorPaymentPage({ token: propToken, onLoginRedirect })
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Column: Package Overview & Entitlements (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
-            
+
             {/* Hero Card */}
             <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
               {/* Soft ambient gradient overlay */}
@@ -471,7 +471,7 @@ export default function VendorPaymentPage({ token: propToken, onLoginRedirect })
           {/* Right Column: Checkout & Payment Summary (5 cols) */}
           <div className="lg:col-span-5 sticky top-24">
             <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/70 relative">
-              
+
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-extrabold text-slate-900">Payment Summary</h2>
                 <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/70">

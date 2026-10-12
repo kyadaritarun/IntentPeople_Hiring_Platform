@@ -140,6 +140,10 @@ export const TAB_CONFIG = {
     path: '/support',
     title: 'Support & Help Desk | Uptrix',
   },
+  onboarding: {
+    path: '/onboarding',
+    title: 'Candidate Onboarding | Uptrix',
+  },
 };
 
 // Default dashboard tab for each user role
@@ -191,6 +195,7 @@ export function normalizeTabForRole(tab, role) {
   if (tab === 'staff_documents' || tab === 'staff_document') return 'staff_documents';
   if (tab === 'messages' || tab === 'message' || tab === 'chat') return 'messages';
   if (tab === 'ai_scheduler') return 'ai_scheduler';
+  if (tab === 'onboarding') return 'onboarding';
   if (tab === 'support' || tab === 'help' || tab === 'support_desk') return 'support';
   return tab;
 }
@@ -319,6 +324,8 @@ export function getTabFromPathname(pathname, role = null) {
     'support': 'support',
     'support-desk': 'support',
     'help': 'support',
+    'onboarding': 'onboarding',
+    'candidate-onboarding': 'onboarding',
   };
 
   return SLUG_MAP[slug] || null;
@@ -344,7 +351,7 @@ export function getDetectedTenantSubdomain() {
 
   // 3. Subdomain on host
   const host = window.location.hostname.toLowerCase();
-  
+
   // If host is an IP address (e.g. 187.77.188.152 or 127.0.0.1), no subdomain
   if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return null;
 

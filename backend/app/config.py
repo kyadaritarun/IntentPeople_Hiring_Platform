@@ -1,8 +1,13 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv(override=True)
+# Load environment variables from .env file (check backend/.env and cwd)
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    load_dotenv(override=True)
 
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Uptrix Digital Marketing Job Platform API")
