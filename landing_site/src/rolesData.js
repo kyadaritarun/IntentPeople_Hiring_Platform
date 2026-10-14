@@ -53,196 +53,199 @@ export const MARKETING_ROLE_CATEGORIES = [
 
 export const DUMMY_JOBS = [
   {
-    id: "job-1",
-    title: "Chief Marketing Officer (CMO)",
+    id: "role-1",
+    title: "Performance Marketing Manager",
+    category: "ACQUISITION",
+    roleTag: "Performance Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-2",
+    title: "Growth Marketing Manager",
+    category: "ACQUISITION",
+    roleTag: "Growth Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-3",
+    title: "Paid Media Manager",
+    category: "ACQUISITION",
+    roleTag: "Paid Media",
+    type: "Full-Time"
+  },
+  {
+    id: "role-4",
+    title: "SEO Manager",
+    category: "ACQUISITION",
+    roleTag: "SEO",
+    type: "Full-Time"
+  },
+  {
+    id: "role-5",
+    title: "Digital Marketing Manager",
+    category: "ACQUISITION",
+    roleTag: "Digital Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-6",
+    title: "Performance Marketing Specialist",
+    category: "ACQUISITION",
+    roleTag: "Performance Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-7",
+    title: "Growth Marketing Specialist",
+    category: "ACQUISITION",
+    roleTag: "Growth Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-8",
+    title: "Paid Search / PPC Specialist",
+    category: "ACQUISITION",
+    roleTag: "Paid Search",
+    type: "Full-Time"
+  },
+  {
+    id: "role-9",
+    title: "Paid Social Specialist",
+    category: "ACQUISITION",
+    roleTag: "Paid Social",
+    type: "Full-Time"
+  },
+  {
+    id: "role-10",
+    title: "Meta Ads Specialist",
+    category: "ACQUISITION",
+    roleTag: "Meta Ads",
+    type: "Full-Time"
+  },
+  {
+    id: "role-11",
+    title: "Google Ads Specialist",
+    category: "ACQUISITION",
+    roleTag: "Google Ads",
+    type: "Full-Time"
+  },
+  {
+    id: "role-12",
+    title: "Head of Digital Marketing",
     category: "STRATEGY",
-    roleTag: "Chief Marketing Officer",
-    company: "ZetaPay FinTech",
-    companyLogo: "💳",
-    location: "Mumbai (Hybrid)",
-    salary: "₹65L - ₹90L / yr",
-    type: "Full-Time",
-    experience: "10+ Yrs",
-    tags: ["Brand Strategy", "P&L Ownership", "Multi-Channel Scale"],
-    postedTime: "2 days ago",
-    applicantsCount: 14
+    roleTag: "Leadership",
+    type: "Full-Time"
   },
   {
-    id: "job-2",
-    title: "Senior Growth Marketer",
-    category: "ACQUISITION",
-    roleTag: "Growth Marketer",
-    company: "Kura Health D2C",
-    companyLogo: "🌿",
-    location: "Bengaluru / Remote",
-    salary: "₹26L - ₹38L / yr",
-    type: "Full-Time",
-    experience: "5+ Yrs",
-    tags: ["Meta Ads", "CAC Reduction", "Funnel Optimization"],
-    postedTime: "Just now",
-    applicantsCount: 28
-  },
-  {
-    id: "job-3",
-    title: "Paid Social & Meta Ads Lead",
-    category: "ACQUISITION",
-    roleTag: "Paid Social Marketer",
-    company: "StyleVerse Fashion",
-    companyLogo: "👗",
-    location: "Remote (India)",
-    salary: "₹20L - ₹30L / yr",
-    type: "Full-Time",
-    experience: "4+ Yrs",
-    tags: ["Meta Ads Manager", "Creative Testing", "TikTok / Reels"],
-    postedTime: "1 day ago",
-    applicantsCount: 19
-  },
-  {
-    id: "job-4",
-    title: "Paid Search & Google Ads Director",
-    category: "ACQUISITION",
-    roleTag: "Paid Search Marketer",
-    company: "CloudPeak SaaS",
-    companyLogo: "☁️",
-    location: "Gurgaon / Remote",
-    salary: "₹22L - ₹32L / yr",
-    type: "Full-Time",
-    experience: "6+ Yrs",
-    tags: ["Google Search", "High Intent B2B", "ROAS Optimization"],
-    postedTime: "3 days ago",
-    applicantsCount: 11
-  },
-  {
-    id: "job-5",
-    title: "Head of SEO & Organic Traffic",
-    category: "ACQUISITION",
-    roleTag: "SEO Marketer",
-    company: "SkillSprint EdTech",
-    companyLogo: "📚",
-    location: "Bengaluru",
-    salary: "₹28L - ₹42L / yr",
-    type: "Full-Time",
-    experience: "7+ Yrs",
-    tags: ["Technical SEO", "Programmatic SEO", "Content Moats"],
-    postedTime: "2 days ago",
-    applicantsCount: 16
-  },
-  {
-    id: "job-6",
-    title: "Creative Strategist & Direct Response Lead",
+    id: "role-13",
+    title: "Head of Growth",
     category: "STRATEGY",
-    roleTag: "Creative Strategist",
-    company: "Aura Consumer Labs",
-    companyLogo: "✨",
-    location: "Remote",
-    salary: "₹18L - ₹26L / yr",
-    type: "Full-Time",
-    experience: "4+ Yrs",
-    tags: ["UGC Ads", "Hook Rates", "Storyboarding", "Figma"],
-    postedTime: "4 days ago",
-    applicantsCount: 22
+    roleTag: "Leadership",
+    type: "Full-Time"
   },
   {
-    id: "job-7",
-    title: "Lifecycle & Email Marketer",
-    category: "RETENTION",
-    roleTag: "Email Marketer",
-    company: "Nurture Subscription App",
-    companyLogo: "💌",
-    location: "Remote",
-    salary: "₹18L - ₹25L / yr",
-    type: "Full-Time",
-    experience: "4+ Yrs",
-    tags: ["Klaviyo", "Retention Cohorts", "Customer LTV"],
-    postedTime: "1 day ago",
-    applicantsCount: 15
-  },
-  {
-    id: "job-8",
-    title: "Social Media & Community Manager",
-    category: "RETENTION",
-    roleTag: "Social Media Manager",
-    company: "Bolt Fitness Gear",
-    companyLogo: "⚡",
-    location: "Delhi NCR / Hybrid",
-    salary: "₹14L - ₹20L / yr",
-    type: "Full-Time",
-    experience: "3+ Yrs",
-    tags: ["Viral Reels", "Community Building", "Influencer Collabs"],
-    postedTime: "Just now",
-    applicantsCount: 31
-  },
-  {
-    id: "job-9",
-    title: "Marketing Automation & CRM Architect",
+    id: "role-14",
+    title: "Marketing Analytics Manager",
     category: "OPS",
-    roleTag: "Marketing Automation",
-    company: "Veloce Enterprise SaaS",
-    companyLogo: "⚙️",
-    location: "Hyderabad / Remote",
-    salary: "₹24L - ₹34L / yr",
-    type: "Full-Time",
-    experience: "5+ Yrs",
-    tags: ["HubSpot Enterprise", "Zapier/Make", "Lead Lifecycle"],
-    postedTime: "3 days ago",
-    applicantsCount: 9
+    roleTag: "Analytics",
+    type: "Full-Time"
   },
   {
-    id: "job-10",
-    title: "Marketing Attribution & Data Analyst",
+    id: "role-15",
+    title: "Marketing Data Analyst",
     category: "OPS",
-    roleTag: "Marketing Analyst",
-    company: "OmniCart Global",
-    companyLogo: "📊",
-    location: "Remote",
-    salary: "₹22L - ₹32L / yr",
-    type: "Full-Time",
-    experience: "5+ Yrs",
-    tags: ["GA4 Attribution", "Mixpanel", "SQL Data Moats"],
-    postedTime: "2 days ago",
-    applicantsCount: 12
+    roleTag: "Data Analyst",
+    type: "Full-Time"
   },
   {
-    id: "job-11",
-    title: "Amazon & Marketplace Growth Lead",
+    id: "role-16",
+    title: "Marketing Automation Manager",
+    category: "OPS",
+    roleTag: "Automation",
+    type: "Full-Time"
+  },
+  {
+    id: "role-17",
+    title: "CRM Marketing Manager",
+    category: "RETENTION",
+    roleTag: "CRM",
+    type: "Full-Time"
+  },
+  {
+    id: "role-18",
+    title: "Lifecycle Marketing Manager",
+    category: "RETENTION",
+    roleTag: "Lifecycle",
+    type: "Full-Time"
+  },
+  {
+    id: "role-19",
+    title: "Email Marketing Manager",
+    category: "RETENTION",
+    roleTag: "Email Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-20",
+    title: "E-commerce Marketing Manager",
     category: "ACQUISITION",
-    roleTag: "Amazon Marketer",
-    company: "PureFoods Nutrition",
-    companyLogo: "📦",
-    location: "Bengaluru",
-    salary: "₹18L - ₹27L / yr",
-    type: "Full-Time",
-    experience: "4+ Yrs",
-    tags: ["Amazon Ads", "Blinkit / Zepto Ads", "A+ Catalog"],
-    postedTime: "5 days ago",
-    applicantsCount: 18
+    roleTag: "E-commerce",
+    type: "Full-Time"
   },
   {
-    id: "job-12",
-    title: "Brand Marketer & Narrative Lead",
+    id: "role-21",
+    title: "Marketplace Marketing Manager",
+    category: "ACQUISITION",
+    roleTag: "Marketplace",
+    type: "Full-Time"
+  },
+  {
+    id: "role-22",
+    title: "Product Marketing Manager",
     category: "STRATEGY",
-    roleTag: "Brand Marketer",
-    company: "Loom & Thread D2C",
-    companyLogo: "🧵",
-    location: "Mumbai",
-    salary: "₹24L - ₹32L / yr",
-    type: "Full-Time",
-    experience: "6+ Yrs",
-    tags: ["Brand Identity", "PR & Media", "Campaign Ideation"],
-    postedTime: "3 days ago",
-    applicantsCount: 20
-  }
+    roleTag: "Product Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-23",
+    title: "Content Marketing Manager",
+    category: "RETENTION",
+    roleTag: "Content Marketing",
+    type: "Full-Time"
+  },
+  {
+    id: "role-24",
+    title: "Content Strategist",
+    category: "RETENTION",
+    roleTag: "Content Strategy",
+    type: "Full-Time"
+  },
+  {
+    id: "role-25",
+    title: "Social Media Manager",
+    category: "RETENTION",
+    roleTag: "Social Media",
+    type: "Full-Time"
+  },
+  {
+    id: "role-26",
+    title: "Influencer Marketing Manager",
+    category: "RETENTION",
+    roleTag: "Influencer Marketing",
+    type: "Full-Time"
+  },
 ];
 
 export const DUMMY_CANDIDATES = [
   {
     id: "cand-1",
-    name: "Elena Miller",
+    name: "Neha Verma",
     avatar: "/images/elena_miller.jpg",
-    initials: "EM",
+    initials: "NV",
     title: "Senior Growth & Performance Lead",
     category: "ACQUISITION",
     roleTag: "Growth Marketer",
+    location: "Bengaluru / Remote",
     experience: "7+ Yrs • Ex-DTC Unicorn",
     statBadge: "₹12 Cr+ Ad Spend Verified",
     statSubtext: "4.8x Blended ROAS across Meta & Google",
@@ -261,6 +264,7 @@ export const DUMMY_CANDIDATES = [
     title: "Head of Paid Search & Performance Media",
     category: "ACQUISITION",
     roleTag: "Paid Search Marketer",
+    location: "Delhi NCR / Remote",
     experience: "9+ Yrs • Ex-Agency VP",
     statBadge: "₹25 Cr+ Ad Spend Managed",
     statSubtext: "Google Premier Partner Certified",
@@ -279,6 +283,7 @@ export const DUMMY_CANDIDATES = [
     title: "Director of Organic Growth & SEO",
     category: "ACQUISITION",
     roleTag: "SEO Marketer",
+    location: "Bengaluru (Hybrid)",
     experience: "8+ Yrs • Scaled 0 to 4.5M monthly visits",
     statBadge: "4.5M Organic Visits/mo",
     statSubtext: "Built #1 ranking moats in competitive SaaS",
@@ -297,6 +302,7 @@ export const DUMMY_CANDIDATES = [
     title: "Fractional Chief Marketing Officer (CMO)",
     category: "STRATEGY",
     roleTag: "Chief Marketing Officer",
+    location: "Mumbai (Hybrid)",
     experience: "14+ Yrs • Ex-Swiggy & Zomato Leader",
     statBadge: "Scaled 3 Brands from Seed to Series C",
     statSubtext: "Comprehensive P&L and 50+ team management",
@@ -315,6 +321,7 @@ export const DUMMY_CANDIDATES = [
     title: "Lifecycle & Retention Marketing Lead",
     category: "RETENTION",
     roleTag: "Email Marketer",
+    location: "Mumbai / Remote",
     experience: "6+ Yrs • Ex-Nykaa D2C Lead",
     statBadge: "42% Average LTV Uplift",
     statSubtext: "Klaviyo & Braze certified architect",
@@ -333,6 +340,7 @@ export const DUMMY_CANDIDATES = [
     title: "Marketing Automation & Attribution Architect",
     category: "OPS",
     roleTag: "Marketing Automation",
+    location: "Hyderabad / Remote",
     experience: "8+ Yrs • 50+ Enterprise CRM Builds",
     statBadge: "50+ CRM Deployments",
     statSubtext: "HubSpot Solutions Partner & Segment Certified",
@@ -351,6 +359,7 @@ export const DUMMY_CANDIDATES = [
     title: "Creative Strategist & UGC Director",
     category: "STRATEGY",
     roleTag: "Creative Strategist",
+    location: "Bengaluru / Remote",
     experience: "5+ Yrs • Ex-Growth Agency Producer",
     statBadge: "500+ High-ROAS Video Ads",
     statSubtext: "12% Higher 3-second hook rate average",
@@ -369,6 +378,7 @@ export const DUMMY_CANDIDATES = [
     title: "Amazon & Marketplace Growth Lead",
     category: "ACQUISITION",
     roleTag: "Amazon Marketer",
+    location: "Delhi NCR (Hybrid)",
     experience: "6+ Yrs • Managed 15+ 8-Figure Brands",
     statBadge: "₹18 Cr+ Amazon GMV",
     statSubtext: "Blinkit, Zepto & Amazon Ads Specialist",

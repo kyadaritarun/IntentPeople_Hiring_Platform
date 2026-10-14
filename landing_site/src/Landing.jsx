@@ -37,6 +37,37 @@ import {
   Info
 } from "lucide-react";
 
+const TRUSTED_COMPANIES = [
+  {
+    name: "Aptroid Consulting PVT.LTD",
+    logo: "/images/aptroid_consulting_india_pvt_ltd_logo.jpg",
+  },
+  {
+    name: "Zeta Global",
+    logo: "/images/zetaglobal_logo.jpg",
+  },
+  {
+    name: "Premier People Logistic Solutions",
+    logo: "/images/premiere_people_logistic_solutions_logo.jpg",
+  },
+  {
+    name: "Vrinda Techapps",
+    logo: "/images/vrindaio_logo.jpg",
+  },
+  {
+    name: "Leapfront Technologies",
+    logo: "/images/leapfront_technologies_logo.jpg",
+  },
+  {
+    name: "WhiteScholars",
+    logo: "/images/whitescholars_academy_logo.jpg",
+  },
+  {
+    name: "Fort Dental",
+    logo: "/images/finalogo1-r8lpqtllrjcodssw688ueq04bas5c7fs19f3gkuzxk.webp",
+  },
+];
+
 export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerms, onOpenPrivacy }) {
   const [plans, setPlans] = useState(DEFAULT_PLANS);
   const [plansLoading, setPlansLoading] = useState(false);
@@ -194,7 +225,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
               </span>
 
               <h1 className="font-serif text-[2.5rem] leading-[1.12] sm:text-5xl md:text-[3.25rem] font-medium text-[#0F172A] mb-6 max-w-2xl mx-auto md:mx-0">
-                Find the <span className="font-serif text-indigo-600 italic">right next step</span> for your hiring & growth journey.
+                <span className="font-serif text-indigo-600 italic">Hire marketers</span> who've already grown businesses like yours.
               </h1>
 
               <p className="text-[#526071] text-base md:text-lg leading-relaxed mb-6 max-w-xl mx-auto md:mx-0">
@@ -210,7 +241,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
                   <span className="text-indigo-600 font-bold">✓</span> Real Campaign Portfolios
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-indigo-600 font-bold">✓</span> Zero-Spam Direct Pipeline
+                  <span className="text-indigo-600 font-bold">✓</span> Zero-Spam
                 </div>
               </div>
 
@@ -237,247 +268,167 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
               </div>
             </div>
 
-            {/* Right Column: Clean SaaS Talent Dossier Showcase */}
-            <div className="flex-1 w-full max-w-[530px] mx-auto relative mt-5 lg:mt-0">
+            {/* Right Column: 3 Interactive Tilted Marketer Cards */}
+            <div className="flex-1 w-full max-w-[560px] mx-auto relative mt-8 lg:mt-0 flex items-center justify-center">
               {/* Soft Ambient Radial Backdrop */}
-              <div className="absolute -inset-3 sm:-inset-4 rounded-[2.5rem] bg-gradient-to-tr from-indigo-500/10 via-emerald-500/8 to-blue-500/10 blur-2xl pointer-events-none" />
+              <div className="absolute -inset-4 sm:-inset-6 rounded-[3rem] bg-gradient-to-tr from-indigo-500/10 via-amber-500/10 to-rose-500/10 blur-3xl pointer-events-none" />
 
-              {/* Main Card Container: Crisp White, Balanced Padding, Sleek Shadow */}
-              <div className="relative rounded-2xl border border-slate-200/90 bg-white/98 backdrop-blur-sm p-4.5 sm:p-6 shadow-xl shadow-slate-900/5">
+              {/* Responsive Container for the 3 Overlapping Tilted Cards */}
+              <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center">
+                <div className="relative w-[340px] sm:w-[500px] h-[450px] sm:h-[490px] scale-[0.82] sm:scale-100 origin-center transition-transform">
 
-                {/* Top Section: 1,420+ Vetted Leaders Pill */}
-                <div className="flex items-center justify-end mb-3">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0]/60 text-[#065F46] text-xs font-semibold">
-                    <Users size={13} className="text-[#059669]" />
-                    <span>1,420+ Vetted Leaders</span>
-                  </div>
-                </div>
-
-                {/* Candidate Header Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    {/* Candidate Avatar with Professional Portrait */}
-                    <div className="relative flex-shrink-0">
+                  {/* ── Card 2: Growth Marketer (Center Top) ── */}
+                  <div
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-10 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer -rotate-[1deg]"
+                  >
+                    <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-slate-100">
                       <img
-                        src="/images/elena_miller.jpg"
-                        alt="Elena Miller - Growth Marketing Lead"
-                        className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl object-cover shadow-sm shadow-slate-900/10 border border-slate-200/90"
+                        src="/images/marketer_growth.jpg"
+                        alt="Growth Marketer"
+                        className="w-full h-full object-cover object-top select-none pointer-events-none"
+                        loading="eager"
                       />
-                      <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-[#10B981] border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">
-                        ✓
-                      </span>
                     </div>
-
-                    {/* Candidate Details */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">Elena Miller</h3>
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#EEF2FF] border border-[#E0E7FF] text-[#4F46E5] text-[10px] font-bold uppercase tracking-wider">
-                          TOP 1%
+                    <div className="px-1">
+                      <h4 className="text-sm sm:text-[15px] font-extrabold text-slate-900 tracking-tight mb-2">
+                        Growth Marketer
+                      </h4>
+                      <div className="flex items-center gap-3 mb-2.5">
+                        {/* Aptroid Consulting */}
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src="/images/aptroid_consulting_india_pvt_ltd_logo.jpg"
+                            alt="Aptroid Consulting"
+                            className="w-4 h-4 rounded object-contain shrink-0"
+                          />
+                          <span className="font-black text-[#EB1700] text-[10.5px] tracking-wider uppercase font-sans">Aptroid Consulting</span>
+                        </div>
+                        
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="bg-slate-100/90 border border-slate-200/70 text-slate-700 text-[10.5px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap">
+                          +400K Merchants
+                        </span>
+                        <span className="bg-slate-100/90 border border-slate-200/70 text-slate-700 text-[10.5px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap">
+                          +$100M Scale
                         </span>
                       </div>
-                      <p className="text-xs text-[#526071] font-medium mt-0.5 mb-2">
-                        Senior Growth & Performance Lead • Ex-DTC
-                      </p>
+                    </div>
+                  </div>
 
-                      {/* Mini Platform Badges */}
+                  {/* ── Card 1: SEO & Content Marketer (Bottom Left) ── */}
+                  <div
+                    className="absolute bottom-2 left-0 sm:left-2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-20 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer -rotate-[6deg]"
+                  >
+                    <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-slate-100">
+                      <img
+                        src="/images/marketer_seo.jpg"
+                        alt="SEO & Content Marketer"
+                        className="w-full h-full object-cover object-top select-none pointer-events-none"
+                        loading="eager"
+                      />
+                    </div>
+                    <div className="px-1">
+                      <h4 className="text-sm sm:text-[15px] font-extrabold text-slate-900 tracking-tight mb-2">
+                        SEO & Content Marketer
+                      </h4>
+                      <div className="flex items-center gap-2 mb-2.5">
+                       
+                        {/* Zeta Global */}
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src="/images/zetaglobal_logo.jpg"
+                            alt="Zeta Global"
+                            className="w-4 h-4 rounded object-contain shrink-0"
+                          />
+                          <span className="text-[10px] font-bold text-[#F22F46] tracking-tight">Zeta Global</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="bg-slate-100/90 border border-slate-200/70 text-slate-700 text-[10.5px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap">
+                          +377% Revenue
+                        </span>
+                        <span className="bg-slate-100/90 border border-slate-200/70 text-slate-700 text-[10.5px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap">
+                          +195% Traffic
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Card 3: Head of Marketing (Bottom Right) ── */}
+                  <div
+                    className="absolute bottom-6 right-0 sm:right-2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-20 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer rotate-[6deg]"
+                  >
+                    <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-pink-50">
+                      <img
+                        src="/images/marketer_head.jpg"
+                        alt="Head of Marketing"
+                        className="w-full h-full object-cover object-top select-none pointer-events-none"
+                        loading="eager"
+                      />
+                    </div>
+                    <div className="px-1">
+                      <h4 className="text-sm sm:text-[15px] font-extrabold text-slate-900 tracking-tight mb-2">
+                        Head of Marketing
+                      </h4>
+                      <div className="flex items-center gap-2.5 mb-2.5">
+                        {/* WhiteScholars */}
+                        <div className="flex items-center gap-1.5">
+                          <img
+                            src="/images/whitescholars_academy_logo.jpg"
+                            alt="WhiteScholars"
+                            className="w-4 h-4 rounded object-contain shrink-0"
+                          />
+                          <span className="text-[11px] font-bold text-slate-800 tracking-tight">
+                            WhiteScholars
+                          </span>
+                        </div>                        
+                      </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-700">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#0081FB]"><path d="M12 7.2c-2.4 0-4.4 1.4-5.6 3.6-1.1-2.2-3.1-3.6-5.5-3.6C.4 7.2 0 7.8 0 8.5v7c0 .7.4 1.3.9 1.3 2.4 0 4.4-1.4 5.6-3.6 1.1 2.2 3.1 3.6 5.5 3.6 2.4 0 4.4-1.4 5.6-3.6 1.1 2.2 3.1 3.6 5.5 3.6.5 0 .9-.6.9-1.3v-7c0-.7-.4-1.3-.9-1.3-2.4 0-4.4 1.4-5.6 3.6-1.1-2.2-3.1-3.6-5.5-3.6zm0 7.8c-1.8 0-3.3-1.3-3.8-3.1.5-1.8 2-3.1 3.8-3.1s3.3 1.3 3.8 3.1c-.5 1.8-2 3.1-3.8 3.1z" /></svg>
-                          Meta
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-700">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" /><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.35 7.34 24 12 24z" /><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.21 0 10.05 0 12s.46 3.79 1.27 5.42l4.01-3.15z" /><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.65 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z" /></svg>
-                          Google
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-700">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#000000]"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298 0 .59.05.86.15V9.4a6.33 6.33 0 0 0-.86-.06A6.34 6.34 0 0 0 3.1 15.68a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.87-4.48V8.71a8.28 8.28 0 0 0 4.8 1.52v-3.4c-.34-.04-.69-.09-1-.14z" /></svg>
-                          TikTok
+                        <span className="bg-slate-100/90 border border-slate-200/70 text-slate-700 text-[10.5px] font-semibold px-2.5 py-0.5 rounded-md whitespace-nowrap">
+                          50K+ Students
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Mint Green Turnaround Box */}
-                  <div className="flex flex-col justify-center rounded-xl bg-[#ECFDF5]/70 border border-[#A7F3D0]/80 px-3.5 py-2.5 min-w-[170px] shadow-2xs">
-                    <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                      TURNAROUND
-                    </span>
-                    <div className="flex items-center justify-between text-[#065F46]">
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={14} className="text-[#059669]" />
-                        <span className="text-[13px] font-bold text-[#065F46]">&lt; 24h Shortlist</span>
-                      </div>
-                      <ChevronRight size={13} className="text-[#059669]" />
-                    </div>
-                    <span className="text-[10px] text-slate-500 font-normal mt-0.5">
-                      Pre-vetted & ready to interview
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3 Metric Cards with Wave Sparklines */}
-                <div className="grid grid-cols-3 gap-2.5 mb-4">
-                  {/* Card 1: Audited ROAS */}
-                  <div className="p-2.5 sm:p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between overflow-hidden relative">
-                    <div>
-                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="20" x2="18" y2="10" />
-                          <line x1="12" y1="20" x2="12" y2="4" />
-                          <line x1="6" y1="20" x2="6" y2="14" />
-                        </svg>
-                      </div>
-                      <span className="text-[10px] font-medium text-slate-500 block">Audited ROAS</span>
-                      <span className="text-lg sm:text-xl font-bold text-[#059669] block leading-tight">8.4x</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">Verified PMax</span>
-                    </div>
-                    <div className="w-16 h-8 flex-shrink-0 self-end">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 80 36">
-                        <defs>
-                          <linearGradient id="roasSparkGradSm" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0 32 Q 20 30, 40 24 T 65 12 T 80 4 L 80 36 L 0 36 Z" fill="url(#roasSparkGradSm)" />
-                        <path d="M0 32 Q 20 30, 40 24 T 65 12 T 80 4" fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Spend Managed */}
-                  <div className="p-2.5 sm:p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between overflow-hidden relative">
-                    <div>
-                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1.5">
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <ellipse cx="12" cy="5" rx="9" ry="3" />
-                          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-                          <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
-                        </svg>
-                      </div>
-                      <span className="text-[10px] font-medium text-slate-500 block">Spend Managed</span>
-                      <span className="text-lg sm:text-xl font-bold text-[#4F46E5] block leading-tight">$4.2M</span>
-                      <span className="text-[9px] text-slate-400 block mt-0.5">Meta & Google</span>
-                    </div>
-                    <div className="w-16 h-8 flex-shrink-0 self-end">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 80 36">
-                        <defs>
-                          <linearGradient id="spendSparkGradSm" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0 33 Q 25 33, 45 26 T 65 14 T 80 4 L 80 36 L 0 36 Z" fill="url(#spendSparkGradSm)" />
-                        <path d="M0 33 Q 25 33, 45 26 T 65 14 T 80 4" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Card 3: AI Fit Match */}
-                  <div className="p-2.5 sm:p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between overflow-hidden relative">
-                    <div>
-                      <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5">
-                        <Target size={15} />
-                      </div>
-                      <span className="text-[10px] font-medium text-slate-500 block">AI Fit Match</span>
-                      <span className="text-lg sm:text-xl font-bold text-[#0F172A] block leading-tight">99.2%</span>
-                      <span className="text-[9px] text-[#059669] font-semibold block mt-0.5">Pre-screened</span>
-                    </div>
-                    <div className="w-16 h-8 flex-shrink-0 self-end">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 80 36">
-                        <defs>
-                          <linearGradient id="fitSparkGradSm" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0 31 Q 20 25, 38 29 T 62 14 T 80 4 L 80 36 L 0 36 Z" fill="url(#fitSparkGradSm)" />
-                        <path d="M0 31 Q 20 25, 38 29 T 62 14 T 80 4" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Specialties Row */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                  <span className="text-xs font-bold text-slate-700 mr-1">Specialties</span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF2FF]/70 border border-[#E0E7FF] text-[#4F46E5] text-[11px] font-semibold">
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#0081FB]"><path d="M12 7.2c-2.4 0-4.4 1.4-5.6 3.6-1.1-2.2-3.1-3.6-5.5-3.6C.4 7.2 0 7.8 0 8.5v7c0 .7.4 1.3.9 1.3 2.4 0 4.4-1.4 5.6-3.6 1.1 2.2 3.1 3.6 5.5 3.6 2.4 0 4.4-1.4 5.6-3.6 1.1 2.2 3.1 3.6 5.5 3.6.5 0 .9-.6.9-1.3v-7c0-.7-.4-1.3-.9-1.3-2.4 0-4.4 1.4-5.6 3.6-1.1-2.2-3.1-3.6-5.5-3.6zm0 7.8c-1.8 0-3.3-1.3-3.8-3.1.5-1.8 2-3.1 3.8-3.1s3.3 1.3 3.8 3.1c-.5 1.8-2 3.1-3.8 3.1z" /></svg>
-                    Meta Ads (CBO)
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 text-[11px] font-medium">
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" /><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.35 7.34 24 12 24z" /><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.21 0 10.05 0 12s.46 3.79 1.27 5.42l4.01-3.15z" /><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.25 2.65 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z" /></svg>
-                    Google PMax
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 text-[11px] font-medium">
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#000000]"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298 0 .59.05.86.15V9.4a6.33 6.33 0 0 0-.86-.06A6.34 6.34 0 0 0 3.1 15.68a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.87-4.48V8.71a8.28 8.28 0 0 0 4.8 1.52v-3.4c-.34-.04-.69-.09-1-.14z" /></svg>
-                    TikTok UGC
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 text-[11px] font-medium">
-                    <svg className="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <line x1="18" y1="20" x2="18" y2="10" />
-                      <line x1="12" y1="20" x2="12" y2="4" />
-                      <line x1="6" y1="20" x2="6" y2="14" />
-                    </svg>
-                    Attribution
-                  </span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#EEF2FF] border border-[#E0E7FF] text-[#4F46E5] text-[10.5px] font-semibold">
-                    +2 more
-                  </span>
-                </div>
-
-                {/* Bottom Match Activity Bar */}
-                <div className="rounded-xl bg-[#F8FAFC] border border-slate-200/80 p-3 sm:px-3.5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6.5 h-6.5 rounded-md bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5]">
-                      <Users size={14} />
-                    </div>
-                    <span className="text-xs text-slate-600 font-medium">
-                      Dossier matched with <strong className="text-slate-900 font-bold">4 Scaleup Teams</strong> today
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                    {/* Overlapping Company Logos Stack */}
-                    <div className="flex items-center -space-x-1.5">
-                      {/* Slack */}
-                      <div className="w-5.5 h-5.5 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 127 127">
-                          <path d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2C6.7 93.2.8 87.3.8 80c0-7.3 5.9-13.2 13.2-13.2h13.2V80zm6.6 0c0-7.3 5.9-13.2 13.2-13.2 7.3 0 13.2 5.9 13.2 13.2v33c0 7.3-5.9 13.2-13.2 13.2-7.3 0-13.2-5.9-13.2-13.2V80z" fill="#E01E5A" />
-                          <path d="M47 27.2c-7.3 0-13.2-5.9-13.2-13.2C33.8 6.7 39.7.8 47 .8c7.3 0 13.2 5.9 13.2 13.2v13.2H47zm0 6.6c7.3 0 13.2 5.9 13.2 13.2 0 7.3-5.9 13.2-13.2 13.2H14c-7.3 0-13.2-5.9-13.2-13.2 0-7.3 5.9-13.2 13.2-13.2h33z" fill="#36C5F0" />
-                          <path d="M99.8 47c0-7.3 5.9-13.2 13.2-13.2 7.3 0 13.2 5.9 13.2 13.2 0 7.3-5.9 13.2-13.2 13.2H99.8V47zm-6.6 0c0 7.3-5.9 13.2-13.2 13.2-7.3 0-13.2-5.9-13.2-13.2V14c0-7.3 5.9-13.2 13.2-13.2 7.3 0 13.2 5.9 13.2 13.2v33z" fill="#2EB67D" />
-                          <path d="M80 99.8c7.3 0 13.2 5.9 13.2 13.2 0 7.3-5.9 13.2-13.2 13.2-7.3 0-13.2-5.9-13.2-13.2V99.8H80zm0-6.6c-7.3 0-13.2-5.9-13.2-13.2 0-7.3 5.9-13.2 13.2-13.2h33c7.3 0 13.2 5.9 13.2 13.2 0 7.3-5.9 13.2-13.2H80z" fill="#ECB22E" />
-                        </svg>
-                      </div>
-                      {/* Notion */}
-                      <div className="w-5.5 h-5.5 rounded-full bg-black text-white text-[10px] font-bold border border-slate-200 shadow-xs flex items-center justify-center font-serif">
-                        N
-                      </div>
-                      {/* HubSpot */}
-                      <div className="w-5.5 h-5.5 rounded-full bg-[#FF7A59] text-white border border-slate-200 shadow-xs flex items-center justify-center">
-                        <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
-                          <path d="M18.8 9.3V6.6a2.2 2.2 0 0 0 1.3-2 2.2 2.2 0 1 0-4.4 0c0 .9.5 1.6 1.3 2v2.7a5.5 5.5 0 0 0-3.3 1.9L7.3 8.3a2.1 2.1 0 1 0-1.2 1.5l6.3 4.9a5.5 5.5 0 1 0 6.4-5.4zm-3.6 7.4a3.3 3.3 0 1 1 0-6.6 3.3 3.3 0 0 1 0 6.6z" />
-                        </svg>
-                      </div>
-                      {/* Stripe */}
-                      <div className="w-5.5 h-5.5 rounded-full bg-[#635BFF] text-white text-[10px] font-bold border border-slate-200 shadow-xs flex items-center justify-center">
-                        S
-                      </div>
-                    </div>
-
-                    <a href="#recruiters" className="text-xs font-bold text-[#4F46E5] hover:text-[#4338CA] flex items-center gap-1 cursor-pointer no-underline">
-                      <span>View Live Match</span>
-                      <ArrowRight size={13} />
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Trusted Companies Ribbon (Social Proof) */}
+          <div className="mt-14 pt-8 pb-3 border-t border-slate-200/80 w-full overflow-hidden">
+            <p className="text-center text-[10.5px] sm:text-xs font-bold uppercase tracking-widest text-slate-500 mb-6">
+              TRUSTED BY 500+ FAST-GROWING COMPANIES
+            </p>
+            {/* Infinite Marquee with edge gradient fade */}
+            <div className="relative w-full overflow-hidden py-1 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+              <div className="animate-trust-marquee flex items-center gap-4">
+                {[...TRUSTED_COMPANIES, ...TRUSTED_COMPANIES].map((company, idx) => (
+                  <div
+                    key={`${company.name}-${idx}`}
+                    className="bg-white rounded-2xl border border-slate-200/85 px-3.5 py-2 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all flex items-center gap-3 shrink-0 cursor-default"
+                  >
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-slate-200/80 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                      <img
+                        src={company.logo}
+                        alt={company.name}
+                        className="w-full h-full object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="text-xs sm:text-[13px] font-bold text-slate-900 tracking-tight leading-snug whitespace-nowrap">
+                      {company.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Bottom Row: Interactive Role Pathway Selector */}
-          <div className="mt-14 pt-10 border-t border-slate-200/90 w-full">
+          <div className="mt-10 pt-10 border-t border-slate-200/90 w-full">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-2">
               <div>
                 <span className="eyebrow text-xs uppercase tracking-wider mb-1.5 block">
@@ -641,21 +592,21 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
                   </div>
 
                   <h4 className="text-base font-bold text-[#0F172A] mb-1.5">
-                    Explore Roles & Specializations
+                    Matched to Your Industry, Scale &amp; Tools
                   </h4>
                   <p className="text-xs leading-relaxed text-[#526071] mb-4">
-                    Browse pre-vetted marketing roles across Strategy, Customer Acquisition, Convert & Retain, and Ops & Data. Search verified candidates and active jobs.
+                    Not only is your marketer a pro, they have experience helping companies exactly like yours. We match on millions of data points, including industry, growth stage, and specific challenges.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mb-5 text-[11px] font-medium text-slate-600">
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      🎯 Strategy & CMOs
+                      🎯 Exact Industry Fit
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      📈 Paid Social & Search
+                      📊 Growth Stage Match
                     </span>
                     <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-                      ⚡ Retention & Ops
+                      🛠️ Tool Stack Aligned
                     </span>
                   </div>
                 </div>
@@ -785,7 +736,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
                   <Clock size={20} />
                 </div>
                 <h3 className="font-serif font-semibold text-lg text-[#0F172A] mb-2">
-                  48-Hour Curated Shortlists
+                  48-Hour Turnaround
                 </h3>
                 <p className="text-xs text-[#526071] leading-relaxed">
                   Submit your requisition details and target channels. Our algorithmic matcher delivers 3 to 5 pre-evaluated, interview-ready candidate dossiers with complete skill rubrics within 2 business days.
@@ -868,29 +819,29 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
                 </p>
               </div>
 
-              {/* Feature 3: AI-Audited Talent Dossier */}
+              {/* Feature 3: Know What to Expect */}
               <div className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all">
                 <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 mb-4 shadow-2xs">
                   <Sparkles size={20} />
                 </div>
                 <h3 className="font-serif font-semibold text-lg text-[#0F172A] mb-2">
-                  AI-Audited Talent Dossier
+                  Know What to Expect
                 </h3>
                 <p className="text-xs text-[#526071] leading-relaxed">
-                  Replace static text resumes with an interactive proof-of-work dossier. Showcase your verified ad spend scale, creative experiments, conversion benchmarks, and standardized assessment ratings.
+                  Get a clear picture of the company, compensation, role expectations, required skills, and experience before you apply. No guesswork. Just the details you need to make an informed decision.
                 </p>
               </div>
 
-              {/* Feature 4: Transparent Compensation */}
+              {/* Feature 4: Apply Where You Fit */}
               <div className="p-6 rounded-2xl bg-white border border-slate-200 hover:border-teal-400 hover:shadow-md transition-all">
                 <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#00a884] mb-4 shadow-2xs">
-                  <DollarSign size={20} />
+                  <Target size={20} />
                 </div>
                 <h3 className="font-serif font-semibold text-lg text-[#0F172A] mb-2">
-                  Transparent Upfront CTC
+                  Apply Where You Fit
                 </h3>
                 <p className="text-xs text-[#526071] leading-relaxed">
-                  Never waste time guessing salary ranges. Every inbound requisition states explicit base compensation, performance bonuses, equity tiers, and remote work policies upfront before you connect.
+                  Find opportunities that match your skills, experience, and the work you've actually done. Spend less time applying to roles that aren't right for you and more time exploring opportunities where you can make a difference.
                 </p>
               </div>
             </div>

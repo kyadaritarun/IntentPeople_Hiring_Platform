@@ -355,25 +355,20 @@ export default function RolesExplorer({
                 </button>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${compact ? "max-h-[210px]" : "max-h-[45vh]"} overflow-y-auto pr-1`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 ${compact ? "max-h-[220px]" : "max-h-[48vh]"} overflow-y-auto pr-1`}>
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
-                    className={`${compact ? "p-2" : "p-3.5"} rounded-xl bg-white border border-slate-200 hover:border-teal-400 hover:bg-teal-50/20 transition-all flex items-center justify-between gap-2 shadow-2xs`}
+                    className={`${compact ? "p-2.5 px-3" : "p-3 px-3.5"} rounded-xl bg-white border border-slate-200/90 hover:border-indigo-400 hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group`}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`${compact ? "text-base" : "text-lg"} flex-shrink-0`}>{job.companyLogo}</span>
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-xs text-[#0F172A] leading-snug truncate m-0">
-                          {job.title}
-                        </h4>
-                        <span className="text-[10px] text-slate-500 truncate block mt-0.5">
-                          {job.company}
-                        </span>
-                      </div>
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                      <h4 className="font-medium text-xs sm:text-[13px] text-[#0F172A] group-hover:text-indigo-600 transition-colors leading-snug truncate m-0">
+                        {job.title}
+                      </h4>
                     </div>
-                    <span className="text-[9px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-                      {job.type}
+                    <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
+                      {job.type || "Full-Time"}
                     </span>
                   </div>
                 ))}
@@ -433,8 +428,8 @@ export default function RolesExplorer({
                       </div>
                     </div>
 
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border whitespace-nowrap flex-shrink-0 ${cand.badgeColor}`}>
-                      {cand.badge}
+                    <span className="text-[10px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
+                      {cand.location || "Remote"}
                     </span>
                   </div>
                 ))}

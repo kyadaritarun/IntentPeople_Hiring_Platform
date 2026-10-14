@@ -178,7 +178,7 @@ export default function RecruitersPage({
                 <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200/70">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-slate-900 m-0">Elena Miller • Senior Growth Marketer</p>
+                      <p className="text-xs font-bold text-slate-900 m-0">Neha Verma • Senior Growth Marketer</p>
                       <p className="text-[10.5px] text-slate-500 m-0">₹12 Cr+ Ad Spend Verified • 4.8x ROAS</p>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
