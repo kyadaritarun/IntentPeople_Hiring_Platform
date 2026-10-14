@@ -279,6 +279,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
 
                   {/* ── Card 2: Growth Marketer (Center Top) ── */}
                   <div
+                    onClick={() => onNavigateToAuth ? onNavigateToAuth("login_recruiter") : null}
                     className="absolute top-0 left-1/2 -translate-x-1/2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-10 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer -rotate-[1deg]"
                   >
                     <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-slate-100">
@@ -318,6 +319,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
 
                   {/* ── Card 1: SEO & Content Marketer (Bottom Left) ── */}
                   <div
+                    onClick={() => onNavigateToAuth ? onNavigateToAuth("login_recruiter") : null}
                     className="absolute bottom-2 left-0 sm:left-2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-20 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer -rotate-[6deg]"
                   >
                     <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-slate-100">
@@ -357,6 +359,7 @@ export default function Landing({ onNavigateToAuth, onNavigateToView, onOpenTerm
 
                   {/* ── Card 3: Head of Marketing (Bottom Right) ── */}
                   <div
+                    onClick={() => onNavigateToAuth ? onNavigateToAuth("login_recruiter") : null}
                     className="absolute bottom-6 right-0 sm:right-2 w-[220px] sm:w-[245px] bg-white rounded-2xl p-2.5 sm:p-3 shadow-xl shadow-slate-900/10 border border-slate-100/90 z-20 transition-all duration-300 ease-out hover:z-30 hover:rotate-0 hover:scale-105 hover:shadow-2xl cursor-pointer rotate-[6deg]"
                   >
                     <div className="rounded-xl overflow-hidden aspect-[4/3] mb-2.5 bg-pink-50">

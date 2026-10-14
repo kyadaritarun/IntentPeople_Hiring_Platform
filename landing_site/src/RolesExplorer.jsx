@@ -96,6 +96,33 @@ export default function RolesExplorer({
     setSelectedCategory("ALL");
   };
 
+  const handleJobClick = (job) => {
+    if (onApplyJob) {
+      onApplyJob(job);
+    } else {
+      const portalBase =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? (import.meta.env.VITE_PORTAL_URL || 'http://localhost:5173')
+          : 'https://portal.intentpeople.com';
+      window.location.href = `${portalBase}/login/candidate`;
+    }
+  };
+
+  const handleCandidateClick = (cand) => {
+    if (onHireCandidate) {
+      onHireCandidate(cand);
+    } else {
+      const portalBase =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? (import.meta.env.VITE_PORTAL_URL || 'http://localhost:5173')
+          : 'https://portal.intentpeople.com';
+      window.location.href = `${portalBase}/login/recruiter`;
+    }
+  };
+
+
   return (
     <div className={`w-full bg-white text-slate-800 ${isDropdown ? "p-6 md:p-8" : "p-0"}`}>
       {/* ============================================================
@@ -359,7 +386,8 @@ export default function RolesExplorer({
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
-                    className={`${compact ? "p-2.5 px-3" : "p-3 px-3.5"} rounded-xl bg-white border border-slate-200/90 hover:border-indigo-400 hover:shadow-xs transition-all flex items-center justify-between gap-3 cursor-pointer group`}
+                    onClick={() => handleJobClick(job)}
+                    className={`${compact ? "p-2.5 px-3" : "p-3 px-3.5"} rounded-xl bg-white border border-slate-200/90 hover:border-indigo-500 hover:shadow-xs active:scale-[0.99] transition-all flex items-center justify-between gap-3 cursor-pointer group`}
                   >
                     <div className="min-w-0 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
@@ -367,7 +395,7 @@ export default function RolesExplorer({
                         {job.title}
                       </h4>
                     </div>
-                    <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
+                    <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0 group-hover:border-indigo-200 group-hover:text-indigo-600 transition-colors">
                       {job.type || "Full-Time"}
                     </span>
                   </div>
@@ -401,7 +429,8 @@ export default function RolesExplorer({
                 {filteredCandidates.map((cand) => (
                   <div
                     key={cand.id}
-                    className={`${compact ? "p-2" : "p-3.5"} rounded-xl bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/20 transition-all flex items-center justify-between gap-2 shadow-2xs`}
+                    onClick={() => handleCandidateClick(cand)}
+                    className={`${compact ? "p-2" : "p-3.5"} rounded-xl bg-white border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/20 hover:shadow-xs active:scale-[0.99] transition-all flex items-center justify-between gap-2 shadow-2xs cursor-pointer group`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {cand.avatar ? (
@@ -411,13 +440,13 @@ export default function RolesExplorer({
                           className={`${compact ? "w-7 h-7" : "w-8 h-8"} rounded-lg object-cover border border-slate-200 flex-shrink-0 shadow-2xs`}
                         />
                       ) : (
-                        <div className={`${compact ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-[11px]"} rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center flex-shrink-0`}>
+                        <div className={`${compact ? "w-7 h-7 text-[10px]" : "w-8 h-8 text-[11px]"} rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors`}>
                           {cand.initials}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-xs text-slate-900 truncate">{cand.name}</span>
+                          <span className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{cand.name}</span>
                           <span className="w-3 h-3 rounded-full bg-emerald-500 text-white text-[7px] font-bold flex items-center justify-center flex-shrink-0">
                             ✓
                           </span>
@@ -428,7 +457,7 @@ export default function RolesExplorer({
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
+                    <span className="text-[10px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-0.5 rounded-md whitespace-nowrap flex-shrink-0 group-hover:border-indigo-200 group-hover:text-indigo-600 transition-colors">
                       {cand.location || "Remote"}
                     </span>
                   </div>
